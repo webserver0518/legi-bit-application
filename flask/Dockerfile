@@ -21,7 +21,7 @@ COPY app ./app
 EXPOSE 9000
 
 # Healthcheck baked in
-HEALTHCHECK CMD curl -fsS http://localhost:9091/healthz || exit 1
+HEALTHCHECK CMD curl -fsS http://localhost:9000/healthz || exit 1
 
 # Start the backend
 CMD ["python", "-m", "app"]
