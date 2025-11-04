@@ -1,0 +1,10 @@
+[
+  {"value": "admin", "label": "מנהל"},
+  {"value": "office_owner", "label": "בעל המשרד"},
+  {"value": "office_clerk", "label": "פקיד משרדי"},
+  {"value": "legal_secretary", "label": "מזכירה משפטית"},
+  {"value": "paralegal", "label": "פקיד משפטי"},
+  {"value": "finance_clerk", "label": "פקיד גבייה"},
+  {"value": "administrative", "label": "פקיד מנהלי"},
+  {"value": "receptionist", "label": "פקיד קבלה"}
+]

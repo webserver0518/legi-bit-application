@@ -1,0 +1,172 @@
+<!-- templates/admin_components/users_management.html -->
+<div class="container-fluid py-4">
+
+  <!-- טופס הוספת משתמש -->
+  <form id="addUserForm"
+        class="row g-2 align-items-center justify-content-center">
+
+    <!-- שם משרד -->
+    <div class="col-auto form-floating fixed-input">
+      <input id="officeName" name="office_name"
+             class="form-control form-control-sm"
+             placeholder="שם המשרד" required autocomplete="off">
+      <label for="officeName">שם המשרד</label>
+    </div>
+
+    <!-- שם משתמש -->
+    <div class="col-auto form-floating fixed-input">
+      <input id="userName" name="username"
+             class="form-control form-control-sm"
+             placeholder="שם משתמש" required autocomplete="off">
+      <label for="userName">שם משתמש</label>
+    </div>
+
+    <!-- סיסמה -->
+    <div class="col-auto form-floating fixed-input">
+      <input id="userPass" name="password" type="password"
+             class="form-control form-control-sm"
+             placeholder="סיסמה" required autocomplete="off">
+      <label for="userPass">סיסמה</label>
+    </div>
+
+    <!-- תפקיד -->
+    <div class="col-auto form-floating fixed-input position-relative">
+      <div class="form-control form-control-sm dropdown-toggle text-start"
+           id="userRoleDropdown"
+           data-bs-toggle="dropdown"
+           aria-expanded="false"
+           style="cursor: pointer; background-color: white;">
+        בחר תפקידים
+      </div>
+      <ul class="dropdown-menu w-100 p-2" aria-labelledby="userRoleDropdown" style="max-height: 230px; overflow-y: auto;"></ul>
+      <label for="userRoleDropdown">תפקיד</label>
+    </div>
+
+    <!-- אימייל -->
+    <div class="col-auto form-floating fixed-input">
+      <input id="userEmail" name="email" type="email"
+             class="form-control form-control-sm"
+             placeholder="אימייל" autocomplete="off">
+      <label for="userEmail">אימייל</label>
+    </div>
+
+    <!-- כפתור הוסף -->
+    <div class="col-auto d-grid">
+      <button class="btn btn-add btn-primary btn-sm small-btn">הוסף</button>
+    </div>
+  </form>
+
+  <hr>
+
+  <!-- טבלת משתמשים -->
+  <table id="usersTable" class="text-center align-middle w-100">
+    <thead>
+      <tr>
+        <th>שם המשרד</th>
+        <th>שם משתמש</th>
+        <th>תפקיד</th>
+        <th>אימייל</th>
+        <th>תאריך יצירה</th>
+        <th>ערוך</th>
+        <th>מחיקה</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr data-username="{{ user.username }}"
+          data-office-serial="{{ user.office_serial }}"
+          data-office-name="{{ user.office_name }}">
+
+        <td>{{ user.office_name }}</td>
+        <td>{{ user.username }}</td>
+
+        <td>{{ ', '.join(user.roles_hebrew) if user.roles_hebrew else '' }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.created_at }}</td>
+
+        <td>
+          <button class="btn btn-secondary btn-sm small-btn"
+                  onclick="openEditUserModal(this)">ערוך</button>
+        </td>
+
+        <!-- Delete -->
+        <td>
+          {% if 'admin' not in user.roles %}
+          <button class="btn btn-delete btn-sm small-btn"
+                  onclick="deleteUser(this)">🗑</button>
+          {% else %} --- {% endif %}
+        </td>
+
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- 🧾 Modal עריכת משתמש -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="editUserModalLabel">עריכת משתמש</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="editUserForm" class="row g-2 align-items-center justify-content-center">
+          <input type="hidden" name="action" value="edit">
+          <input type="hidden" name="office_serial" id="editOfficeSerial">
+          <input type="hidden" name="username" id="editUsername" autocomplete="off">
+
+          <!-- שם משרד -->
+          <div class="col-auto form-floating fixed-input">
+            <input id="editOfficeName" name="office_name"
+                   class="form-control form-control-sm"
+                   placeholder="שם המשרד" required autocomplete="off">
+            <label for="editOfficeName">שם המשרד</label>
+          </div>
+
+          <!-- סיסמה חדשה -->
+          <div class="col-auto form-floating fixed-input">
+            <input id="editPassword" name="password" type="password"
+                   class="form-control form-control-sm"
+                   placeholder="סיסמה חדשה" autocomplete="off">
+            <label for="editPassword">סיסמה חדשה</label>
+          </div>
+
+          <!-- תפקידים -->
+          <div class="col-auto form-floating fixed-input position-relative">
+            <div class="form-control form-control-sm dropdown-toggle text-start"
+                 id="editUserRoleDropdown"
+                 data-bs-toggle="dropdown"
+                 aria-expanded="false"
+                 style="cursor: pointer; background-color: white;">
+              בחר תפקידים
+            </div>
+
+            <ul class="dropdown-menu w-100 p-2" aria-labelledby="editUserRoleDropdown"
+                style="max-height: 230px; overflow-y: auto;">
+            </ul>
+
+            <label for="editUserRoleDropdown">תפקידים</label>
+          </div>
+
+          <!-- אימייל -->
+          <div class="col-auto form-floating fixed-input">
+            <input id="editEmail" name="email" type="email"
+                   class="form-control form-control-sm"
+                   placeholder="אימייל" autocomplete="off">
+            <label for="editEmail">אימייל</label>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">בטל</button>
+        <button type="button" class="btn btn-primary btn-sm" id="saveEditUserBtn">עדכן</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+</div>

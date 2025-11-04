@@ -1,0 +1,70 @@
+# s3_app.py
+from flask import jsonify, request, Blueprint
+
+from .s3_management import S3Manager
+
+
+bp = Blueprint('main', __name__)
+
+
+# ---------- Core ----------
+
+@bp.route("/healthz", methods=["GET"])
+def healthz():
+    """Simple health check."""
+    return jsonify({"status": "ok"}), 200
+
+
+@bp.route("/list_keys", methods=["GET"])
+def list_keys():
+    """List all S3 keys (optionally under a prefix)."""
+    prefix = request.args.get("prefix", "")
+    mode = request.args.get("mode", "yield")
+    try:
+        if mode == "log":
+            S3Manager.all_keys(mode="log", prefix=prefix)
+            return jsonify({"success": True, "data": "Keys logged"}), 200
+        else:
+            keys = list(S3Manager.all_keys(mode="yield", prefix=prefix))
+            return jsonify({"success": True, "data": keys}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/generate_post", methods=["POST"])
+def generate_post():
+    """
+    Generate a presigned POST URL.
+    Expects JSON: { "file_name": "file.pdf", "file_type": "application/pdf", "file_size": 12345, "key": "office/file.pdf" }
+    """
+    data = request.get_json()
+    try:
+        file_name = data["file_name"]
+        file_type = data["file_type"]
+        file_size = int(data["file_size"])
+        key = data["key"]
+        result = S3Manager.generate_presigned_post(file_name, file_type, file_size, key)
+        return jsonify({"success": True, "data": result}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+
+
+@bp.route("/generate_get", methods=["GET"])
+def generate_get():
+    """Generate a presigned GET (download) URL for a file key."""
+    key = request.args.get("key")
+    if not key:
+        return jsonify({"success": False, "error": "Missing 'key' parameter"}), 400
+    result = S3Manager.generate_presigned_get(key)
+    return jsonify({"success": True, "data": result}), 200
+
+
+@bp.route("/delete", methods=["DELETE"])
+def delete_object():
+    """Delete an object from S3 by key."""
+    data = request.get_json()
+    key = data.get("key")
+    if not key:
+        return jsonify({"success": False, "error": "Missing key"}), 400
+    result = S3Manager.delete(key)
+    return jsonify({"success": True, "data": result}), 200

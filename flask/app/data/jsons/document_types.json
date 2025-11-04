@@ -1,0 +1,9 @@
+[
+  {"value": "general", "label": "מסמך כללי"},
+  {"value": "appendix", "label": "נספח"},
+  {"value": "invoice", "label": "חשבונית"},
+  {"value": "report", "label": "דו״ח"},
+  {"value": "evidence", "label": "ראיה"},
+  {"value": "agreement", "label": "הסכם"},
+  {"value": "other", "label": "אחר"}
+]

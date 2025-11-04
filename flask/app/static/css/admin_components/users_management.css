@@ -1,0 +1,80 @@
+/* ───── משתני צבע לאחידות ───── */
+:root {
+    --c-danger: #dc3545;
+    --c-danger-dark: #c82333;
+}
+
+/* ───── טופס הוספה ───── */
+#addUserForm {
+    margin-bottom: 40px;
+}
+
+.fixed-input {
+    width: 180px;
+}
+
+.form-floating>.form-control-sm {
+    height: calc(1.4rem + 2px);
+    padding: .15rem .5rem;
+    font-size: .85rem;
+    line-height: 1.1;
+}
+
+.form-floating>label {
+    font-size: 10px;
+    padding: .5rem .5rem;
+}
+
+/* כפתור הוסף – תכלת קבוע, כהה בריחוף */
+.btn-add {
+    padding: 10px 40px !important;
+    font-size: 16px !important;
+}
+
+
+/* ───── טבלה ───── */
+#usersTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+#usersTable thead {
+    background: var(--c1);
+    color: #fff;
+}
+
+#usersTable tbody tr {
+    background: #fff;
+    transition: background-color .2s ease;
+}
+
+#usersTable tbody tr:hover {
+    background: #dfe6f9;
+}
+
+#usersTable th,
+#usersTable td {
+    padding: 10px;
+    border: 1px solid #dee2e6;
+}
+
+/* שדות/כפתורים קטנים בתוך הטבלה */
+.small-btn,
+#usersTable input.form-control {
+    font-size: 12px;
+    padding: 2px 6px;
+}
+
+/* כפתור מחיקה – אדום קבוע, כהה בריחוף */
+.btn-delete {
+    background: var(--c-danger) !important;
+    border-color: var(--c-danger) !important;
+    color: #fff !important;
+}
+
+.btn-delete:hover {
+    background: var(--c-danger-dark) !important;
+    border-color: var(--c-danger-dark) !important;
+    color: #fff !important;
+}

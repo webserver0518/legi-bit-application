@@ -1,0 +1,22 @@
+# קבצי סביבת פייתון
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# סביבה וירטואלית
+.venv/
+venv/
+
+# קבצים רגישים
+aws/
+envs/
+*.env
+
+# קבצי לוג/פלט
+*.log
+*.bak
+
+# קבצי IDE (VSCode, PyCharm וכו')
+.vscode/
+.idea/
