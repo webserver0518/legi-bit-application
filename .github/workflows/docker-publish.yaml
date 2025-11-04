@@ -19,14 +19,21 @@ jobs:
             context: flask
             dockerfile: flask/Dockerfile
             image: legi-bit-flask
+
+          - name: nginx
+            context: nginx
+            dockerfile: nginx/Dockerfile
+            image: legi-bit-nginx
+
           - name: mongodb
             context: services/mongodb
             dockerfile: services/mongodb/Dockerfile
             image: legi-bit-mongodb
-          - name: nginx
-            context: services/nginx
-            dockerfile: services/nginx/Dockerfile
-            image: legi-bit-nginx
+
+          - name: s3
+            context: services/s3
+            dockerfile: services/s3/Dockerfile
+            image: legi-bit-s3
 
     steps:
       - name: Checkout code
