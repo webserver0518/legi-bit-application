@@ -6,17 +6,17 @@
 
   fetch('/get_office_archived_cases?expand=true')
     .then(r => r.json())
-    .then(payload  => {
-    const rows = Array.isArray(payload?.data) ? payload.data : [];
-        if (!payload?.success || rows.length === 0) {
-            tbody.innerHTML = `
+    .then(payload => {
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      if (!payload?.success || rows.length === 0) {
+        tbody.innerHTML = `
               <tr>
                 <td colspan="100%" class="text-center text-muted py-3">
                   No cases
                 </td>
               </tr>`;
-            return;
-        }
+        return;
+      }
 
       // Build the table rows dynamically
       tbody.innerHTML = rows.map(obj => `
