@@ -416,7 +416,7 @@ class MongoDBManager:
             # debug not found
             current_app.logger.debug(f"entity {entity} with filters {filters} not found.")
             current_app.logger.debug(f"returning not found")
-            return ResponseManager.not_found(error=f"returning not found")
+            return ResponseManager.not_found(error=f"Not Found")
 
         # debug success
         current_app.logger.debug(f"returning success with results")
@@ -576,15 +576,18 @@ class MongoDBManager:
         """
 
         current_app.logger.debug("inside delete_entity()")
+        # debug inputs
         current_app.logger.debug(f"entity: {entity}")
         current_app.logger.debug(f"office_serial: {office_serial}")
         current_app.logger.debug(f"filters: {filters}")
 
         if not entity:
+            # debug bad request
             current_app.logger.debug("returning bad_request: 'entity' is required")
             return ResponseManager.bad_request(error="Missing 'entity'")
 
         if not filters:
+            # debug bad request
             current_app.logger.debug("returning bad_request: 'filters' are required for delete")
             return ResponseManager.bad_request(error="Missing 'filters'")
 
@@ -595,38 +598,39 @@ class MongoDBManager:
         total_deleted = 0
 
         for db_name in db_names:
-            try:
-                current_app.logger.debug(f"calling delete_records() for DB '{db_name}'")
-                delete_res = cls._delete_records(
-                    db_name=db_name,
-                    collection_name=entity,
-                    filters=filters
+            
+            # debug func call
+            current_app.logger.debug(f"calling delete_records() for DB '{db_name}'")
+            delete_res = cls._delete_records(
+                db_name=db_name,
+                collection_name=entity,
+                filters=filters
+            )
+
+            if not ResponseManager.is_success(response=delete_res):
+                # debug error from delete records
+                current_app.logger.debug(
+                    f"skipping DB '{db_name}' due to response error: "
+                    f"{ResponseManager.get_error(response=delete_res)}"
                 )
-
-                if not ResponseManager.is_success(response=delete_res):
-                    current_app.logger.debug(
-                        f"skipping DB '{db_name}' due to response error: "
-                        f"{ResponseManager.get_error(response=delete_res)}"
-                    )
-                    continue
-
-                deleted_count = ResponseManager.get_data(response=delete_res).get("deleted_count", 0)
-                total_deleted += deleted_count
-
-                results.append({
-                    "office_serial": int(db_name),
-                    "deleted_count": deleted_count
-                })
-
-            except Exception as e:
-                current_app.logger.exception(f"Error deleting entity in DB '{db_name}': {e}")
                 continue
 
+            deleted_count = ResponseManager.get_data(response=delete_res).get("deleted_count", 0)
+            total_deleted += deleted_count
+
+            results.append({
+                "office_serial": int(db_name),
+                "deleted_count": deleted_count
+            })
+
         if total_deleted == 0:
+            # debug not found
             current_app.logger.debug(f"no entities deleted for {entity} with filters {filters}")
+            current_app.logger.debug(f"returning not found")
             return ResponseManager.not_found(error=f"No matching {entity} found to delete")
 
-        current_app.logger.debug(f"returning success with total_deleted={total_deleted}")
+        # debug success
+        current_app.logger.debug(f"returning success with results and total_deleted={total_deleted}")
         return ResponseManager.success(
             data={"total_deleted": total_deleted, "details": results}
         )
