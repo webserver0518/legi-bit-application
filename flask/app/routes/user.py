@@ -46,7 +46,7 @@ def get_case():
 
     office_serial = AuthorizationManager.get_office_serial()
     case_serial = request.args.get("serial")
-    expand =      request.args.get("expand", False)
+    expand = request.args.get("expand", False)
 
     if not office_serial:
         return ResponseManager.error("Missing 'office_serial' in auth")
@@ -63,7 +63,7 @@ def get_case():
         expand=expand
     )
     if not ResponseManager.is_success(response=case_res):
-        flash("Internal Server Error", "danger")
+        current_app.logger.debug("Internal Server Error", "danger")
         return case_res
 
     case = ResponseManager.get_data(response=case_res)
@@ -268,6 +268,37 @@ def create_new_case():
     current_app.logger.debug(f"Created new case with serial={new_case_serial} in office={office_serial}")
     current_app.logger.debug(f"returning success with serial={new_case_serial}")
     return ResponseManager.success(data=new_case_serial)
+
+@user_bp.route("/delete_case", methods=["DELETE"])
+def delete_case():
+    office_serial = AuthorizationManager.get_office_serial()
+    case_serial = request.args.get("serial")
+
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+    if not case_serial:
+        return ResponseManager.bad_request("Missing 'case_serial'")
+
+    try:
+        case_serial = int(case_serial)
+    except ValueError:
+        return ResponseManager.bad_request("Invalid 'case_serial' format")
+
+    # try to delete the case
+    delete_res = mongodb_service.delete_entity(
+        entity=MongoDBEntity.CASES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(case_serial)
+    )
+
+    if not ResponseManager.is_success(response=delete_res):
+        current_app.logger.error(f"DELETE /delete_case | failed to delete case {case_serial} in office {office_serial}")
+        flash("failed to delete case", "danger")
+        return delete_res
+
+    current_app.logger.info(f"DELETE /delete_case | deleted case {case_serial} in office {office_serial}")
+    flash("case deleted", "success")
+    return ResponseManager.success(message=f"Case {case_serial} deleted successfully")
 
 
 # ---------------- CLIENTS MANAGEMENT ---------------- #
