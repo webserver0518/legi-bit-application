@@ -101,7 +101,7 @@ def delete_entity(entity: str,
     Generic wrapper to delete entities (users, clients, files, cases)
     from the MongoDB microservice using provided filters.
     """
-    return _safe_request("POST", "/delete_entity", json={
+    return _safe_request("DELETE", "/delete_entity", json={
         "entity": entity,
         "office_serial": office_serial,
         "filters": filters
