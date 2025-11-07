@@ -91,6 +91,22 @@ def create_entity(entity: str,
         "expand": expand
     })
 
+# ---------------------- Entity Delete ----------------------
+
+def delete_entity(entity: str,
+                  office_serial: int = None,
+                  filters: dict = None
+                  ) -> tuple:
+    """
+    Generic wrapper to delete entities (users, clients, files, cases)
+    from the MongoDB microservice using provided filters.
+    """
+    return _safe_request("POST", "/delete_entity", json={
+        "entity": entity,
+        "office_serial": office_serial,
+        "filters": filters
+    })
+
 
 # ------------------------ Counters ------------------------
 
