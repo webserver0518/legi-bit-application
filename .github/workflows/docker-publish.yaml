@@ -4,9 +4,15 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'README.md'
+      - 'LICENCE'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - 'README.md'
+      - 'LICENCE'
 
 jobs:
   build-and-push:
