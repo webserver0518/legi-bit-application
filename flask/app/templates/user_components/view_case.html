@@ -5,7 +5,7 @@
   <section class="info-card position-relative">
     <h5>פרטי תיק</h5>
     <button class="btn btn-outline-primary btn-sm position-absolute top-0 end-0 m-2"
-            onclick="openEditCaseModal('case')">ערוך</button>
+      onclick="openEditCaseModal('case')">ערוך</button>
     <div class="row g-3">
       <div class="col-md-4">
         <label>מספר סידורי</label>
@@ -38,7 +38,7 @@
   <section class="info-card position-relative">
     <h5>פרטי לקוח</h5>
     <button class="btn btn-outline-primary btn-sm position-absolute top-0 end-0 m-2"
-            onclick="openEditCaseModal('client')">ערוך</button>
+      onclick="openEditCaseModal('client')">ערוך</button>
     <div class="row g-3">
       <div class="col-md-4">
         <label>מספר סידורי</label>
@@ -90,8 +90,8 @@
   <!-- קבצים -->
   <section class="info-card position-relative">
     <h5>קבצים מצורפים</h5>
-    <button class="btn btn-outline-success btn-sm position-absolute top-0 end-0 m-2"
-          onclick="openAddFileModal()">➕ הוסף קבצים</button>
+    <button class="btn btn-outline-success btn-sm position-absolute top-0 end-0 m-2" onclick="openAddFileModal()">➕ הוסף
+      קבצים</button>
     <div class="table-responsive">
       <table class="table table-sm table-striped text-center" id="case-files">
         <thead class="table-light">
@@ -101,11 +101,20 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td colspan="100%" class="text-muted">אין קבצים זמינים</td></tr>
+          <tr>
+            <td colspan="100%" class="text-muted">אין קבצים זמינים</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </section>
+</div>
+
+<!-- כפתור מחיקת תיק -->
+<div class="text-center mt-4 mb-5">
+  <button class="btn btn-outline-danger" onclick="deleteCase()">
+    🗑️ מחק תיק
+  </button>
 </div>
 
 <!-- Modal עריכת פרטי תיק -->
