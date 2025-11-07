@@ -67,6 +67,19 @@ def create_entity():
         document=document
     )
 
+@bp.route("/delete_entity", methods=["DELETE"])
+def delete_entity():
+    data = request.get_json(force=True)
+
+    entity = data.get("entity")
+    office_serial = data.get("office_serial")
+    filters = data.get("filters")
+
+    return MongoDBManager.delete_entity(
+        entity=entity,
+        office_serial=office_serial,
+        filters=filters
+    )
 
 # ---------------------- Counters ----------------------
 
