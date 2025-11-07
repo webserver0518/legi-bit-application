@@ -241,6 +241,57 @@ class MongoDBManager:
         )
         return ResponseManager.success({"modified": result.modified_count})
 
+    @classmethod
+    def _delete_records(
+            cls,
+            db_name: str,
+            collection_name: str,
+            filters: Optional[dict] = None,
+    ):
+        """
+        Delete documents from a MongoDB collection with optional filters.
+
+        Args:
+            db_name (str): Database name.
+            collection_name (str): Collection name.
+            filters (dict, optional): MongoDB query filter (default: {}).
+
+        Returns:
+            ResponseManager: success with deleted_count, or error response.
+        """
+
+        current_app.logger.debug(f"inside _delete_records()")
+        # debug inputs
+        current_app.logger.debug(f"db_name: {db_name}")
+        current_app.logger.debug(f"collection_name: {collection_name}")
+        current_app.logger.debug(f"filters: {filters}")
+
+        if not db_name:
+            current_app.logger.debug(f"returning bad_request: 'db_name' is required")
+            return ResponseManager.bad_request("'db_name' is required")
+
+        if not collection_name:
+            current_app.logger.debug(f"returning bad_request: 'collection_name' is required")
+            return ResponseManager.bad_request("'collection_name' is required")
+
+        collection = cls._get_collection(db_name, collection_name)
+        filters = filters or {}
+
+        result = collection.delete_many(filters)
+        deleted_count = result.deleted_count
+
+        # debug db_name@collection_name number of deleted docs
+        current_app.logger.debug(f"[{db_name}@{collection_name}] Deleted {deleted_count} record(s)")
+
+        if deleted_count == 0:
+            current_app.logger.debug(f"returning not found (no documents matched filters)")
+            return ResponseManager.not_found("No documents matched filters")
+
+        # debug success
+        current_app.logger.debug(f"returning success with deleted_count")
+        return ResponseManager.success(data={"deleted_count": deleted_count})
+
+
     # ---------------------- Index Management ----------------------
 
     @classmethod
@@ -513,6 +564,72 @@ class MongoDBManager:
         current_app.logger.debug(f"Created new {entity} with serial={serial} in DB {db_name}")
         current_app.logger.debug(f"returning success with serial={serial}")
         return ResponseManager.success(data=serial)
+
+    @classmethod
+    def delete_entity(cls,
+                      entity: str,
+                      office_serial: int = None,
+                      filters: dict = None):
+        """
+        Delete entities from a given collection (and optionally tenant DB).
+        Returns a ResponseManager response object.
+        """
+
+        current_app.logger.debug("inside delete_entity()")
+        current_app.logger.debug(f"entity: {entity}")
+        current_app.logger.debug(f"office_serial: {office_serial}")
+        current_app.logger.debug(f"filters: {filters}")
+
+        if not entity:
+            current_app.logger.debug("returning bad_request: 'entity' is required")
+            return ResponseManager.bad_request("Missing 'entity'")
+
+        if not filters:
+            current_app.logger.debug("returning bad_request: 'filters' are required for delete")
+            return ResponseManager.bad_request("Missing 'filters'")
+
+        results = []
+        db_names = [str(office_serial)] if office_serial else list(cls._iter_tenant_dbs())
+        current_app.logger.debug(f"db_names: {db_names}")
+
+        total_deleted = 0
+
+        for db_name in db_names:
+            try:
+                current_app.logger.debug(f"calling delete_records() for DB '{db_name}'")
+                delete_res = cls._delete_records(
+                    db_name=db_name,
+                    collection_name=entity,
+                    filters=filters
+                )
+
+                if not ResponseManager.is_success(response=delete_res):
+                    current_app.logger.debug(
+                        f"skipping DB '{db_name}' due to response error: "
+                        f"{ResponseManager.get_error(response=delete_res)}"
+                    )
+                    continue
+
+                deleted_count = ResponseManager.get_data(response=delete_res).get("deleted_count", 0)
+                total_deleted += deleted_count
+
+                results.append({
+                    "office_serial": int(db_name),
+                    "deleted_count": deleted_count
+                })
+
+            except Exception as e:
+                current_app.logger.exception(f"Error deleting entity in DB '{db_name}': {e}")
+                continue
+
+        if total_deleted == 0:
+            current_app.logger.debug(f"no entities deleted for {entity} with filters {filters}")
+            return ResponseManager.not_found(f"No matching {entity} found to delete")
+
+        current_app.logger.debug(f"returning success with total_deleted={total_deleted}")
+        return ResponseManager.success(
+            data={"total_deleted": total_deleted, "details": results}
+        )
 
     # ------------------------ Counters -------------------------
 
