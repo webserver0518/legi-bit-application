@@ -23,12 +23,12 @@ This repository defines a containerized stack for the Legibit web application.
 
 Each component is containerized with its own `Dockerfile`:
 
-- `flask/Dockerfile` builds the Flask application image.
-- `services/mongodb/Dockerfile` builds the MongoDB-facing API service.
-- `services/s3/Dockerfile` builds the S3 helper service.
-- `nginx/Dockerfile` assembles the reverse proxy image with configuration from `nginx/conf/`.
+- `flask/Dockerfile`
+- `services/mongodb/Dockerfile`
+- `services/s3/Dockerfile`
+- `nginx/Dockerfile`
 
-These images are meant to be orchestrated together (e.g., via `docker compose`) to provide a full stack where the gateway fronts the Flask API, which in turn coordinates with the MongoDB and S3 helper services.
+These images are meant to be orchestrated together.
 
 ## Local Development
 
@@ -40,6 +40,11 @@ These images are meant to be orchestrated together (e.g., via `docker compose`) 
    docker build -t legibit-nginx ./nginx
    ```
 2. Run the containers with your preferred orchestration tool, ensuring the Flask app can reach the MongoDB and S3 services, and that Nginx proxies to the Flask container.
+
+## Production
+
+see [infra repo](https://github.com/webserver0518/legi-bit-infrastructure)
+for more details
 
 ## License
 
