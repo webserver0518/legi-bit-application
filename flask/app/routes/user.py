@@ -76,99 +76,99 @@ def get_case():
 @user_bp.route("/get_office_cases")
 def get_office_cases():
     """
-    Return cases for a given office, with optional filters (client_name, status, category, city).
-    Scalable design — more filters can be added easily later.
+    Return cases for a given office, supporting:
+    - title_tokens (split words, AND match)
+    - client_tokens (split words, match any token in first/last name)
+    - field
+    - status
     """
-    current_app.logger.debug("inside get_office_cases()")
+    current_app.logger.debug("🟦 [get_office_cases] entered")
 
     office_serial = AuthorizationManager.get_office_serial()
     expand = request.args.get("expand", False)
     if not office_serial:
+        current_app.logger.error("❌ Missing office_serial in auth")
         return ResponseManager.error("Missing office_serial in auth")
 
-    # --- Build filters dynamically ---
+    # --- Extract query params ---
+    title_tokens = request.args.getlist("title_tokens")
+    client_tokens = request.args.getlist("client_tokens")
+    field = request.args.get("field")
+    status = request.args.get("status")
+
+    current_app.logger.debug(f"📥 Params → title_tokens={title_tokens}, client_tokens={client_tokens}, field={field}, status={status}")
+
     filters = {}
 
-    # extract query params
-    client_name = request.args.get("client_name")
-    city = request.args.get("city")
-    status = request.args.get("status")
-    category = request.args.get("category")
-
-    # --- simple filters ---
+    # --- Simple filters ---
+    if field:
+        filters["field"] = {"$regex": field, "$options": "i"}
+        current_app.logger.debug(f"📘 Added field filter: {filters['field']}")
     if status:
         filters["status"] = status
-    if category:
-        filters["category"] = category
+        current_app.logger.debug(f"⚙️ Added status filter: {status}")
 
-    # --- complex filters via clients collection ---
-    if client_name or city:
-        client_filters = {}
+    # --- Title tokens (each token must appear in title) ---
+    if title_tokens:
+        filters.setdefault("$and", [])
+        for token in title_tokens:
+            filters["$and"].append({"title": {"$regex": token, "$options": "i"}})
+        current_app.logger.debug(f"🧩 Added title tokens filter: {filters['$and']}")
 
-        if client_name:
-            parts = client_name.strip().split()
-            if len(parts) == 1:
-                client_filters["$or"] = [
-                    {"first_name": {"$regex": parts[0], "$options": "i"}},
-                    {"last_name": {"$regex": parts[0], "$options": "i"}}
+    # --- Client tokens (search via CLIENTS collection) ---
+    if client_tokens:
+        client_filter = {"$and": []}
+        for token in client_tokens:
+            client_filter["$and"].append({
+                "$or": [
+                    {"first_name": {"$regex": token, "$options": "i"}},
+                    {"last_name": {"$regex": token, "$options": "i"}},
                 ]
-            else:
-                first, last = parts[0], parts[-1]
-                client_filters["$and"] = [
-                    {"first_name": {"$regex": first, "$options": "i"}},
-                    {"last_name": {"$regex": last, "$options": "i"}}
-                ]
+            })
 
-        if city:
-            client_filters["city"] = {"$regex": city, "$options": "i"}
+        current_app.logger.debug(f"👤 Searching clients with filters: {client_filter}")
 
-        current_app.logger.debug(f"searching clients with filters: {client_filters}")
-        
         clients_res = mongodb_service.get_entity(
             entity=MongoDBEntity.CLIENTS,
             office_serial=office_serial,
-            filters=client_filters
+            filters=client_filter
         )
 
-        if ResponseManager.is_success(clients_res):
-            clients = ResponseManager.get_data(clients_res)
-            client_serials = [c["clients"]["serial"] for c in clients]
-            if client_serials:
-                filters["client_serial"] = {"$in": client_serials}
-                current_app.logger.debug(f"matched client_serials: {client_serials}")
-            else:
-                current_app.logger.debug("no matching clients found → returning empty list")
-                return ResponseManager.success(data=[])
-        else:
-            current_app.logger.debug("client lookup failed → returning empty list")
+        if not ResponseManager.is_success(clients_res):
+            current_app.logger.error("❌ Client search failed")
             return ResponseManager.success(data=[])
 
-    # default: only active cases (not archived)
-    if not filters:
-        filters = None
+        clients = ResponseManager.get_data(clients_res)
+        client_serials = [c["clients"]["serial"] for c in clients]
+        current_app.logger.debug(f"👤 Found {len(client_serials)} matching clients: {client_serials}")
 
-    current_app.logger.debug(f"filters applied: {filters}")
+        if not client_serials:
+            current_app.logger.debug("⚠️ No clients matched → returning []")
+            return ResponseManager.success(data=[])
 
-    # --- fetch from MongoDB microservice ---
+        filters["client_serial"] = {"$in": client_serials}
+        current_app.logger.debug(f"🔗 Added client_serial filter: {filters['client_serial']}")
+
+    current_app.logger.debug(f"🧱 Final Mongo filters: {filters if filters else 'None'}")
+
+    # --- Fetch cases ---
     cases_res = mongodb_service.get_entity(
         entity=MongoDBEntity.CASES,
         office_serial=office_serial,
-        filters=filters,
+        filters=filters or None,
         expand=expand
     )
 
     if ResponseManager.is_not_found(cases_res):
-        current_app.logger.debug("no cases found, returning empty list")
+        current_app.logger.debug("⚠️ No cases found, returning empty list")
         return ResponseManager.success(data=[])
 
-    if not ResponseManager.is_success(response=cases_res):
-        current_app.logger.debug("error fetching cases")
-        flash(ResponseManager.get_error(response=cases_res), "danger")
+    if not ResponseManager.is_success(cases_res):
+        current_app.logger.error("❌ Error fetching cases from MongoDB service")
         return cases_res
 
-    # --- success ---
-    cases = ResponseManager.get_data(response=cases_res)
-    current_app.logger.debug(f"returning {len(cases)} cases")
+    cases = ResponseManager.get_data(cases_res)
+    current_app.logger.debug(f"✅ Returning {len(cases)} cases after applying filters")
     return ResponseManager.success(data=cases)
 
 
@@ -196,7 +196,7 @@ def create_new_case():
             "created_at": d.get("created_at"),
             "status": "open",
             "title": d.get("title"),
-            "category": d.get("category"),
+            "field": d.get("field"),
             "facts": d.get("facts", ""),
             "files_serials": []
         }
