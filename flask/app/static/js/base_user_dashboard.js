@@ -11,7 +11,7 @@ const utilsFallback = {
   qs: (selector, scope = document) => scope?.querySelector?.(selector) || null,
   qsa: (selector, scope = document) => scope?.querySelectorAll ? Array.from(scope.querySelectorAll(selector)) : [],
   delegate: (root, eventName, selector, handler, options) => {
-    if (!root?.addEventListener) return () => {};
+    if (!root?.addEventListener) return () => { };
     const listener = (event) => {
       const match = event.target?.closest(selector);
       if (match && root.contains(match)) handler(event, match);
@@ -45,13 +45,13 @@ function showToast(message, type = 'info', opts = {}) {
     });
 }
 
-function highlightInSidebar(link, sidebarClass){
+function highlightInSidebar(link, sidebarClass) {
   if (!link) return;
   utils.qsa(`.${sidebarClass} a`).forEach((a) => a.classList.remove('active'));
   link.classList.add('active');
 }
 
-function updateDateTime(){
+function updateDateTime() {
   const n = new Date();
   utils.setText(utils.qs('#current-date'), n.toLocaleDateString('he-IL'));
   utils.setText(utils.qs('#current-time'), n.toLocaleTimeString('he-IL'));
@@ -63,7 +63,7 @@ function ensureSubmenuVisible() {
   utils.qs('#subMenu')?.classList.remove('collapsed');
 }
 
-function showSubMenu(type, force=false){
+function showSubMenu(type, force = false) {
   S.set(current_sub_sidebar, type);
 
   const cont = utils.qs('#subMenu');
@@ -75,14 +75,13 @@ function showSubMenu(type, force=false){
   if (type === 'all_cases') {
     html = `
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="cases_birds_view">מבט על תיקים</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="active_cases">תיקים פעילים</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="cases">תיקים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="add_case">הוספת תיק</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="view_case">צפייה בתיק</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="archived_cases">ארכיון</a>`;
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="view_case">צפייה בתיק</a>`;
   } else if (type === 'all_clients') {
     html = `
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clients_birds_view">מבט על לקוחות</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="active_clients">לקוחות פעילים</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clients">לקוחות</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="add_client">הוספת לקוח</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="view_client">צפייה בלקוח</a>`;
   } else if (type === 'attendance') {
@@ -116,7 +115,7 @@ window.addEventListener('DOMContentLoaded', () => {
     .then(name => {
       utils.setText(utils.qs('#office-name'), name);
     })
-    .catch(()=>{});
+    .catch(() => { });
 
   if (!S.get(current_sub_sidebar)) S.set(current_sub_sidebar, 'all_cases');
   showSubMenu(S.get(current_sub_sidebar), true);
@@ -162,8 +161,21 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 /* Mobile toggle */
-function toggleSidebar(){
+function toggleSidebar() {
   document.body.classList.toggle('sidebar-collapsed');
   document.querySelector('.sidebar')?.classList.toggle('collapsed');
   document.querySelector('.sub-sidebar')?.classList.toggle('collapsed');
 }
+
+
+
+// Disable Ctrl + Scroll and Ctrl + (+ / -)
+document.addEventListener('wheel', function (e) {
+  if (e.ctrlKey) e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('keydown', function (e) {
+  if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=')) {
+    e.preventDefault();
+  }
+});
