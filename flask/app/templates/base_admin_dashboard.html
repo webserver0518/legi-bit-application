@@ -2,6 +2,7 @@
 
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
   <meta charset="UTF-8">
   <title>דשבורד אדמין</title>
@@ -12,6 +13,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
+
 <body class="dashboard-base">
 
   <div id="user-info" data-roles="{{ ','.join(session.get('roles', [])) }}"></div>
@@ -22,7 +24,8 @@
     <a href="#" id="current-time"></a>
     <a href="#" id="office-name"></a>
     <hr>
-    <a href="#" class="sidebar-link" data-type="admin" data-sidebar="sidebar" data-page="users_management">ניהול משתמשים</a>
+    <a href="#" class="sidebar-link" data-type="admin" data-sidebar="sidebar" data-page="users_management">ניהול
+      משתמשים</a>
     <hr>
     <a href="{{ url_for('site.logout') }}" onclick="clearStorageAndLogout(event)">התנתקות</a>
     <hr>
@@ -36,11 +39,14 @@
 
   <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3 mb-4" style="z-index: 9999;">
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <div class="toast align-items-center text-white bg-{{ 'success' if category=='info' else category }} border-0 show" role="alert">
-          <div class="d-flex"><div class="toast-body text-center w-100">{{ message }}</div></div>
-        </div>
-      {% endfor %}
+    {% for field, message in messages %}
+    <div class="toast align-items-center text-white bg-{{ 'success' if field=='info' else field }} border-0 show"
+      role="alert">
+      <div class="d-flex">
+        <div class="toast-body text-center w-100">{{ message }}</div>
+      </div>
+    </div>
+    {% endfor %}
     {% endwith %}
   </div>
 
@@ -49,4 +55,5 @@
   <script src="{{ url_for('static', filename='js/loader.js') }}"></script>
   <script src="{{ url_for('static', filename='js/base_admin_dashboard.js') }}"></script>
 </body>
+
 </html>
