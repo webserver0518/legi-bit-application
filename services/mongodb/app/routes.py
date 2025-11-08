@@ -81,6 +81,26 @@ def delete_entity():
         filters=filters
     )
 
+@bp.route("/update_entity", methods=["PATCH"])
+def update_entity():
+    data = request.get_json(force=True)
+
+    entity = data.get("entity")
+    office_serial = data.get("office_serial")
+    filters = data.get("filters")
+    update_data = data.get("update_data")
+    multiple = data.get("multiple", False)
+    operator = data.get("operator", "$set")
+
+    return MongoDBManager.update_entity(
+        entity=entity,
+        office_serial=office_serial,
+        filters=filters,
+        update_data=update_data,
+        multiple=multiple,
+        operator=operator
+    )
+
 # ---------------------- Counters ----------------------
 
 
