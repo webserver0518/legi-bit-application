@@ -30,7 +30,7 @@
     setVal('client-phone', client.phone);
     setVal('client-city', client.city);
     setVal('client-street', client.street);
-    setVal('client-street-number', client.street_number);
+    setVal('client-home-number', client.home_number);
     setVal('client-postal-code', client.postal_code);
     const tbody = document.querySelector('#case-files tbody');
     if (!tbody) return;
