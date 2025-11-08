@@ -63,6 +63,17 @@ def get_entity(entity: str,
     """
     Generic wrapper to fetch entities (users, clients, files, cases)
     from the MongoDB microservice with optional expansion flags.
+
+    Args:
+        entity (str): Collection name (e.g., 'cases', 'users', etc.)
+        office_serial (int, optional): Tenant DB serial
+        filters (dict, optional): Query filter to match target documents
+        projection (dict, optional): Fields to include/exclude in results
+        sort (tuple, optional): Sort order as (field, direction)
+        limit (int): Max number of documents to return (0 = no limit)
+        expand (bool): Whether to expand related fields in the response
+    Returns:
+        tuple: ResponseManager-compatible response
     """
     return _safe_request("POST", "/get_entity", json={
         "entity": entity,
@@ -83,6 +94,14 @@ def create_entity(entity: str,
     """
     Create a new document in the MongoDB service for the given tenant and entity.
     Automatically assigns a serial based on entity type.
+
+    Args:
+        entity (str): Collection name (e.g., 'cases', 'users', etc.)
+        office_serial (int): Tenant DB serial
+        document (dict): Document data to insert
+        expand (bool): Whether to expand related fields in the response
+    Returns:
+        tuple: ResponseManager-compatible response
     """
     return _safe_request("POST", "/create_entity", json={
         "entity": entity,
@@ -100,11 +119,49 @@ def delete_entity(entity: str,
     """
     Generic wrapper to delete entities (users, clients, files, cases)
     from the MongoDB microservice using provided filters.
+
+    Args:
+        entity (str): Collection name (e.g., 'cases', 'users', etc.)
+        office_serial (int, optional): Tenant DB serial
+        filters (dict): Query filter to match target documents
+    Returns:
+        tuple: ResponseManager-compatible response
     """
     return _safe_request("DELETE", "/delete_entity", json={
         "entity": entity,
         "office_serial": office_serial,
         "filters": filters
+    })
+
+# ---------------------- Entity Update ----------------------
+def update_entity(entity: str,
+                  office_serial: int = None,
+                  filters: dict = None,
+                  update_data: dict = None,
+                  *,
+                  multiple: bool = False,
+                  operator: str = "$set") -> tuple:
+    """
+    Generic wrapper to update entities (users, clients, files, cases)
+    in the MongoDB microservice using provided filters and update data.
+
+    Args:
+        entity (str): Collection name (e.g., 'cases', 'users', etc.)
+        office_serial (int, optional): Tenant DB serial
+        filters (dict): Query filter to match target documents
+        update_data (dict): Data to apply under the given operator
+        multiple (bool): Whether to update multiple documents
+        operator (str): MongoDB operator, default "$set"
+    Returns:
+        tuple: ResponseManager-compatible response
+    """
+    return _safe_request("PATCH", "/update_entity", json={
+        "entity": entity,
+        "office_serial": office_serial,
+        "filters": filters,
+        "update_data": update_data,
+        "multiple": multiple,
+        "operator": operator
     })
 
 
