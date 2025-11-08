@@ -4,8 +4,11 @@
   <!-- פרטי תיק -->
   <section class="info-card position-relative">
     <h5>פרטי תיק</h5>
-    <button class="btn btn-outline-primary btn-sm position-absolute top-0 end-0 m-2"
-      onclick="openEditCaseModal('case')">ערוך</button>
+    <div class="edit-controls position-absolute top-0 end-0 m-2 d-flex gap-1">
+      <button class="btn btn-outline-primary btn-sm" onclick="enterEditMode('case')">ערוך</button>
+      <button class="btn btn-success btn-sm d-none" onclick="saveSection('case')">שמור</button>
+      <button class="btn btn-secondary btn-sm d-none" onclick="cancelEdit('case')">בטל</button>
+    </div>
     <div class="row g-3">
       <div class="col-md-4">
         <label>מספר סידורי</label>
@@ -24,8 +27,8 @@
         <input id="case-title" class="form-control readonly" readonly>
       </div>
       <div class="col-md-4">
-        <label>קטגוריה</label>
-        <input id="case-category" class="form-control readonly" readonly>
+        <label>תחום</label>
+        <input id="case-field" class="form-control readonly" readonly>
       </div>
       <div class="col-md-4">
         <label>עובדות התיק</label>
@@ -37,8 +40,11 @@
   <!-- פרטי לקוח -->
   <section class="info-card position-relative">
     <h5>פרטי לקוח</h5>
-    <button class="btn btn-outline-primary btn-sm position-absolute top-0 end-0 m-2"
-      onclick="openEditCaseModal('client')">ערוך</button>
+    <div class="edit-controls position-absolute top-0 end-0 m-2 d-flex gap-1">
+      <button class="btn btn-outline-primary btn-sm" onclick="enterEditMode('client')">ערוך</button>
+      <button class="btn btn-success btn-sm d-none" onclick="saveSection('client')">שמור</button>
+      <button class="btn btn-secondary btn-sm d-none" onclick="cancelEdit('client')">בטל</button>
+    </div>
     <div class="row g-3">
       <div class="col-md-4">
         <label>מספר סידורי</label>
@@ -122,112 +128,3 @@
   <button class="btn btn-outline-danger" onclick="deleteCase()">
     🗑️ מחק תיק
   </button>
-
-</div>
-<!-- Modal עריכת פרטי תיק -->
-<div class="modal fade" id="editCaseModal" tabindex="-1" aria-labelledby="editCaseModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="editCaseModalLabel">עריכת פרטי תיק</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <form id="editCaseForm" class="row g-2">
-          <input type="hidden" name="serial" id="edit-case-serial">
-
-          <div class="col-12">
-            <label class="form-label">כותרת</label>
-            <input id="edit-case-title" name="title" class="form-control">
-          </div>
-
-          <div class="col-12">
-            <label class="form-label">קטגוריה</label>
-            <select id="edit-case-category" name="category" class="form-select"></select>
-          </div>
-
-          <div class="col-12">
-            <label class="form-label">סטטוס</label>
-            <select id="edit-case-status" name="status" class="form-select"></select>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">בטל</button>
-        <button type="button" class="btn btn-primary btn-sm" id="saveEditCaseBtn">שמור</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal עריכת פרטי לקוח -->
-<div class="modal fade" id="editClientModal" tabindex="-1" aria-labelledby="editClientModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="editClientModalLabel">עריכת פרטי לקוח</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <form id="editClientForm" class="row g-2">
-          <input type="hidden" name="serial" id="edit-client-serial">
-          <div class="col-12">
-            <label class="form-label">שם</label>
-            <input id="edit-client-name" name="client_name" class="form-control">
-          </div>
-          <div class="col-12">
-            <label class="form-label">תעודת זהות</label>
-            <input id="edit-client-id" name="client_id" class="form-control">
-          </div>
-          <div class="col-12">
-            <label class="form-label">טלפון</label>
-            <input id="edit-client-phone" name="client_phone" class="form-control">
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">בטל</button>
-        <button type="button" class="btn btn-primary btn-sm" id="saveEditClientBtn">שמור</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal העלאת קבצים -->
-<div class="modal fade" id="addFileModal" tabindex="-1" aria-labelledby="addFileModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="addFileModalLabel">הוספת קבצים לתיק</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-
-        <form id="addFileForm" enctype="multipart/form-data">
-          <input type="hidden" name="serial" id="add-files-serial">
-
-          <div id="drop-area">
-            גרור קבצים לכאן או לחץ לבחירה
-            <input type="file" id="fileElem" hidden multiple>
-          </div>
-
-          <table class="table table-striped table-sm mt-3" id="fileTable">
-            <thead class="table-light">
-              <tr>
-                <th>שם קובץ</th>
-                <th>ביטול</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-
-          <input type="file" name="files" id="realFileInput" hidden multiple>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">בטל</button>
-        <button class="btn btn-primary btn-sm" id="saveFilesBtn">שמור</button>
-      </div>
-    </div>
-  </div>
-</div>
