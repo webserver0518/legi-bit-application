@@ -241,6 +241,7 @@ class MongoDBManager:
         )
         return ResponseManager.success(data={"modified": result.modified_count})
 
+    # ---------- Deletes -----------
     @classmethod
     def _delete_records(
             cls,
@@ -633,6 +634,87 @@ class MongoDBManager:
         current_app.logger.debug(f"returning success with results and total_deleted={total_deleted}")
         return ResponseManager.success(
             data={"total_deleted": total_deleted, "details": results}
+        )
+
+    @classmethod
+    def update_entity(cls,
+                    entity: str,
+                    office_serial: int = None,
+                    filters: dict = None,
+                    update_data: dict = None,
+                    *,
+                    multiple: bool = False,
+                    operator: str = "$set"):
+        """
+        Public interface to update entities (users, clients, files, cases)
+        inside a specific tenant DB or across all tenants.
+
+        Wraps _update_fields() and always returns a ResponseManager object.
+        """
+
+        current_app.logger.debug("inside update_entity()")
+        # debug inputs
+        current_app.logger.debug(f"entity={entity}")
+        current_app.logger.debug(f"office_serial={office_serial}")
+        current_app.logger.debug(f"filters={filters}")
+        current_app.logger.debug(f"update_data={update_data}")
+        current_app.logger.debug(f"multiple={multiple}")
+        current_app.logger.debug(f"operator={operator}")
+
+        # --- validation ---
+        if not entity:
+            # debug bad request
+            return ResponseManager.bad_request("Missing 'entity'")
+        if not filters:
+            # debug bad request
+            return ResponseManager.bad_request("Missing 'filters'")
+        if not update_data:
+            # debug bad request
+            return ResponseManager.bad_request("Missing 'update_data'")
+
+        db_names = [str(office_serial)] if office_serial else list(cls._iter_tenant_dbs())
+        total_modified = 0
+        results = []
+
+        for db_name in db_names:
+
+            # debug func call
+            current_app.logger.debug(f"calling _update_fields() for DB '{db_name}'")
+            update_res = cls._update_fields(
+                db_name=db_name,
+                collection_name=entity,
+                filters=filters,
+                update_data=update_data,
+                multiple=multiple,
+                operator=operator
+            )
+
+            if not ResponseManager.is_success(update_res):
+                # debug error from delete records
+                current_app.logger.debug(
+                    f"skipping DB '{db_name}' due to response error: "
+                    f"{ResponseManager.get_error(response=update_res)}"
+                )
+                continue
+
+            modified = ResponseManager.get_data(update_res).get("modified", 0)
+            total_modified += modified
+
+            results.append({
+                "office_serial": int(db_name),
+                "modified": modified
+            })
+
+        if total_modified == 0:
+            # debug not found
+            current_app.logger.debug(f"No {entity} updated with filters {filters}")
+            current_app.logger.debug(f"returning not found")
+            return ResponseManager.not_found(error=f"No matching {entity} found to update")
+
+        # debug success
+        current_app.logger.debug(f"returning success with results and total_modified={total_modified}")
+        return ResponseManager.success(
+            data={"total_modified": total_modified, "details": results}
         )
 
     # ------------------------ Counters -------------------------
