@@ -4,7 +4,8 @@ window.init_add_case = function () {
   initFileUploader();          // Initialize drag & drop + file handling
   initAccordionSections();     // Accordion animation logic
   initCaseFormPreview();       // Form submission & validation
-  initFieldAutocomplete();  // Field autocomplete
+  initFieldAutocomplete();     // Field autocomplete
+  initClientsManager();        // ✅ Multi-client management
 };
 
 /* Parse API responses safely into a unified object */
@@ -21,9 +22,91 @@ const parseApiResponse = (payload) => {
   };
 };
 
-/* File uploader (drag & drop + manual selection) */
-(() => {
+/* ==============================
+   🧩 MULTI-CLIENT MANAGEMENT
+   ============================== */
+function initClientsManager() {
+  const addBtn = document.getElementById("add-client-btn");
+  const roleSelect = document.getElementById("client_role");
+  const tableBody = document.querySelector("#clients-table tbody");
+  const form = document.getElementById("addCaseForm");
 
+  if (!addBtn || !tableBody) return;
+
+  window.clientsList = [];
+
+  // ➕ Add client button
+  addBtn.addEventListener("click", () => {
+    const fd = new FormData(form);
+
+    const client = {
+      first_name: fd.get("client_first_name"),
+      last_name: fd.get("client_last_name"),
+      id_card_number: fd.get("client_id_card_number"),
+      phone: fd.get("client_phone"),
+      city: fd.get("client_city"),
+      street: fd.get("client_street"),
+      home_number: fd.get("client_home_number"),
+      postal_code: fd.get("client_postal_code"),
+      email: fd.get("client_email"),
+      birth_date: fd.get("client_birth_date"),
+      role: roleSelect?.value || "secondary",
+    };
+
+    // ✅ Require minimal client details before adding
+    if (!client.first_name || !client.last_name || !client.id_card_number || !client.phone) {
+      alert("יש למלא שם פרטי, שם משפחה, תעודת זהות וטלפון לפני הוספת לקוח");
+      return;
+    }
+
+    clientsList.push(client);
+    renderClientsTable();
+    clearClientFields();
+  });
+
+  // 🧹 Clear input fields after adding
+  function clearClientFields() {
+    [
+      "client_first_name", "client_last_name", "client_id_card_number", "client_phone",
+      "client_city", "client_street", "client_home_number", "client_postal_code",
+      "client_email", "client_birth_date"
+    ].forEach(id => {
+      const el = document.querySelector(`[name='${id}']`);
+      if (el) el.value = "";
+    });
+  }
+
+  // 🧾 Render client list in the table
+  function renderClientsTable() {
+    tableBody.innerHTML = clientsList.map((c, i) => `
+      <tr>
+        <td>${c.first_name}</td>
+        <td>${c.last_name}</td>
+        <td>${c.id_card_number || "-"}</td>
+        <td>${c.phone || "-"}</td>
+        <td>${c.city || "-"}</td>
+        <td>${c.street || "-"}</td>
+        <td>${c.home_number || "-"}</td>
+        <td>${c.postal_code || "-"}</td>
+        <td>${c.email || "-"}</td>
+        <td>${c.birth_date || "-"}</td>
+        <td>${c.role === "main" ? "ראשי" : "משני"}</td>
+        <td><button class="btn btn-sm btn-outline-danger" onclick="removeClient(${i})">✖</button></td>
+      </tr>
+    `).join("");
+  }
+
+  // ❌ Remove client by index
+  window.removeClient = function (i) {
+    clientsList.splice(i, 1);
+    renderClientsTable();
+  };
+}
+
+/* ==============================
+   📂 File uploader (drag & drop)
+   ============================== */
+(() => {
   window.initFileUploader = function () {
     const dropArea = document.getElementById('drop-area');
     if (!dropArea || dropArea.dataset.ready) return;
@@ -33,7 +116,6 @@ const parseApiResponse = (payload) => {
     const tbody = document.querySelector('#fileTable tbody');
     const form = document.getElementById('addCaseForm');
 
-    // Ensure a hidden real file input exists
     let realInput = document.getElementById('realFileInput');
     if (!realInput) {
       realInput = document.createElement('input');
@@ -45,16 +127,13 @@ const parseApiResponse = (payload) => {
       form.appendChild(realInput);
     }
 
-    const dt = new DataTransfer(); // Virtual clipboard to track files
-    const nameCount = {};          // Prevent duplicate filenames
-
+    const dt = new DataTransfer();
+    const nameCount = {};
     const stop = e => { e.preventDefault(); e.stopPropagation(); };
-
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
       dropArea.addEventListener(ev, stop, false)
     );
 
-    // Events for drag/drop and manual file selection
     dropArea.addEventListener('click', () => pickInput.click());
     dropArea.addEventListener('dragover', () => dropArea.classList.add('highlight'));
     dropArea.addEventListener('dragleave', () => dropArea.classList.remove('highlight'));
@@ -62,10 +141,8 @@ const parseApiResponse = (payload) => {
       dropArea.classList.remove('highlight');
       if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
     });
-
     pickInput.addEventListener('change', () => addFiles(pickInput.files));
 
-    /* Add files to the table and virtual clipboard */
     function addFiles(list) {
       [...list].forEach(f => {
         dt.items.add(f);
@@ -75,7 +152,6 @@ const parseApiResponse = (payload) => {
       pickInput.value = '';
     }
 
-    /* Generate unique filenames if duplicates are found */
     function unique(name) {
       if (nameCount[name] === undefined) {
         nameCount[name] = 0;
@@ -88,31 +164,21 @@ const parseApiResponse = (payload) => {
         : `${name}_${nameCount[name]}`;
     }
 
-    /* Add new file row to the table */
     async function addRow(file) {
       const disp = unique(file.name);
       const tr = document.createElement('tr');
-
       tr.innerHTML = `
         <td>${disp}</td>
-        <td>
-          <select class="form-select form-select-sm" name="file_type_${disp}">
-            <option>טוען...</option>
-          </select>
-        </td>
-        <td class="text-center">
-          <button type="button" class="btn btn-sm btn-outline-danger">✖</button>
-        </td>
+        <td><select class="form-select form-select-sm" name="file_type_${disp}"><option>טוען...</option></select></td>
+        <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger">✖</button></td>
       `;
       tbody.appendChild(tr);
 
-      // Load document type list from backend JSON
       try {
         const res = await fetch("/get_document_types");
         const types = await res.json();
         const select = tr.querySelector("select");
         select.innerHTML = "";
-
         types.forEach(t => {
           const opt = document.createElement("option");
           opt.value = t.value;
@@ -123,7 +189,6 @@ const parseApiResponse = (payload) => {
         console.error("❌ שגיאה בטעינת סוגי המסמכים:", err);
       }
 
-      // Delete row + file
       tr.querySelector('button').onclick = () => {
         const idx = [...tbody.children].indexOf(tr);
         dt.items.remove(idx);
@@ -132,13 +197,11 @@ const parseApiResponse = (payload) => {
       };
     }
   };
-
 })();
 
 /* Accordion open/close animation handler */
 window.initAccordionSections = function () {
   const headers = document.querySelectorAll(".section-header");
-
   headers.forEach(header => {
     const targetId = header.getAttribute("data-target");
     const content = document.querySelector(targetId);
@@ -151,42 +214,30 @@ window.initAccordionSections = function () {
 
     header.addEventListener("click", () => {
       const isOpen = content.classList.contains("show");
-
-      // Close any open accordion section
       document.querySelectorAll(".accordion-collapse.show").forEach(openItem => {
         if (openItem !== content) {
           openItem.style.height = `${openItem.scrollHeight}px`;
-          requestAnimationFrame(() => {
-            openItem.style.height = "0";
-          });
+          requestAnimationFrame(() => openItem.style.height = "0");
           openItem.classList.remove("show");
         }
       });
-
-      // Toggle current section
       if (isOpen) {
         content.style.height = `${content.scrollHeight}px`;
-        requestAnimationFrame(() => {
-          content.style.height = "0";
-        });
+        requestAnimationFrame(() => content.style.height = "0");
         content.classList.remove("show");
       } else {
         content.classList.add("show");
         content.style.height = "0";
-        requestAnimationFrame(() => {
-          content.style.height = `${content.scrollHeight}px`;
-        });
+        requestAnimationFrame(() => content.style.height = `${content.scrollHeight}px`);
         content.addEventListener("transitionend", () => {
-          if (content.classList.contains("show")) {
-            content.style.height = "auto";
-          }
+          if (content.classList.contains("show")) content.style.height = "auto";
         }, { once: true });
       }
     });
   });
 };
 
-/* Main form submission: create case + upload files */
+/* Form submission */
 window.initCaseFormPreview = function () {
   const form = document.getElementById("addCaseForm");
   if (!form) return;
@@ -194,9 +245,14 @@ window.initCaseFormPreview = function () {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const fd = new FormData(form);
+    // ✅ Require at least one main client before submission
+    const hasMain = (window.clientsList || []).some(c => c.role === "main");
+    if (!hasMain) {
+      alert("יש להוסיף לפחות לקוח ראשי אחד לפני פתיחת תיק");
+      return;
+    }
 
-    // Append timestamp with timezone offset
+    const fd = new FormData(form);
     const now = new Date();
     const tzOffset = -now.getTimezoneOffset();
     const sign = tzOffset >= 0 ? "+" : "-";
@@ -210,21 +266,14 @@ window.initCaseFormPreview = function () {
       pad(now.getMinutes()) +
       sign + offsetHours + ":" + offsetMinutes;
 
-    // Step 1: Create case record and get its serial
     const form_data = {
       created_at: timestamp,
       title: fd.get('title'),
       field: fd.get('field'),
       facts: fd.get('facts'),
-      client_first_name: fd.get('client_first_name'),
-      client_last_name: fd.get('client_last_name'),
-      client_phone: fd.get('client_phone'),
-      client_email: fd.get('client_email'),
-      client_city: fd.get('client_city'),
-      client_street: fd.get('client_street'),
-      client_street_number: fd.get('client_street_number'),
-      client_postal_code: fd.get('client_postal_code'),
-      client_id_card_number: fd.get('client_id_card_number'),
+      against: fd.get('against'),
+      against_type: document.getElementById('against-type')?.value || '',
+      clients: window.clientsList || [], // ✅ include all clients
     };
 
     try {
@@ -236,105 +285,18 @@ window.initCaseFormPreview = function () {
 
       const json = await res.json();
       const parsed = parseApiResponse(json);
-
       if (!parsed.success) {
         showToast(`❌ Failed to create case: ${parsed.error}`, true);
         return;
       }
-
       showToast("✅ Case created successfully");
-
-      // ✅ UI reload
       localStorage.setItem("selectedSubMenu", "all_cases");
       showSubMenu("all_cases");
       loadContent("cases", true, "user");
-
     } catch (error) {
       console.error(error);
       showToast("⚠️ Error contacting server", true);
     }
-
-    /*
-      const initJson = await initRes.json().catch(() => null);
-      const initParsed = parseApiResponse(initJson);
-      const { serial, office_name } = initParsed.data || {};
-  
-      // Step 2: Upload files to S3 using presigned URLs
-      const uploadedNames = [];
-      for (const f of files) {
-        const presRes = await fetch("/s3/presign", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            filename: f.name,
-            filetype: f.type,
-            filesize: f.size,
-            serial: serial
-          })
-        });
-  
-        const { presigned, safe_name, error } = await presRes.json();
-        if (!presRes.ok || error) {
-          showToast(`❌ Failed to generate presigned URL for ${f.name}`, true);
-          return;
-        }
-  
-        const s3Form = new FormData();
-        Object.entries(presigned.fields).forEach(([k, v]) => s3Form.append(k, v));
-        s3Form.append("file", f);
-  
-        const s3Upload = await fetch(presigned.url, { method: "POST", body: s3Form });
-        if (!s3Upload.ok) {
-          showToast(`❌ Failed to upload ${f.name} to S3`, true);
-          return;
-        }
-  
-        uploadedNames.push(safe_name);
-      }
-  
-      // Replace blobs with uploaded file names
-      fd.delete("files[]");
-      uploadedNames.forEach(n => fd.append("uploaded[]", n));
-  
-      fd.append("serial", serial);
-  
-      // Step 3: Send full case form to backend
-      try {
-        const response = await fetch("/create_case", {
-          method: "POST",
-          body: fd
-        });
-  
-        if (response.ok) {
-          showToast("Case created successfully");
-  
-          localStorage.setItem("selectedSubMenu", "all_cases");
-          localStorage.setItem("activeSubMenuText", "תיקים פעילים");
-          localStorage.setItem("activeMainMenuText", "כל התיקים");
-  
-          showSubMenu("all_cases");
-          loadContent(page = "cases", force = true, type = 'client');
-  
-          const subLinks = document.querySelectorAll('.sub-sidebar a');
-          subLinks.forEach(link => {
-            if (link.textContent.trim() === "תיקים פעילים") {
-              highlightInSidebar(link, 'sub-sidebar');
-            }
-          });
-  
-          const mainLinks = document.querySelectorAll('.sidebar a');
-          mainLinks.forEach(link => {
-            if (link.textContent.trim() === "כל התיקים") {
-              highlightInSidebar(link, 'sidebar');
-            }
-          });
-        } else {
-          showToast("❌ Form submission failed", true);
-        }
-      }
-  
-    */
-
   });
 };
 
@@ -347,15 +309,10 @@ window.initFieldAutocomplete = async function () {
   try {
     const res = await fetch("/get_case_categories");
     const categories = await res.json();
-
-    // Show dropdown suggestions based on input text
     function showSuggestions(filter = "") {
       const value = filter.trim();
       suggestions.innerHTML = "";
-      const matches = categories.filter(cat =>
-        cat.label.includes(value)
-      );
-
+      const matches = categories.filter(cat => cat.label.includes(value));
       matches.forEach(cat => {
         const li = document.createElement("li");
         li.className = "list-group-item list-group-item-action";
@@ -367,13 +324,10 @@ window.initFieldAutocomplete = async function () {
         suggestions.appendChild(li);
       });
     }
-
     input.addEventListener("input", () => showSuggestions(input.value));
     input.addEventListener("focus", () => showSuggestions(""));
     document.addEventListener("click", (e) => {
-      if (!suggestions.contains(e.target) && e.target !== input) {
-        suggestions.innerHTML = "";
-      }
+      if (!suggestions.contains(e.target) && e.target !== input) suggestions.innerHTML = "";
     });
   } catch (err) {
     console.error("Failed to load categories:", err);
