@@ -8,57 +8,95 @@
       <div class="accordion-item border-0">
         <h2 class="accordion-header" id="headingClient">
           <button class="section-header w-100 text-start collapsed" type="button" data-target="#collapseClient">
-            פרטי הלקוח
+            פרטי הלקוחות
           </button>
         </h2>
         <div id="collapseClient" class="accordion-collapse">
+
+          <!-- Client Basic Details -->
           <div class="accordion-body section-content">
             <div class="form-grid">
 
-              <div>
-                <div class="position-relative">
-                  <input name="client_first_name" class="form-control" id="client-first-name-input" required
-                    autocomplete="off" autocorrect="off" spellcheck="false" maxlength="30" placeholder="שם פרטי">
-                  <ul id="client-suggestions" class="list-group position-absolute w-100" style="z-index: 1000;"></ul>
-                </div>
+              <div class="position-relative">
+                <input name="client_first_name" class="form-control" id="client-first-name-input" autocomplete="off"
+                  autocorrect="off" spellcheck="false" maxlength="30" placeholder="שם פרטי">
+                <ul id="client-suggestions" class="list-group position-absolute w-100" style="z-index: 1000;"></ul>
               </div>
-              <div>
-                <div class="position-relative">
-                  <input name="client_last_name" class="form-control" id="client-last-name-input" required
-                    autocomplete="off" autocorrect="off" spellcheck="false" maxlength="30" placeholder="שם משפחה">
-                </div>
+
+              <div class="position-relative">
+                <input name="client_last_name" class="form-control" id="client-last-name-input" autocomplete="off"
+                  autocorrect="off" spellcheck="false" maxlength="30" placeholder="שם משפחה">
               </div>
-              <div>
-                <input name="client_phone" class="form-control" autocomplete="off" autocorrect="off" spellcheck="false"
-                  maxlength="10" placeholder="טלפון">
-              </div>
-              <div>
-                <input type="email" name="client_email" class="form-control" autocomplete="off" autocorrect="off"
-                  spellcheck="false" maxlength="100" placeholder="אימייל">
-              </div>
-              <div>
-                <input name="client_city" class="form-control" autocomplete="off" autocorrect="off" spellcheck="false"
-                  maxlength="40" placeholder="עיר">
-              </div>
-              <div>
-                <input name="client_street" class="form-control" autocomplete="off" autocorrect="off" spellcheck="false"
-                  maxlength="50" placeholder="רחוב">
-              </div>
-              <div>
-                <input name="client_street_number" class="form-control" autocomplete="off" autocorrect="off"
-                  spellcheck="false" maxlength="3" placeholder="מספר רחוב">
-              </div>
-              <div>
-                <input name="client_postal_code" class="form-control" autocomplete="off" autocorrect="off"
-                  spellcheck="false" maxlength="7" placeholder="מיקוד">
-              </div>
-              <div>
-                <input name="client_id_card_number" class="form-control" autocomplete="off" autocorrect="off"
-                  spellcheck="false" maxlength="9" placeholder="מספר תעודת זהות">
-              </div>
+
+              <input name="client_id_card_number" class="form-control" autocomplete="off" autocorrect="off"
+                spellcheck="false" maxlength="9" placeholder="מספר תעודת זהות">
+
+              <input name="client_phone" class="form-control" autocomplete="off" autocorrect="off" spellcheck="false"
+                maxlength="10" placeholder="טלפון">
 
             </div>
           </div>
+
+          <!-- Client Address -->
+          <div class="accordion-body section-content">
+            <div class="form-grid">
+              <input name="client_city" class="form-control" autocomplete="off" autocorrect="off" spellcheck="false"
+                maxlength="40" placeholder="עיר">
+              <input name="client_street" class="form-control" autocomplete="off" autocorrect="off" spellcheck="false"
+                maxlength="50" placeholder="רחוב">
+              <input name="client_home_number" class="form-control" autocomplete="off" autocorrect="off"
+                spellcheck="false" maxlength="3" placeholder="מספר בית">
+              <input name="client_postal_code" class="form-control" autocomplete="off" autocorrect="off"
+                spellcheck="false" maxlength="7" placeholder="מיקוד">
+            </div>
+          </div>
+
+          <!-- Client Additional Info -->
+          <div class="accordion-body section-content">
+            <div class="form-grid">
+              <input type="email" name="client_email" class="form-control" autocomplete="off" autocorrect="off"
+                spellcheck="false" maxlength="100" placeholder="אימייל">
+
+              <input type="date" name="client_birth_date" class="form-control" autocomplete="off" autocorrect="off"
+                placeholder="תאריך לידה">
+
+              <select id="client_role" class="form-select">
+                <option value="main">ראשי</option>
+                <option value="secondary">משני</option>
+              </select>
+
+              <button type="button" id="add-client-btn" class="btn btn-success">
+                ➕ הוסף לקוח
+              </button>
+            </div>
+          </div>
+
+          <!-- Clients table -->
+          <div class="accordion-body section-content">
+            <div class="table-responsive">
+              <table class="table table-striped table-sm align-middle text-center" id="clients-table">
+                <thead class="table-light">
+                  <tr>
+                    <th>שם פרטי</th>
+                    <th>שם משפחה</th>
+                    <th>ת"ז</th>
+                    <th>טלפון</th>
+                    <th>עיר</th>
+                    <th>רחוב</th>
+                    <th>מס' בית</th>
+                    <th>מיקוד</th>
+                    <th>אימייל</th>
+                    <th>תאריך לידה</th>
+                    <th>תפקיד</th>
+                    <th>פעולות</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <small class="text-muted">יש להוסיף לפחות לקוח אחד ולפחות אחד מסוג ראשי.</small>
+          </div>
+
         </div>
       </div>
 
@@ -70,29 +108,52 @@
           </button>
         </h2>
         <div id="collapseCase" class="accordion-collapse">
-          <div class="accordion-body section-content">
 
+          <div class="accordion-body section-content">
             <div class="form-grid">
+
               <div>
                 <input name="title" id="case-title-input" class="form-control" required autocomplete="off"
                   autocorrect="off" spellcheck="false" maxlength="40" placeholder="כותרת">
               </div>
-              <div>
-
-                <div class="position-relative">
-                  <input name="field" id="field-input" class="form-control" autocomplete="off" maxlength="40"
-                    placeholder="תחום">
-                  <ul id="field-suggestions" class="list-group position-absolute w-100" style="z-index: 1000;"></ul>
-                </div>
-
+              <div class="position-relative">
+                <input name="field" id="field-input" class="form-control" autocomplete="off" maxlength="40"
+                  placeholder="תחום">
+                <ul id="field-suggestions" class="list-group position-absolute w-100" style="z-index: 1000;"></ul>
               </div>
-            </div>
 
-            <div class="mb-3">
-              <textarea name="facts" id="case-facts-input" rows="5" class="form-control" autocomplete="off"
-                autocorrect="off" spellcheck="false" placeholder="תיאור"></textarea>
             </div>
           </div>
+
+          <div class="accordion-body section-content">
+            <div class="form-grid">
+
+              <div class="mb-3">
+                <textarea name="facts" id="case-facts-input" rows="5" class="form-control" autocomplete="off"
+                  autocorrect="off" spellcheck="false" placeholder="תיאור"></textarea>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="accordion-body section-content">
+            <div class="form-grid">
+
+              <input name="against" class="form-control" autocomplete="off" autocorrect="off" spellcheck="false"
+                maxlength="40" placeholder='נגד:  שם / ח"פ / ארגון'>
+
+              <div class="position-relative">
+                <select id="against-type" class="form-select">
+                  <option value="prosecutor">תובע</option>
+                  <option value="defendant">נתבע</option>
+                </select>
+              </div>
+
+
+
+            </div>
+          </div>
+
         </div>
       </div>
 
