@@ -1,11 +1,11 @@
 # app/routes/user.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, render_template, request, flash, current_app
 
 from ..services import mongodb_service, s3_service
 from ..managers.response_management import ResponseManager
 from ..managers.json_management import JSONManager
 from ..managers.auth_management import AuthorizationManager
-from ..constants.constants_mongodb import MongoDBEntity, MongoDBFilters
+from ..constants.constants_mongodb import MongoDBEntity, MongoDBFilters, MongoDBData
 
 user_bp = Blueprint('user', __name__)
 
@@ -75,93 +75,100 @@ def get_case():
 
 @user_bp.route("/get_office_cases")
 def get_office_cases():
-    """Return only active cases."""
-    office_serial = AuthorizationManager.get_office_serial()
-    expand =        request.args.get("expand", False)
-
-    if not office_serial:
-        return ResponseManager.error("Missing office_serial in auth")
-
-    cases_res = mongodb_service.get_entity(
-        entity=MongoDBEntity.CASES,
-        office_serial=office_serial,
-        expand=expand
-    )
-
-    if not ResponseManager.is_success(response=cases_res):
-        flash(ResponseManager.get_error(response=cases_res), "danger")
-        return cases_res
-
-    cases = ResponseManager.get_data(response=cases_res)
-    return ResponseManager.success(data=cases)
-
-
-@user_bp.route("/get_office_active_cases")
-def get_office_active_cases():
-    """Return only active cases."""
-    current_app.logger.debug("inside get_office_active_cases()")
+    """
+    Return cases for a given office, with optional filters (client_name, status, category, city).
+    Scalable design — more filters can be added easily later.
+    """
+    current_app.logger.debug("inside get_office_cases()")
 
     office_serial = AuthorizationManager.get_office_serial()
     expand = request.args.get("expand", False)
     if not office_serial:
-        # debug bad request
-        current_app.logger.debug(f"returning bad_request: 'office_serial' is required")
         return ResponseManager.error("Missing office_serial in auth")
 
-    # debug func call
-    current_app.logger.debug(f"calling create_entity() from get_office_active_cases()")
+    # --- Build filters dynamically ---
+    filters = {}
+
+    # extract query params
+    client_name = request.args.get("client_name")
+    city = request.args.get("city")
+    status = request.args.get("status")
+    category = request.args.get("category")
+
+    # --- simple filters ---
+    if status:
+        filters["status"] = status
+    if category:
+        filters["category"] = category
+
+    # --- complex filters via clients collection ---
+    if client_name or city:
+        client_filters = {}
+
+        if client_name:
+            parts = client_name.strip().split()
+            if len(parts) == 1:
+                client_filters["$or"] = [
+                    {"first_name": {"$regex": parts[0], "$options": "i"}},
+                    {"last_name": {"$regex": parts[0], "$options": "i"}}
+                ]
+            else:
+                first, last = parts[0], parts[-1]
+                client_filters["$and"] = [
+                    {"first_name": {"$regex": first, "$options": "i"}},
+                    {"last_name": {"$regex": last, "$options": "i"}}
+                ]
+
+        if city:
+            client_filters["city"] = {"$regex": city, "$options": "i"}
+
+        current_app.logger.debug(f"searching clients with filters: {client_filters}")
+        
+        clients_res = mongodb_service.get_entity(
+            entity=MongoDBEntity.CLIENTS,
+            office_serial=office_serial,
+            filters=client_filters
+        )
+
+        if ResponseManager.is_success(clients_res):
+            clients = ResponseManager.get_data(clients_res)
+            client_serials = [c["clients"]["serial"] for c in clients]
+            if client_serials:
+                filters["client_serial"] = {"$in": client_serials}
+                current_app.logger.debug(f"matched client_serials: {client_serials}")
+            else:
+                current_app.logger.debug("no matching clients found → returning empty list")
+                return ResponseManager.success(data=[])
+        else:
+            current_app.logger.debug("client lookup failed → returning empty list")
+            return ResponseManager.success(data=[])
+
+    # default: only active cases (not archived)
+    if not filters:
+        filters = None
+
+    current_app.logger.debug(f"filters applied: {filters}")
+
+    # --- fetch from MongoDB microservice ---
     cases_res = mongodb_service.get_entity(
         entity=MongoDBEntity.CASES,
         office_serial=office_serial,
-        filters=MongoDBFilters.Case.active,
+        filters=filters,
         expand=expand
     )
 
-    if not ResponseManager.is_success(response=cases_res):
-        # debug internal error
-        current_app.logger.debug(f"returning internal error: Failed to get cases")
-        return ResponseManager.internal("Failed to get cases")
-
-    cases = ResponseManager.get_data(response=cases_res)
-    # debug success
-    current_app.logger.debug(f"returning success with {len(cases)} cases")
-    return ResponseManager.success(data=cases)
-
-
-@user_bp.route("/get_office_archived_cases")
-def get_office_archived_cases():
-    """Return only archived cases."""
-    current_app.logger.debug("inside get_office_archived_cases()")
-
-    office_serial = AuthorizationManager.get_office_serial()
-    expand = request.args.get("expand")
-    if not office_serial:
-        # debug bad request
-        current_app.logger.debug(f"returning bad_request: 'office_serial' is required")
-        return ResponseManager.bad_request("Missing 'office_serial' in auth")
-
-    # debug func call
-    current_app.logger.debug(f"calling create_entity() from get_office_archived_cases()")
-    cases_res = mongodb_service.get_entity(
-        entity=MongoDBEntity.CASES,
-        office_serial=office_serial,
-        filters=MongoDBFilters.Case.archived,
-        expand=expand
-    )
-
-    if not ResponseManager.is_not_found(response=cases_res):
-        # debug not found
-        current_app.logger.debug(f"returning not found")
-        return ResponseManager.internal("Not Found")
+    if ResponseManager.is_not_found(cases_res):
+        current_app.logger.debug("no cases found, returning empty list")
+        return ResponseManager.success(data=[])
 
     if not ResponseManager.is_success(response=cases_res):
-        # debug internal error
-        current_app.logger.debug(f"returning internal error: Failed to get cases")
-        return ResponseManager.internal("Failed to get cases")
+        current_app.logger.debug("error fetching cases")
+        flash(ResponseManager.get_error(response=cases_res), "danger")
+        return cases_res
 
+    # --- success ---
     cases = ResponseManager.get_data(response=cases_res)
-    # debug success
-    current_app.logger.debug(f"returning success with {len(cases)} cases")
+    current_app.logger.debug(f"returning {len(cases)} cases")
     return ResponseManager.success(data=cases)
 
 
@@ -279,10 +286,7 @@ def delete_case():
     if not case_serial:
         return ResponseManager.bad_request("Missing 'case_serial'")
 
-    try:
-        case_serial = int(case_serial)
-    except ValueError:
-        return ResponseManager.bad_request("Invalid 'case_serial' format")
+    case_serial = int(case_serial)
 
     # try to delete the case
     delete_res = mongodb_service.delete_entity(
@@ -301,6 +305,83 @@ def delete_case():
     return ResponseManager.success(message=f"Case {case_serial} deleted successfully")
 
 
+@user_bp.route("/update_case", methods=["PATCH"])
+def update_case():
+    office_serial = AuthorizationManager.get_office_serial()
+    case_serial = request.args.get("serial")
+    update_data = request.get_json(force=True) or {}
+
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+    if not case_serial:
+        return ResponseManager.bad_request("Missing 'case_serial'")
+    if not update_data:
+        return ResponseManager.bad_request("Missing 'update_data' in request body")
+
+    case_serial = int(case_serial)
+
+    current_app.logger.debug(f"PATCH /update_case | office={office_serial}, case={case_serial}, update={update_data}")
+
+    # perform the update via MongoDB microservice
+    update_res = mongodb_service.update_entity(
+        entity=MongoDBEntity.CASES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(case_serial),
+        update_data=update_data,
+        multiple=False
+    )
+
+    if not ResponseManager.is_success(response=update_res):
+        error = ResponseManager.get_error(response=update_res)
+        current_app.logger.error(f"PATCH /update_case | failed to update case {case_serial}: {error}")
+        return update_res
+
+    current_app.logger.info(f"PATCH /update_case | case {case_serial} updated successfully")
+    return ResponseManager.success(
+        message=f"Case {case_serial} updated successfully",
+        data=ResponseManager.get_data(update_res)
+    )
+
+@user_bp.route("/update_case_status", methods=["PATCH"])
+def update_case_status():
+    office_serial = AuthorizationManager.get_office_serial()
+    case_serial = request.args.get("serial")
+    payload = request.get_json(force=True) or {}
+    new_status = payload.get("status")
+
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+    if not case_serial:
+        return ResponseManager.bad_request("Missing 'case_serial'")
+    if not new_status:
+        return ResponseManager.bad_request("Missing 'status' in request body")
+
+    case_serial = int(case_serial)
+
+    update_data = MongoDBData.Case.status(new_status)
+    if not update_data:
+        return ResponseManager.bad_request(f"Invalid status '{new_status}'. Must be one of: open, closed, archived")
+
+    current_app.logger.debug(
+        f"PATCH /update_status | office={office_serial}, case={case_serial}, update={update_data}"
+    )
+
+    update_res = mongodb_service.update_entity(
+        entity=MongoDBEntity.CASES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(case_serial),
+        update_data=update_data,
+        multiple=False
+    )
+
+    if not ResponseManager.is_success(update_res):
+        return update_res
+
+    return ResponseManager.success(
+        message=f"Case {case_serial} status updated to '{new_status}'",
+        data=ResponseManager.get_data(update_res)
+    )
+
 # ---------------- CLIENTS MANAGEMENT ---------------- #
 
 
@@ -312,9 +393,9 @@ def delete_case():
 def load_cases_birds_view():
     return render_template("user_components/cases_birds_view.html")
 
-@user_bp.route("/load_active_cases")
-def load_active_cases():
-    return render_template("user_components/active_cases.html")
+@user_bp.route("/load_cases")
+def load_cases():
+    return render_template("user_components/cases.html")
 
 @user_bp.route("/load_add_case")
 def load_add_case():
@@ -324,18 +405,14 @@ def load_add_case():
 def load_view_case():
     return render_template("user_components/view_case.html")
 
-@user_bp.route("/load_archived_cases")
-def load_archived_cases():
-    return render_template("user_components/archived_cases.html")
-
 
 @user_bp.route("/load_clients_birds_view")
 def load_clients_birds_view():
     return render_template("user_components/clients_birds_view.html")
 
-@user_bp.route("/load_active_clients")
-def load_active_clients():
-    return render_template("user_components/active_clients.html")
+@user_bp.route("/load_clients")
+def load_clients():
+    return render_template("user_components/clients.html")
 
 @user_bp.route("/load_add_client")
 def load_add_client():
