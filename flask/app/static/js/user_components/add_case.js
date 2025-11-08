@@ -4,7 +4,7 @@ window.init_add_case = function () {
   initFileUploader();          // Initialize drag & drop + file handling
   initAccordionSections();     // Accordion animation logic
   initCaseFormPreview();       // Form submission & validation
-  initCategoryAutocomplete();  // Category autocomplete
+  initFieldAutocomplete();  // Field autocomplete
 };
 
 /* Parse API responses safely into a unified object */
@@ -214,7 +214,7 @@ window.initCaseFormPreview = function () {
     const form_data = {
       created_at: timestamp,
       title: fd.get('title'),
-      category: fd.get('category'),
+      field: fd.get('field'),
       facts: fd.get('facts'),
       client_first_name: fd.get('client_first_name'),
       client_last_name: fd.get('client_last_name'),
@@ -338,10 +338,10 @@ window.initCaseFormPreview = function () {
   });
 };
 
-/* Autocomplete for case category selection */
-window.initCategoryAutocomplete = async function () {
-  const input = document.getElementById("category-input");
-  const suggestions = document.getElementById("category-suggestions");
+/* Autocomplete for case field selection */
+window.initFieldAutocomplete = async function () {
+  const input = document.getElementById("field-input");
+  const suggestions = document.getElementById("field-suggestions");
   if (!input) return;
 
   try {
