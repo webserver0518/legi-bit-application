@@ -110,13 +110,20 @@
   </section>
 </div>
 
-<!-- כפתור מחיקת תיק -->
-<div class="text-center mt-4 mb-5">
+<!-- כפתורי פעולה -->
+<div class="text-center mt-4 mb-5 d-flex justify-content-center gap-3">
+
+  <!-- כפתור העברה לארכיון -->
+  <button class="btn btn-outline-secondary" onclick="updateCaseStatus('archived')">
+    📦 העבר לארכיון
+  </button>
+
+  <!-- כפתור מחיקת תיק -->
   <button class="btn btn-outline-danger" onclick="deleteCase()">
     🗑️ מחק תיק
   </button>
-</div>
 
+</div>
 <!-- Modal עריכת פרטי תיק -->
 <div class="modal fade" id="editCaseModal" tabindex="-1" aria-labelledby="editCaseModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
