@@ -44,3 +44,12 @@ class MongoDBFilters:
 class MongoDBSort:
     newest = ("serial", -1)
     oldest = ("serial", 1)
+
+
+class MongoDBData:
+    class Case:
+
+        @staticmethod
+        def status(value: str) -> dict:
+            valid_statuses = {"open", "closed", "archived"}
+            return {"status": value} if value in valid_statuses else None
