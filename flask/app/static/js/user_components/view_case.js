@@ -106,4 +106,37 @@
     }
   };
 
+  // --- update case status ---
+  window.updateCaseStatus = function (newStatus) {
+    const serial = $('case-serial')?.value;
+    if (!serial) {
+      toast("Please Select a case first", "danger");
+      return;
+    }
+
+    if (!newStatus) {
+      toast("Missing target status", "warning");
+      return;
+    }
+
+    fetch(`/update_case_status?serial=${encodeURIComponent(serial)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus })
+    })
+      .then(r => r.json())
+      .then(payload => {
+        if (payload?.success) {
+          toast(`Status changed to '${newStatus}'`, "success");
+          setVal("case-status", newStatus);
+        } else {
+          toast(payload?.error || "Error updating status", "danger");
+        }
+      })
+      .catch(err => {
+        console.error("❌ updateCaseStatus error:", err);
+        toast("Internal server error", "danger");
+      });
+  };
+
 })();
