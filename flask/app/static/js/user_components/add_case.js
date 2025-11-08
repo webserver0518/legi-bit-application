@@ -228,112 +228,112 @@ window.initCaseFormPreview = function () {
     };
 
     try {
-        const res = await fetch("/create_new_case", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form_data)
-        });
-
-        const json = await res.json();
-        const parsed = parseApiResponse(json);
-
-        if (!parsed.success) {
-          showToast(`❌ Failed to create case: ${parsed.error}`, true);
-          return;
-        }
-
-        showToast("✅ Case created successfully");
-
-        // ✅ UI reload
-        localStorage.setItem("selectedSubMenu", "all_cases");
-        showSubMenu("all_cases");
-        loadContent("active_cases", true, "user");
-
-      } catch (error) {
-        console.error(error);
-        showToast("⚠️ Error contacting server", true);
-      }
-
-  /*
-    const initJson = await initRes.json().catch(() => null);
-    const initParsed = parseApiResponse(initJson);
-    const { serial, office_name } = initParsed.data || {};
-
-    // Step 2: Upload files to S3 using presigned URLs
-    const uploadedNames = [];
-    for (const f of files) {
-      const presRes = await fetch("/s3/presign", {
+      const res = await fetch("/create_new_case", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filename: f.name,
-          filetype: f.type,
-          filesize: f.size,
-          serial: serial
-        })
+        body: JSON.stringify(form_data)
       });
 
-      const { presigned, safe_name, error } = await presRes.json();
-      if (!presRes.ok || error) {
-        showToast(`❌ Failed to generate presigned URL for ${f.name}`, true);
+      const json = await res.json();
+      const parsed = parseApiResponse(json);
+
+      if (!parsed.success) {
+        showToast(`❌ Failed to create case: ${parsed.error}`, true);
         return;
       }
 
-      const s3Form = new FormData();
-      Object.entries(presigned.fields).forEach(([k, v]) => s3Form.append(k, v));
-      s3Form.append("file", f);
+      showToast("✅ Case created successfully");
 
-      const s3Upload = await fetch(presigned.url, { method: "POST", body: s3Form });
-      if (!s3Upload.ok) {
-        showToast(`❌ Failed to upload ${f.name} to S3`, true);
-        return;
-      }
+      // ✅ UI reload
+      localStorage.setItem("selectedSubMenu", "all_cases");
+      showSubMenu("all_cases");
+      loadContent("cases", true, "user");
 
-      uploadedNames.push(safe_name);
+    } catch (error) {
+      console.error(error);
+      showToast("⚠️ Error contacting server", true);
     }
 
-    // Replace blobs with uploaded file names
-    fd.delete("files[]");
-    uploadedNames.forEach(n => fd.append("uploaded[]", n));
-
-    fd.append("serial", serial);
-
-    // Step 3: Send full case form to backend
-    try {
-      const response = await fetch("/create_case", {
-        method: "POST",
-        body: fd
-      });
-
-      if (response.ok) {
-        showToast("Case created successfully");
-
-        localStorage.setItem("selectedSubMenu", "all_cases");
-        localStorage.setItem("activeSubMenuText", "תיקים פעילים");
-        localStorage.setItem("activeMainMenuText", "כל התיקים");
-
-        showSubMenu("all_cases");
-        loadContent(page = "active_cases", force = true, type = 'client');
-
-        const subLinks = document.querySelectorAll('.sub-sidebar a');
-        subLinks.forEach(link => {
-          if (link.textContent.trim() === "תיקים פעילים") {
-            highlightInSidebar(link, 'sub-sidebar');
-          }
+    /*
+      const initJson = await initRes.json().catch(() => null);
+      const initParsed = parseApiResponse(initJson);
+      const { serial, office_name } = initParsed.data || {};
+  
+      // Step 2: Upload files to S3 using presigned URLs
+      const uploadedNames = [];
+      for (const f of files) {
+        const presRes = await fetch("/s3/presign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filename: f.name,
+            filetype: f.type,
+            filesize: f.size,
+            serial: serial
+          })
         });
-
-        const mainLinks = document.querySelectorAll('.sidebar a');
-        mainLinks.forEach(link => {
-          if (link.textContent.trim() === "כל התיקים") {
-            highlightInSidebar(link, 'sidebar');
-          }
-        });
-      } else {
-        showToast("❌ Form submission failed", true);
+  
+        const { presigned, safe_name, error } = await presRes.json();
+        if (!presRes.ok || error) {
+          showToast(`❌ Failed to generate presigned URL for ${f.name}`, true);
+          return;
+        }
+  
+        const s3Form = new FormData();
+        Object.entries(presigned.fields).forEach(([k, v]) => s3Form.append(k, v));
+        s3Form.append("file", f);
+  
+        const s3Upload = await fetch(presigned.url, { method: "POST", body: s3Form });
+        if (!s3Upload.ok) {
+          showToast(`❌ Failed to upload ${f.name} to S3`, true);
+          return;
+        }
+  
+        uploadedNames.push(safe_name);
       }
-    }
-
-  */
+  
+      // Replace blobs with uploaded file names
+      fd.delete("files[]");
+      uploadedNames.forEach(n => fd.append("uploaded[]", n));
+  
+      fd.append("serial", serial);
+  
+      // Step 3: Send full case form to backend
+      try {
+        const response = await fetch("/create_case", {
+          method: "POST",
+          body: fd
+        });
+  
+        if (response.ok) {
+          showToast("Case created successfully");
+  
+          localStorage.setItem("selectedSubMenu", "all_cases");
+          localStorage.setItem("activeSubMenuText", "תיקים פעילים");
+          localStorage.setItem("activeMainMenuText", "כל התיקים");
+  
+          showSubMenu("all_cases");
+          loadContent(page = "cases", force = true, type = 'client');
+  
+          const subLinks = document.querySelectorAll('.sub-sidebar a');
+          subLinks.forEach(link => {
+            if (link.textContent.trim() === "תיקים פעילים") {
+              highlightInSidebar(link, 'sub-sidebar');
+            }
+          });
+  
+          const mainLinks = document.querySelectorAll('.sidebar a');
+          mainLinks.forEach(link => {
+            if (link.textContent.trim() === "כל התיקים") {
+              highlightInSidebar(link, 'sidebar');
+            }
+          });
+        } else {
+          showToast("❌ Form submission failed", true);
+        }
+      }
+  
+    */
 
   });
 };
