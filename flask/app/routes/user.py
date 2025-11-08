@@ -180,15 +180,16 @@ def create_new_case():
     def construct_client_document(d: dict):
         return {
             "created_at": d.get("created_at"),
-            "id_card_number": d.get("client_id_card_number"),
-            "first_name": d.get("client_first_name"),
-            "last_name": d.get("client_last_name"),
-            "phone": d.get("client_phone"),
-            "email": d.get("client_email"),
-            "city": d.get("client_city"),
-            "street": d.get("client_street"),
-            "street_number": d.get("client_street_number"),
-            "postal_code": d.get("client_postal_code")
+            "id_card_number": d.get("id_card_number"),
+            "first_name": d.get("first_name"),
+            "last_name": d.get("last_name"),
+            "phone": d.get("phone"),
+            "email": d.get("email"),
+            "city": d.get("city"),
+            "street": d.get("street"),
+            "home_number": d.get("home_number"),
+            "postal_code": d.get("postal_code"),
+            "birth_date": d.get("birth_date"),
         }
 
     def construct_case_document(d: dict):
@@ -198,83 +199,94 @@ def create_new_case():
             "title": d.get("title"),
             "field": d.get("field"),
             "facts": d.get("facts", ""),
-            "files_serials": []
+            "against": d.get("against"),
+            "against_type": d.get("against_type"),
+            "files_serials": [],
         }
 
     office_serial = AuthorizationManager.get_office_serial()
     user_serial = AuthorizationManager.get_user_serial()
     if not office_serial:
-        # debug bad request
-        current_app.logger.debug(f"returning bad_request: 'office_serial' is required")
+        current_app.logger.debug("returning bad_request: 'office_serial' is required")
         return ResponseManager.bad_request("Missing 'office_serial' in auth")
     if not user_serial:
-        # debug bad request
-        current_app.logger.debug(f"returning bad_request: 'user_serial' is required")
+        current_app.logger.debug("returning bad_request: 'user_serial' is required")
         return ResponseManager.bad_request("Missing 'user_serial' in auth")
 
     data = request.get_json(force=True)
     if not data:
-        # debug bad request
         current_app.logger.debug("returning bad_request: Missing request JSON")
         return ResponseManager.bad_request("Missing request JSON")
 
-    # Create new Client
-    new_client_doc = construct_client_document(data)
-    new_client_doc['user_serial'] = user_serial # attach user that created this client
-    # debug new Client
-    current_app.logger.debug(f"new_client_doc: {new_client_doc}")
+    clients = data.get("clients", [])
+    if not isinstance(clients, list) or len(clients) == 0:
+        current_app.logger.debug("returning bad_request: No clients provided")
+        return ResponseManager.bad_request("At least one client is required")
 
-    for k, v in new_client_doc.items():
-        if not v:
-            # debug bad request
-            current_app.logger.debug(f"returning bad_request: Missing Client's '{k}' attribute")
-            return ResponseManager.bad_request(f"Missing Client's '{k}' attribute")
+    client_serials_map = {}  # { serial: role }
 
-    # debug func call
-    current_app.logger.debug(f"calling create_entity() from create_new_case()")
-    new_client_res = mongodb_service.create_entity(
-        entity=MongoDBEntity.CLIENTS,
-        office_serial=office_serial,
-        document=new_client_doc
-    )
-    if not ResponseManager.is_success(response=new_client_res):
-        # debug internal error
-        current_app.logger.debug(f"returning internal error: Failed to create client")
-        return ResponseManager.internal("Failed to create client")
+    # === Create all Clients ===
+    for i, c in enumerate(clients, start=1):
+        new_client_doc = construct_client_document(c)
+        new_client_doc["user_serial"] = user_serial
+        new_client_doc["created_at"] = data.get("created_at")
 
-    new_client_serial = ResponseManager.get_data(response=new_client_res)
+        current_app.logger.debug(f"[client {i}] new_client_doc: {new_client_doc}")
 
-    # Create new case
+        # ✅ Require only minimal mandatory fields
+        mandatory_fields = ("first_name", "last_name", "id_card_number", "phone")
+        missing_fields = [k for k in mandatory_fields if not new_client_doc.get(k)]
+        if missing_fields:
+            msg = f"Missing required fields for client {i}: {', '.join(missing_fields)}"
+            current_app.logger.debug(msg)
+            return ResponseManager.bad_request(msg)
+
+        new_client_res = mongodb_service.create_entity(
+            entity=MongoDBEntity.CLIENTS,
+            office_serial=office_serial,
+            document=new_client_doc,
+        )
+
+        if not ResponseManager.is_success(new_client_res):
+            current_app.logger.debug(f"Failed to create client {i}")
+            return ResponseManager.internal(f"Failed to create client {i}")
+
+        new_client_serial = ResponseManager.get_data(new_client_res)
+        client_serials_map[str(new_client_serial)] = c.get("role", "secondary")
+
+    # ✅ Ensure at least one main client exists
+    if "main" not in client_serials_map.values():
+        current_app.logger.debug("returning bad_request: no main client found")
+        return ResponseManager.bad_request("At least one main client is required")
+
+    # === Create Case ===
     new_case_doc = construct_case_document(data)
-    new_case_doc['user_serial'] = user_serial
-    new_case_doc['client_serial'] =  new_client_serial
-    # debug new Case
+    new_case_doc["user_serial"] = user_serial
+    new_case_doc["clients_serials"] = client_serials_map
+
     current_app.logger.debug(f"new_case_doc: {new_case_doc}")
 
+    # validation (basic)
     for k, v in new_case_doc.items():
-        if not v and k != "files_serials": # todo: delete k != "files_serials"
-            # debug bad request
+        if not v and k not in ("files_serials", "facts", "against", "against_type"):
             current_app.logger.debug(f"returning bad_request: Missing case '{k}' attribute")
             return ResponseManager.bad_request(f"Missing case '{k}' attribute")
 
-    # debug func call
-    current_app.logger.debug(f"calling create_entity() from create_new_case()")
     new_case_res = mongodb_service.create_entity(
         entity=MongoDBEntity.CASES,
         office_serial=office_serial,
-        document=new_case_doc
+        document=new_case_doc,
     )
-    if not ResponseManager.is_success(response=new_case_res):
-        # debug internal error
-        current_app.logger.debug(f"returning internal error: Failed to create client")
-        return ResponseManager.internal("Failed to create client")
+    if not ResponseManager.is_success(new_case_res):
+        current_app.logger.debug("Failed to create case")
+        return ResponseManager.internal("Failed to create case")
 
-    new_case_serial = ResponseManager.get_data(response=new_case_res)
-
-    # debug success
+    new_case_serial = ResponseManager.get_data(new_case_res)
     current_app.logger.debug(f"Created new case with serial={new_case_serial} in office={office_serial}")
-    current_app.logger.debug(f"returning success with serial={new_case_serial}")
     return ResponseManager.success(data=new_case_serial)
+
+
+
 
 @user_bp.route("/delete_case", methods=["DELETE"])
 def delete_case():
