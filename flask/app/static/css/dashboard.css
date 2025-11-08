@@ -7,7 +7,8 @@
   --bg: #f4f6fb;
 }
 
-html, body {
+html,
+body {
   overflow-x: hidden !important;
   max-width: 100vw;
 }
@@ -142,7 +143,7 @@ body:not(.sidebar-collapsed) .marginClient {
   background: none !important;
 }
 
-#place-holder{
+#place-holder {
   height: 40px;
 }
 
@@ -153,4 +154,23 @@ body:not(.sidebar-collapsed) .marginClient {
 
 #dynamicContent {
   transition: opacity 40s ease;
+}
+
+
+
+
+
+
+.dataTables_wrapper {
+  direction: rtl;
+  text-align: right;
+}
+
+.dataTables_paginate {
+  direction: ltr !important;
+}
+
+#casesTable tbody tr:hover {
+  background-color: #f0f8ff;
+  cursor: pointer;
 }
