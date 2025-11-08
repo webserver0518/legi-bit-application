@@ -163,20 +163,39 @@ table.dataTable {
     /* כחול עדין */
 }
 
-/* --- שורות של תיקים בארכיון --- */
-.archived-row {
-    background-color: #f3f3f3 !important;
-    opacity: 0.75;
-    color: #555 !important;
-    font-style: italic;
-    border-left: 5px solid #bbb;
-    transition: background-color 0.25s ease, opacity 0.25s ease;
+/* ✅ ממרכז את נקודת הסטטוס בתא */
+#casesTable td:nth-child(4) {
+    text-align: center;
+    vertical-align: middle;
 }
 
-/* גם בארכיון – העכבר נראה כמו לחיצה */
-.archived-row:hover {
-    background-color: #e6e6e6 !important;
-    opacity: 0.9;
-    cursor: pointer;
-    /* 👈 נשאר pointer */
+
+
+/* ✅ עיצוב נקודה */
+.status-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+/* ירוק = פעיל */
+.status-dot.active {
+    background-color: #28a745;
+}
+
+/* אדום = ארכיון */
+.status-dot.archived {
+    background-color: #dc3545;
+}
+
+
+/* Title column wider */
+#casesTable th.col-title,
+#casesTable td:nth-child(1) {
+    min-width: 260px;
+    max-width: 340px;
+    text-align: right !important;
+    white-space: nowrap;
 }
