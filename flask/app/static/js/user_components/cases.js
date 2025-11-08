@@ -107,8 +107,12 @@
 
   // reset all filters
   window.clearFilters = () => {
-    document.querySelectorAll('#filter-title, #filter-field, #filter-status, #filter-client')
+    document.querySelectorAll('#filter-title, #filter-field, #filter-client')
       .forEach(el => el.value = '');
+
+    const statusSelect = document.getElementById('filter-status');
+    if (statusSelect) statusSelect.value = '';
+
     loadCases();
   };
 
