@@ -18,7 +18,7 @@ const current_sub_sidebar = 'current_sub_sidebar';
 
 
 /* ניווט מהתפריט */
-function navigateTo(linkEl, force=false) {
+function navigateTo(linkEl, force = false) {
   loadContent(
     page = linkEl.dataset.page,
     force = force,
@@ -30,12 +30,12 @@ function navigateTo(linkEl, force=false) {
 /* טעינת דף */
 function loadContent(page, force, type) {
   let cureentContent;
-  if (type == 'site'){
+  if (type == 'site') {
     cureentContent = current_site_content;
-  }else if (type == 'admin' || type == 'user'){
+  } else if (type == 'admin' || type == 'user') {
     cureentContent = current_dashboard_content;
   }
-  
+
   if (!page || page === S.get(cureentContent) && !force) return;
   S.set(cureentContent, page);
   let folderName = type + "_components";
@@ -87,11 +87,11 @@ const Loader = (() => {
   }
 
   /* API ראשי */
-  async function loadPage({ pageID, fetchUrl, cssPath, jsPath, container, forceState = false }) 
-  {
+  async function loadPage({ pageID, fetchUrl, cssPath, jsPath, container, forceState = false }) {
     if (pageID === currentPage && !forceState) return;
 
     /* 1. HTML */
+    console.log(`Loading page: ${pageID} from ${fetchUrl}`);
     const html = await fetch(`${fetchUrl}?v=${Date.now()}`)
       .then(r => { if (!r.ok) throw new Error(`loading error: ${r.status}`); return r.text(); });
 
