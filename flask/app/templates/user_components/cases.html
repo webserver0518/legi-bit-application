@@ -1,19 +1,17 @@
 <div class="container">
 
     <!-- 🔍 שורת סינון -->
-    <div class="d-flex flex-wrap gap-2 align-items-center bg-light p-3 rounded shadow-sm">
-        <input id="filter-client" type="text" class="form-control w-auto flex-grow-1" placeholder="שם לקוח">
+    <div class="d-flex flex-wrap gap-2 align-items-center bg-light p-3 rounded shadow-sm mb-3">
+        <input id="filter-title" type="text" class="form-control w-auto flex-grow-1" placeholder="כותרת">
+        <input id="filter-field" type="text" class="form-control w-auto flex-grow-1" placeholder="תחום">
         <select id="filter-status" class="form-select w-auto">
-            <option value="">כל הסטטוסים</option>
-            <option value="open">פתוח</option>
-            <option value="closed">סגור</option>
-            <option value="archived">בארכיון</option>
+            <option value="">הכל</option>
+            <option value="active">פעיל</option>
+            <option value="archived">ארכיון</option>
         </select>
-        <input id="filter-category" type="text" class="form-control w-auto" placeholder="קטגוריה">
-        <input id="filter-city" type="text" class="form-control w-auto" placeholder="עיר">
+        <input id="filter-client" type="text" class="form-control w-auto flex-grow-1" placeholder="שם לקוח">
         <div class="btn-group">
-            <button class="btn btn-primary btn-sm">סנן</button>
-            <button class="btn btn-outline-secondary btn-sm">נקה</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">נקה</button>
         </div>
     </div>
 
@@ -21,27 +19,23 @@
     <table class="table table-striped table-sm text-center" id="casesTable">
         <thead class="table-primary">
             <tr>
-                <th rowspan="2" id="sort-serial">מספר סידורי</th>
-                <th rowspan="2">מספר סידורי משתמש יוצר</th>
-                <th rowspan="2">שם</th>
-                <th rowspan="2">קטגוריה</th>
+                <th rowspan="2" class="col-title">כותרת</th>
+                <th rowspan="2">מס' סידורי</th>
+                <th rowspan="2">תחום</th>
                 <th rowspan="2">סטטוס</th>
-                <th colspan="7">לקוח</th>
-                <th rowspan="2">תאריך יצירת התיק</th>
-                <th rowspan="2">קבצים</th>
+                <th colspan="4">לקוח</th>
+                <th rowspan="2">נוצר ע"י</th>
+                <th rowspan="2">תאריך יצירה</th>
+                <th rowspan="2">מס' קבצים</th>
             </tr>
             <tr>
                 <th>שם פרטי</th>
                 <th>שם משפחה</th>
-                <th>תעודת זהות</th>
+                <th>ת"ז</th>
                 <th>טלפון</th>
-                <th>עיר</th>
-                <th>רחוב</th>
-                <th>מס'</th>
             </tr>
         </thead>
-        <tbody>
-        </tbody>
+        <tbody></tbody>
     </table>
 
 </div>
