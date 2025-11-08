@@ -1,192 +1,196 @@
 /* app/flask/templates/user_components/add_case.css */
 .form-grid {
   display: grid;
-  gap: 12px 18px; /* ריווח בין שדות */
+  gap: 12px 18px;
+  /* ריווח בין שדות */
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   direction: rtl;
 }
 
 .add-case-page {
-    font-family: 'Segoe UI', sans-serif;
-    font-size: 12px;
-    padding: 20px;
-    background: white;
-    overflow-x: hidden;
-  }
-  
-  .add-case-page h2 {
-    text-align: center;
-    font-size: 14px;
-    font-weight: 600;
-  }
-  
-  /* אקורדיון */
-  .add-case-page .accordion-item {
-    border: none;
-    margin-bottom: 10px;
-    border-radius: 8px 8px 0 0;
-    overflow: hidden;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  .add-case-page .section-header {
-    background-color: white;
-    padding: 16px 20px;
-    font-size: 16px;
-    font-weight: 600;
-    border: 1px solid #ddd;
-    border-right: 12px solid var(--c1);
-    border-radius: 8px;
-    text-align: right;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  .add-case-page .section-header.collapsed {
-    border-right-color: var(--c2);
-  }
-  
-  .add-case-page .section-header:hover {
-    border-right-color: var(--c1);
-  }
-  
-  /* אפקט פתיחה */
-  .add-case-page .accordion-collapse {
-    height: 0;
-    overflow: hidden;
-    transition: height 1.5s ease;
-  }
-  
-  /* כאשר פתוח */
-  .add-case-page .accordion-collapse.show {
-    height: auto;
-    background-color: #e3f2fd;
-    border-top: none;
-    border-radius: 0 0 8px 8px;
-  }
-  
-  /* גוף הסקשן */
-  .add-case-page .accordion-body {
-    padding: 20px 25px;
-    margin: 0;
-  }
-  
-  /* שדות טופס */
-  .add-case-page .form-label {
-    margin-bottom: 5px;
-  }
-  
-  .add-case-page .form-control,
-  .add-case-page .form-select {
-    border-radius: 6px;
-    padding: 8px 10px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  
-  .add-case-page .required::after {
-    content: " *";
-    color: red;
-  }
-  
-  /* אזור העלאת קבצים */
-  .add-case-page #drop-area {
-    background: #f8f9fa;
-    border: 2px dashed #90caf9;
-    border-radius: 8px;
-    padding: 25px;
-    text-align: center;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  
-  .add-case-page #drop-area.highlight {
-    border: 2px dashed #0d6efd !important;
-    background: #e1f5fe;
-  }
-  
-  /* כפתורים */
-  .add-case-page .btn {
-    border-radius: 6px;
-    padding: 10px 16px;
-    background-color: #039cc7;
-    color: white;
-    border: none;
-    transition: background-color 0.2s ease;
-  }
-  
-  .add-case-page .btn:hover {
-    background-color: #0288d1;
-    color: white;
-  }
-  
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 12px;
+  padding: 20px;
+  background: white;
+  overflow-x: hidden;
+}
+
+.add-case-page h2 {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* אקורדיון */
+.add-case-page .accordion-item {
+  border: none;
+  margin-bottom: 10px;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.add-case-page .section-header {
+  background-color: white;
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border: 1px solid #ddd;
+  border-right: 12px solid var(--c1);
+  border-radius: 8px;
+  text-align: right;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.add-case-page .section-header.collapsed {
+  border-right-color: var(--c2);
+}
+
+.add-case-page .section-header:hover {
+  border-right-color: var(--c1);
+}
+
+/* אפקט פתיחה */
+.add-case-page .accordion-collapse {
+  height: 0;
+  overflow: hidden;
+  transition: height 1.5s ease;
+}
+
+/* כאשר פתוח */
+.add-case-page .accordion-collapse.show {
+  height: auto;
+  background-color: #e3f2fd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+}
+
+/* גוף הסקשן */
+.add-case-page .accordion-body {
+  padding: 20px 25px;
+  margin: 0;
+}
+
+/* שדות טופס */
+.add-case-page .form-label {
+  margin-bottom: 5px;
+}
+
+.add-case-page .form-control,
+.add-case-page .form-select {
+  border-radius: 6px;
+  padding: 8px 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.add-case-page .required::after {
+  content: " *";
+  color: red;
+}
+
+/* אזור העלאת קבצים */
+.add-case-page #drop-area {
+  background: #f8f9fa;
+  border: 2px dashed #90caf9;
+  border-radius: 8px;
+  padding: 25px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-case-page #drop-area.highlight {
+  border: 2px dashed #0d6efd !important;
+  background: #e1f5fe;
+}
+
+/* כפתורים */
+.add-case-page .btn {
+  border-radius: 6px;
+  padding: 10px 16px;
+  background-color: #039cc7;
+  color: white;
+  border: none;
+  transition: background-color 0.2s ease;
+}
+
+.add-case-page .btn:hover {
+  background-color: #0288d1;
+  color: white;
+}
 
 
 
 
-  .add-case-page .form-control.readonly-locked {
-    pointer-events: none;
-    user-select: none;
-    background-color: #f0f0f0;
-    cursor: not-allowed;
-  }
 
-  #client-suggestions {
-    max-height: calc(7 * 38px); /* גובה של 7 שורות בערך */
-    overflow-y: auto;
-    border: 1px solid #ccc;
-    border-top: none;
-    background-color: white;
-    direction: rtl;
-    text-align: right;
-    padding: 0;
-    margin: 0;
-    border-radius: 0 0 6px 6px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  }
+.add-case-page .form-control.readonly-locked {
+  pointer-events: none;
+  user-select: none;
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+}
 
-  #client-suggestions li {
-    cursor: pointer;
-    padding: 8px 12px;
-  }
-  
-  #client-suggestions li:hover {
-    background-color: #f1f1f1;
-  }
+#client-suggestions {
+  max-height: calc(7 * 38px);
+  /* גובה של 7 שורות בערך */
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-top: none;
+  background-color: white;
+  direction: rtl;
+  text-align: right;
+  padding: 0;
+  margin: 0;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+#client-suggestions li {
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+#client-suggestions li:hover {
+  background-color: #f1f1f1;
+}
 
 
 
-  #category-suggestions {
-    max-height: calc(7 * 38px); /* גובה של 7 שורות בערך */
-    overflow-y: auto;
-    border: 1px solid #ccc;
-    border-top: none;
-    background-color: white;
-    direction: rtl;
-    text-align: right;
-    padding: 0;
-    margin: 0;
-    border-radius: 0 0 6px 6px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  }
-  
-  #category-suggestions li {
-    cursor: pointer;
-    padding: 8px 12px;
-  }
-  
-  #category-suggestions li:hover {
-    background-color: #f1f1f1;
-  }
+#field-suggestions {
+  max-height: calc(7 * 38px);
+  /* גובה של 7 שורות בערך */
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-top: none;
+  background-color: white;
+  direction: rtl;
+  text-align: right;
+  padding: 0;
+  margin: 0;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
 
-  /* גובה רשימת סוגי המסמכים */
-#fileTable  {
+#field-suggestions li {
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+#field-suggestions li:hover {
+  background-color: #f1f1f1;
+}
+
+/* גובה רשימת סוגי המסמכים */
+#fileTable {
   max-height: 180px;
   overflow-y: auto;
 }
 
 /* גובה רשימת ההצעות של קטגוריות */
-#category-suggestions {
-  max-height: 180px; /* אפשר לשנות לפי הצורך */
+#field-suggestions {
+  max-height: 180px;
+  /* אפשר לשנות לפי הצורך */
   overflow-y: auto;
 }
