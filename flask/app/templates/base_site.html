@@ -2,6 +2,7 @@
 
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
   <meta charset="UTF-8">
   <title>LegiBit</title>
@@ -28,7 +29,7 @@
 
       <div class="collapse navbar-collapse justify-content-end" id="navbarContent">
         <ul class="navbar-nav flex-row-reverse gap-2">
-          <a class="nav-link" data-type="site" data-page="home"  href="#">🏠 דף הבית</a>
+          <a class="nav-link" data-type="site" data-page="home" href="#">🏠 דף הבית</a>
           <a class="nav-link" data-type="site" data-page="about" href="#">ℹ️ אודות</a>
           <a class="nav-link" data-type="site" data-page="login" href="#">🔐 התחברות</a>
         </ul>
@@ -43,13 +44,14 @@
 
   <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3 mb-4" style="z-index: 9999;">
     {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <div class="toast align-items-center text-white bg-{{ 'success' if category=='info' else category }} border-0 show" role="alert">
-          <div class="d-flex">
-            <div class="toast-body text-center w-100">{{ message }}</div>
-          </div>
-        </div>
-      {% endfor %}
+    {% for field, message in messages %}
+    <div class="toast align-items-center text-white bg-{{ 'success' if field=='info' else field }} border-0 show"
+      role="alert">
+      <div class="d-flex">
+        <div class="toast-body text-center w-100">{{ message }}</div>
+      </div>
+    </div>
+    {% endfor %}
     {% endwith %}
   </div>
 
@@ -58,4 +60,5 @@
   <script src="{{ url_for('static', filename='js/base_site.js') }}"></script>
 
 </body>
+
 </html>
