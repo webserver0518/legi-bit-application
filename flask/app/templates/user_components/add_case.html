@@ -1,168 +1,155 @@
 <!-- app/flask/templates/user_components/add_case.html -->
 <div class="add-case-page">
-    <form id="addCaseForm" enctype="multipart/form-data">
-  
-      <div class="accordion" id="caseAccordion">
-  
-        <!-- Section 1 – Client Details -->
-        <div class="accordion-item border-0">
-          <h2 class="accordion-header" id="headingClient">
-            <button class="section-header w-100 text-start collapsed" type="button" data-target="#collapseClient">
-              פרטי הלקוח
-            </button>
-          </h2>
-          <div id="collapseClient" class="accordion-collapse">
-            <div class="accordion-body section-content">
-              <div class="form-grid">
+  <form id="addCaseForm" enctype="multipart/form-data">
 
-                <div>
-                  <div class="position-relative">
-                      <input name="client_first_name" class="form-control" id="client-first-name-input"
-                             required autocomplete="off" autocorrect="off" spellcheck="false"
-                             maxlength="30" placeholder="שם פרטי">
-                      <ul id="client-suggestions" class="list-group position-absolute w-100" style="z-index: 1000;"></ul>
-                  </div>
+    <div class="accordion" id="caseAccordion">
+
+      <!-- Section 1 – Client Details -->
+      <div class="accordion-item border-0">
+        <h2 class="accordion-header" id="headingClient">
+          <button class="section-header w-100 text-start collapsed" type="button" data-target="#collapseClient">
+            פרטי הלקוח
+          </button>
+        </h2>
+        <div id="collapseClient" class="accordion-collapse">
+          <div class="accordion-body section-content">
+            <div class="form-grid">
+
+              <div>
+                <div class="position-relative">
+                  <input name="client_first_name" class="form-control" id="client-first-name-input" required
+                    autocomplete="off" autocorrect="off" spellcheck="false" maxlength="30" placeholder="שם פרטי">
+                  <ul id="client-suggestions" class="list-group position-absolute w-100" style="z-index: 1000;"></ul>
                 </div>
-                <div>
-                  <div class="position-relative">
-                      <input name="client_last_name" class="form-control" id="client-last-name-input"
-                             required autocomplete="off" autocorrect="off" spellcheck="false"
-                             maxlength="30" placeholder="שם משפחה">
-                  </div>
+              </div>
+              <div>
+                <div class="position-relative">
+                  <input name="client_last_name" class="form-control" id="client-last-name-input" required
+                    autocomplete="off" autocorrect="off" spellcheck="false" maxlength="30" placeholder="שם משפחה">
                 </div>
-                <div>
-                  <input name="client_phone" class="form-control"
-                         autocomplete="off" autocorrect="off" spellcheck="false"
-                         maxlength="10" placeholder="טלפון">
-                </div>
-                <div>
-                  <input type="email" name="client_email" class="form-control"
-                         autocomplete="off" autocorrect="off" spellcheck="false"
-                         maxlength="100" placeholder="אימייל">
-                </div>
-                <div>
-                  <input name="client_city" class="form-control"
-                         autocomplete="off" autocorrect="off" spellcheck="false"
-                         maxlength="40" placeholder="עיר">
-                </div>
-                <div>
-                  <input name="client_street" class="form-control"
-                         autocomplete="off" autocorrect="off" spellcheck="false"
-                         maxlength="50" placeholder="רחוב">
-                </div>
-                <div>
-                  <input name="client_street_number" class="form-control"
-                         autocomplete="off" autocorrect="off" spellcheck="false"
-                         maxlength="3" placeholder="מספר רחוב">
-                </div>
-                <div>
-                  <input name="client_postal_code" class="form-control"
-                         autocomplete="off" autocorrect="off" spellcheck="false"
-                         maxlength="7" placeholder="מיקוד">
-                </div>
-                <div>
-                  <input name="client_id_card_number" class="form-control"
-                         autocomplete="off" autocorrect="off" spellcheck="false"
-                         maxlength="9" placeholder="מספר תעודת זהות">
+              </div>
+              <div>
+                <input name="client_phone" class="form-control" autocomplete="off" autocorrect="off" spellcheck="false"
+                  maxlength="10" placeholder="טלפון">
+              </div>
+              <div>
+                <input type="email" name="client_email" class="form-control" autocomplete="off" autocorrect="off"
+                  spellcheck="false" maxlength="100" placeholder="אימייל">
+              </div>
+              <div>
+                <input name="client_city" class="form-control" autocomplete="off" autocorrect="off" spellcheck="false"
+                  maxlength="40" placeholder="עיר">
+              </div>
+              <div>
+                <input name="client_street" class="form-control" autocomplete="off" autocorrect="off" spellcheck="false"
+                  maxlength="50" placeholder="רחוב">
+              </div>
+              <div>
+                <input name="client_street_number" class="form-control" autocomplete="off" autocorrect="off"
+                  spellcheck="false" maxlength="3" placeholder="מספר רחוב">
+              </div>
+              <div>
+                <input name="client_postal_code" class="form-control" autocomplete="off" autocorrect="off"
+                  spellcheck="false" maxlength="7" placeholder="מיקוד">
+              </div>
+              <div>
+                <input name="client_id_card_number" class="form-control" autocomplete="off" autocorrect="off"
+                  spellcheck="false" maxlength="9" placeholder="מספר תעודת זהות">
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2 – Case Details -->
+      <div class="accordion-item border-0">
+        <h2 class="accordion-header" id="headingCase">
+          <button class="section-header w-100 text-start collapsed" type="button" data-target="#collapseCase">
+            פרטי התיק
+          </button>
+        </h2>
+        <div id="collapseCase" class="accordion-collapse">
+          <div class="accordion-body section-content">
+
+            <div class="form-grid">
+              <div>
+                <input name="title" id="case-title-input" class="form-control" required autocomplete="off"
+                  autocorrect="off" spellcheck="false" maxlength="40" placeholder="כותרת">
+              </div>
+              <div>
+
+                <div class="position-relative">
+                  <input name="field" id="field-input" class="form-control" autocomplete="off" maxlength="40"
+                    placeholder="תחום">
+                  <ul id="field-suggestions" class="list-group position-absolute w-100" style="z-index: 1000;"></ul>
                 </div>
 
               </div>
             </div>
-          </div>
-        </div>
-  
-        <!-- Section 2 – Case Details -->
-        <div class="accordion-item border-0">
-          <h2 class="accordion-header" id="headingCase">
-            <button class="section-header w-100 text-start collapsed" type="button" data-target="#collapseCase">
-              פרטי התיק
-            </button>
-          </h2>
-          <div id="collapseCase" class="accordion-collapse">
-            <div class="accordion-body section-content">
 
-              <div class="form-grid">
-                <div>
-                  <input name="title" id="case-title-input" class="form-control"
-                         required autocomplete="off" autocorrect="off" spellcheck="false"
-                         maxlength="40" placeholder="כותרת">
-                </div>
-                <div>
-
-                  <div class="position-relative">
-                    <input name="category" id="category-input" class="form-control"
-                           autocomplete="off"
-                           maxlength="40" placeholder="קטגוריה">
-                    <ul id="category-suggestions" class="list-group position-absolute w-100" style="z-index: 1000;"></ul>
-                  </div>
-
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <textarea name="facts" id="case-facts-input" rows="5" class="form-control"
-                          autocomplete="off" autocorrect="off" spellcheck="false"
-                          placeholder="תיאור"></textarea>
-              </div>
+            <div class="mb-3">
+              <textarea name="facts" id="case-facts-input" rows="5" class="form-control" autocomplete="off"
+                autocorrect="off" spellcheck="false" placeholder="תיאור"></textarea>
             </div>
           </div>
         </div>
-  
-        <!-- Section 3 – File Upload -->
-        <div class="accordion-item border-0">
-          <h2 class="accordion-header" id="headingFiles">
-            <button class="section-header w-100 text-start collapsed" type="button" data-target="#collapseFiles">
-              העלאת קבצים
-            </button>
-          </h2>
-          <div id="collapseFiles" class="accordion-collapse">
-            <div class="accordion-body section-content">
+      </div>
 
-              <!-- Drap & Drop -->
-              <div id="drop-area">
-                גרור קבצים לכאן או לחץ לבחירה
-                <input type="file" id="fileElem" hidden multiple>
-              </div>
-  
-              <!-- Table -->
-              <table class="table table-striped table-sm mt-3" id="fileTable">
-                <thead class="table-light">
-                  <tr>
-                    <th style="width:45%">שם קובץ</th>
-                    <th style="width:35%">סוג קובץ</th>
-                    <th style="width:20%">ביטול</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-  
-              <!-- "Real" input sent to server -->
-              <input type="file" name="files[]" id="realFileInput" hidden multiple>
+      <!-- Section 3 – File Upload -->
+      <div class="accordion-item border-0">
+        <h2 class="accordion-header" id="headingFiles">
+          <button class="section-header w-100 text-start collapsed" type="button" data-target="#collapseFiles">
+            העלאת קבצים
+          </button>
+        </h2>
+        <div id="collapseFiles" class="accordion-collapse">
+          <div class="accordion-body section-content">
+
+            <!-- Drap & Drop -->
+            <div id="drop-area">
+              גרור קבצים לכאן או לחץ לבחירה
+              <input type="file" id="fileElem" hidden multiple>
             </div>
+
+            <!-- Table -->
+            <table class="table table-striped table-sm mt-3" id="fileTable">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:45%">שם קובץ</th>
+                  <th style="width:35%">סוג קובץ</th>
+                  <th style="width:20%">ביטול</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+
+            <!-- "Real" input sent to server -->
+            <input type="file" name="files[]" id="realFileInput" hidden multiple>
           </div>
         </div>
-  
-        <!-- Section 4 – Submit -->
-        <div class="accordion-item border-0">
-          <h2 class="accordion-header" id="headingSubmit">
-            <button class="section-header w-100 text-start collapsed" type="button" data-target="#collapseSubmit">
-              אישור וסיום
+      </div>
+
+      <!-- Section 4 – Submit -->
+      <div class="accordion-item border-0">
+        <h2 class="accordion-header" id="headingSubmit">
+          <button class="section-header w-100 text-start collapsed" type="button" data-target="#collapseSubmit">
+            אישור וסיום
+          </button>
+        </h2>
+        <div id="collapseSubmit" class="accordion-collapse">
+          <div class="accordion-body section-content text-center">
+            <p class="mb-4">
+              לחץ על <strong>פתח תיק</strong> כדי לשמור את הנתונים ולהעלות את הקבצים.
+            </p>
+            <button id="submitCaseBtn" class="btn btn-success btn-lg w-100" type="submit">
+              פתח תיק
             </button>
-          </h2>
-          <div id="collapseSubmit" class="accordion-collapse">
-            <div class="accordion-body section-content text-center">
-              <p class="mb-4">
-                לחץ על <strong>פתח תיק</strong> כדי לשמור את הנתונים ולהעלות את הקבצים.
-              </p>
-              <button id="submitCaseBtn" class="btn btn-success btn-lg w-100" type="submit">
-                  פתח תיק
-              </button>
-            </div>
           </div>
         </div>
-  
-      </div><!-- /accordion -->
-  
-    </form>
-  </div>
-  
+      </div>
+
+    </div><!-- /accordion -->
+
+  </form>
+</div>
