@@ -1,130 +1,114 @@
-<!-- app/templates/client_components/view_case.html -->
-<div class="view-case-page container">
+<!-- app/templates/view_case.html -->
+<div class="container mt-4 view-case-page">
 
-  <!-- פרטי תיק -->
-  <section class="info-card position-relative">
-    <h5>פרטי תיק</h5>
-    <div class="edit-controls position-absolute top-0 end-0 m-2 d-flex gap-1">
-      <button class="btn btn-outline-primary btn-sm" onclick="enterEditMode('case')">ערוך</button>
-      <button class="btn btn-success btn-sm d-none" onclick="saveSection('case')">שמור</button>
-      <button class="btn btn-secondary btn-sm d-none" onclick="cancelEdit('case')">בטל</button>
-    </div>
-    <div class="row g-3">
-      <div class="col-md-4">
-        <label>מספר סידורי</label>
-        <input id="case-serial" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>תאריך יצירה</label>
-        <input id="case-created-at" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>סטטוס</label>
-        <input id="case-status" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>כותרת</label>
-        <input id="case-title" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>תחום</label>
-        <input id="case-field" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>עובדות התיק</label>
-        <input id="case-facts" class="form-control readonly" readonly>
-      </div>
-    </div>
-  </section>
+  <!-- 🟦 כותרת עליונה -->
+  <div class="case-header position-relative text-center mb-4">
+    <div class="status-dot position-absolute start-0 top-50 translate-middle-y" id="case-status-dot"></div>
+    <h3 id="case-title" class="fw-bold mb-0">
+      <span id="case-serial">-</span> / <span id="case-name">---</span>
+    </h3>
+  </div>
 
-  <!-- פרטי לקוח -->
-  <section class="info-card position-relative">
-    <h5>פרטי לקוח</h5>
-    <div class="edit-controls position-absolute top-0 end-0 m-2 d-flex gap-1">
-      <button class="btn btn-outline-primary btn-sm" onclick="enterEditMode('client')">ערוך</button>
-      <button class="btn btn-success btn-sm d-none" onclick="saveSection('client')">שמור</button>
-      <button class="btn btn-secondary btn-sm d-none" onclick="cancelEdit('client')">בטל</button>
-    </div>
-    <div class="row g-3">
-      <div class="col-md-4">
-        <label>מספר סידורי</label>
-        <input id="client-serial" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>תאריך יצירה</label>
-        <input id="client-created-at" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>תעודת זהות</label>
-        <input id="client-id-card-number" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>שם פרטי</label>
-        <input id="client-first-name" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>שם משפחה</label>
-        <input id="client-last-name" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>טלפון</label>
-        <input id="client-phone" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>אימייל</label>
-        <input id="client-email" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>עיר</label>
-        <input id="client-city" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>רחוב</label>
-        <input id="client-street" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>מספר בית</label>
-        <input id="client-home-number" class="form-control readonly" readonly>
-      </div>
-      <div class="col-md-4">
-        <label>מיקוד</label>
-        <input id="client-postal-code" class="form-control readonly" readonly>
-      </div>
-    </div>
-  </section>
+  <!-- 🟩 מידע כללי על התיק -->
+  <div class="case-info-row d-flex flex-wrap justify-content-center gap-4 mb-4 text-center">
 
-  <!-- קבצים -->
-  <section class="info-card position-relative">
-    <h5>קבצים מצורפים</h5>
-    <button class="btn btn-outline-success btn-sm position-absolute top-0 end-0 m-2" onclick="openAddFileModal()">➕ הוסף
-      קבצים</button>
-    <div class="table-responsive">
-      <table class="table table-sm table-striped text-center" id="case-files">
+    <div class="case-info-item shadow-sm rounded p-3 bg-light">
+      <span class="label d-block fw-semibold">נוצר ע"י</span>
+      <span id="case-created-by" class="value text-muted">-</span>
+    </div>
+
+    <div class="case-info-item shadow-sm rounded p-3 bg-light">
+      <span class="label d-block fw-semibold">תחום</span>
+      <span id="case-field" class="value text-muted">-</span>
+    </div>
+
+    <div class="case-info-item shadow-sm rounded p-3 bg-light">
+      <span class="label d-block fw-semibold">כנגד</span>
+      <span id="case-against" class="value text-muted">-</span>
+    </div>
+
+    <div class="case-info-item shadow-sm rounded p-3 bg-light">
+      <span class="label d-block fw-semibold">סוג כנגד</span>
+      <span id="case-against-type" class="value text-muted">-</span>
+    </div>
+
+  </div>
+
+  <!-- 🟨 טבלת קבצים -->
+  <div class="case-section mb-5">
+    <h5 class="section-title mb-3">
+      <i class="bi bi-paperclip me-1"></i> קבצים
+    </h5>
+
+    <div class="table-responsive shadow-sm rounded">
+      <table id="filesTable" class="table table-hover align-middle text-center">
         <thead class="table-light">
           <tr>
             <th>שם קובץ</th>
-            <th>הורדה</th>
+            <th>סוג</th>
+            <th>תאריך העלאה</th>
+            <th>פעולות</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td colspan="100%" class="text-muted">אין קבצים זמינים</td>
+            <td colspan="100%" class="text-muted py-3">אין קבצים להצגה</td>
           </tr>
         </tbody>
       </table>
     </div>
-  </section>
+  </div>
+
+  <!-- 🟧 טבלת לקוחות -->
+  <div class="case-section mb-5">
+    <h5 class="section-title mb-3">
+      <i class="bi bi-people me-1"></i> לקוחות
+    </h5>
+
+    <div class="table-responsive shadow-sm rounded">
+      <table id="clientsTable" class="table table-hover align-middle text-center">
+        <thead class="table-light">
+          <tr>
+            <th>שם פרטי</th>
+            <th>שם משפחה</th>
+            <th>תעודת זהות</th>
+            <th>טלפון</th>
+            <th>דוא"ל</th>
+            <th>רמה</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 🟥 טבלת אירועים -->
+  <div class="case-section mb-5">
+    <h5 class="section-title mb-3">
+      <i class="bi bi-calendar-event me-1"></i> אירועים
+    </h5>
+
+    <div class="table-responsive shadow-sm rounded">
+      <table id="eventsTable" class="table table-hover align-middle text-center">
+        <thead class="table-light">
+          <tr>
+            <th>תאריך</th>
+            <th>סוג אירוע</th>
+            <th>תיאור</th>
+            <th>בוצע ע"י</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="100%" class="text-muted py-3">אין אירועים להצגה</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
-
-<!-- כפתורי פעולה -->
-<div class="text-center mt-4 mb-5 d-flex justify-content-center gap-3">
-
-  <!-- כפתור העברה לארכיון -->
-  <button class="btn btn-outline-secondary" onclick="updateCaseStatus('archived')">
-    📦 העבר לארכיון
-  </button>
-
-  <!-- כפתור מחיקת תיק -->
-  <button class="btn btn-outline-danger" onclick="deleteCase()">
-    🗑️ מחק תיק
-  </button>
