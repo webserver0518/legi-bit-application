@@ -1,6 +1,10 @@
 [
-  {"value": "open", "label": "פתוח"},
-  {"value": "in_progress", "label": "בטיפול"},
-  {"value": "closed", "label": "סגור"},
-  {"value": "archived", "label": "ארכיון"}
+  {
+    "value": "active",
+    "label": "פעיל"
+  },
+  {
+    "value": "archived",
+    "label": "ארכיון"
+  }
 ]
