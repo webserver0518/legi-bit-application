@@ -23,9 +23,7 @@ class MongoDBFilters:
         return {"serial": serial}
 
     class Case:
-        open = {"status": "open"}
-        closed = {"status": "closed"}
-        active = {"status": {"$ne": "archived"}}
+        active = {"status": "active"}
         archived = {"status": "archived"}
 
     class User:
