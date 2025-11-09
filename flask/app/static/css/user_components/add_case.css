@@ -194,3 +194,39 @@
   /* אפשר לשנות לפי הצורך */
   overflow-y: auto;
 }
+
+
+
+
+
+.required-indicator {
+  position: absolute;
+  left: 10px;
+  /* כי זה RTL, מצד שמאל */
+  top: 50%;
+  transform: translateY(-50%);
+  color: red;
+  font-weight: bold;
+  font-size: 18px;
+  pointer-events: none;
+  /* שלא יפריע להקלדה */
+  transition: opacity 0.2s ease;
+  opacity: 1;
+}
+
+.required-field.filled+.required-indicator {
+  opacity: 0;
+}
+
+
+
+
+
+.flatpickr-calendar {
+  font-family: 'Segoe UI', sans-serif;
+  direction: rtl;
+}
+
+.flatpickr-input {
+  text-align: right;
+}

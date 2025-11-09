@@ -6,6 +6,8 @@ window.init_add_case = function () {
   initCaseFormPreview();       // Form submission & validation
   initFieldAutocomplete();     // Field autocomplete
   initClientsManager();        // ✅ Multi-client management
+  initRequiredIndicators();    // ✅ Required fields indicators
+  initHebrewBirthDatePicker(); // ✅ Birth date input display handling
 };
 
 /* Parse API responses safely into a unified object */
@@ -54,8 +56,8 @@ function initClientsManager() {
     };
 
     // ✅ Require minimal client details before adding
-    if (!client.first_name || !client.last_name || !client.id_card_number || !client.phone) {
-      alert("יש למלא שם פרטי, שם משפחה, תעודת זהות וטלפון לפני הוספת לקוח");
+    if (!client.first_name) {
+      alert("יש למלא שם פרטי לפני הוספת לקוח");
       return;
     }
 
@@ -78,6 +80,17 @@ function initClientsManager() {
 
   // 🧾 Render client list in the table
   function renderClientsTable() {
+    const table = document.getElementById("clients-table");
+    const tableBody = table.querySelector("tbody");
+
+    if (clientsList.length === 0) {
+      table.style.display = "none"; // או table.classList.add('d-none');
+      tableBody.innerHTML = "";
+      return;
+    }
+
+    // אם יש לקוחות — נציג את הטבלה
+    table.style.display = "table"; // או table.classList.remove('d-none');
     tableBody.innerHTML = clientsList.map((c, i) => `
       <tr>
         <td>${c.first_name}</td>
@@ -101,6 +114,8 @@ function initClientsManager() {
     clientsList.splice(i, 1);
     renderClientsTable();
   };
+
+  renderClientsTable();
 }
 
 /* ==============================
@@ -266,6 +281,12 @@ window.initCaseFormPreview = function () {
       pad(now.getMinutes()) +
       sign + offsetHours + ":" + offsetMinutes;
 
+
+    if (!fd.get('title')) {
+      alert("יש למלא כותרת לתיק");
+      return;
+    }
+
     const form_data = {
       created_at: timestamp,
       title: fd.get('title'),
@@ -333,3 +354,47 @@ window.initFieldAutocomplete = async function () {
     console.error("Failed to load categories:", err);
   }
 };
+
+
+
+
+function initRequiredIndicators() {
+  const requiredInputs = document.querySelectorAll('.required-field');
+
+  requiredInputs.forEach(input => {
+    const update = () => {
+      if (input.value.trim()) {
+        input.classList.add('filled');
+      } else {
+        input.classList.remove('filled');
+      }
+    };
+    input.addEventListener('input', update);
+    input.addEventListener('blur', update);
+    update(); // להריץ פעם אחת בהתחלה
+  });
+}
+
+
+function initHebrewBirthDatePicker() {
+  const input = document.getElementById("client-birthdate-input");
+  if (!input) return;
+
+  flatpickr(input, {
+    locale: "he",
+    dateFormat: "d בF Y", // תצוגה עברית יפה
+    altInput: true,
+    altFormat: "Y-m-d", // הערך שישלח לשרת
+    allowInput: true,
+    disableMobile: false,
+    defaultDate: null,
+    onReady(_, __, fp) {
+      const clearBtn = document.createElement("button");
+      clearBtn.type = "button";
+      clearBtn.className = "btn btn-outline-secondary btn-sm ms-2";
+      clearBtn.textContent = "נקה";
+      clearBtn.onclick = () => fp.clear();
+      fp.calendarContainer.appendChild(clearBtn);
+    }
+  });
+}
