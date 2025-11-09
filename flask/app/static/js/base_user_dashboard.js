@@ -86,7 +86,7 @@ function showSubMenu(type, force = false) {
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="view_client">צפייה בלקוח</a>`;
   } else if (type === 'attendance') {
     html = `
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="attendancy_birds_view">מבט על נוכחות</a>`;
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="attendance_birds_view">מבט על נוכחות</a>`;
   }
 
   const fragment = utils.htmlToFragment(html);
