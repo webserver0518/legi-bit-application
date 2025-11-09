@@ -1,3 +1,8 @@
+.bg-light {
+    background-color: #c3daf5 !important;
+}
+
+
 #casesTable {
     direction: rtl;
     text-align: center;
@@ -158,10 +163,12 @@ table.dataTable {
 }
 
 /* אפקט hover כללי */
-#casesTable tbody tr:hover {
-    background-color: #f0f8ff;
-    /* כחול עדין */
+#casesTable tbody tr:hover>* {
+    background-color: #c3daf5 !important;
 }
+
+
+
 
 /* ✅ ממרכז את נקודת הסטטוס בתא */
 #casesTable td:nth-child(4) {
@@ -198,4 +205,43 @@ table.dataTable {
     max-width: 340px;
     text-align: right !important;
     white-space: nowrap;
+}
+
+
+
+.dataTables_length {
+    display: none !important;
+}
+
+.dataTables_info {
+    display: none !important;
+}
+
+
+
+
+#casesTable tbody tr {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: rowFade 0.6s ease-out forwards;
+}
+
+#casesTable tbody tr:nth-child(odd) {
+    animation-delay: 0.1s;
+}
+
+#casesTable tbody tr:nth-child(even) {
+    animation-delay: 0.2s;
+}
+
+@keyframes rowFade {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
