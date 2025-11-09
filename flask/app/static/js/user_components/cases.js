@@ -4,7 +4,7 @@
   let dataTableInstance = null;
 
   // delay repeated calls while typing
-  function debounce(fn, delay = 400) {
+  function debounce(fn, delay = 500) {
     let timer;
     return (...args) => {
       clearTimeout(timer);
@@ -39,15 +39,16 @@
   function loadCases() {
     const url = `/get_office_cases?${buildQueryParams()}`;
 
-    if (dataTableInstance) {
-      dataTableInstance.clear().destroy();
-      dataTableInstance = null;
-    }
-    tbody.empty().html(`<tr><td colspan="100%" class="text-muted py-3">Loading...</td></tr>`);
-
     fetch(url)
       .then(r => r.json())
       .then(payload => {
+
+        if (dataTableInstance) {
+          dataTableInstance.clear().destroy();
+          dataTableInstance = null;
+        }
+        tbody.empty().html(`<tr><td colspan="100%" class="text-muted py-3">Loading...</td></tr>`);
+
         const rows = Array.isArray(payload?.data) ? payload.data : [];
 
         if (!payload?.success || rows.length === 0) {
@@ -58,9 +59,14 @@
         // build table rows
         const htmlRows = rows.map(obj => {
           const c = obj.cases || {};
-          const client = c.client || {};
           const user = c.user || {};
           const isArchived = c.status === "archived";
+
+          let client = {};
+          if (Array.isArray(c.clients)) {
+            // pick main client or first one
+            client = c.clients.find(cl => cl.level === "main") || c.clients[0] || {};
+          }
 
           const createdDate = c.created_at
             ? new Date(c.created_at).toLocaleDateString('he-IL')
@@ -72,16 +78,16 @@
 
           return `
             <tr class="${isArchived ? 'archived-row' : ''}" onclick="storeCaseAndOpen('${c.serial}')">
-              <td>${c.title ?? '-'}</td>
-              <td>${c.serial ?? '-'}</td>
-              <td>${c.field ?? c.category ?? '-'}</td>
+              <td>${safeValue(c.title)}</td>
+              <td>${c.serial}</td>
+              <td>${safeValue(c.field ?? c.category)}</td>
               <td>${statusDot}</td>
-              <td>${client.first_name ?? '-'}</td>
-              <td>${client.last_name ?? '-'}</td>
-              <td>${client.id_card_number ?? '-'}</td>
-              <td>${client.phone ?? '-'}</td>
-              <td>${user.first_name ?? user.username ?? '-'}</td>
-              <td>${createdDate}</td>
+              <td>${safeValue(client.first_name)}</td>
+              <td>${safeValue(client.last_name)}</td>
+              <td>${safeValue(client.id_card_number)}</td>
+              <td>${safeValue(client.phone)}</td>
+              <td>${safeValue(user.first_name ?? user.username)}</td>
+              <td>${safeValue(createdDate)}</td>
               <td>${Array.isArray(c.files) ? c.files.length : '0'}</td>
             </tr>
           `;
@@ -96,6 +102,7 @@
           ordering: true,
           info: true,
           pageLength: 10,
+          dom: 'lrtip',
           language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/he.json' }
         });
       })
@@ -122,7 +129,6 @@
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('input', debouncedLoad);
-    el.addEventListener('change', debouncedLoad);
   });
 
   // initial load
@@ -133,4 +139,8 @@
 function storeCaseAndOpen(serial) {
   sessionStorage.setItem('selectedCaseSerial', serial);
   loadContent('view_case', true, 'user');
+}
+
+function safeValue(v) {
+  return (v && v.trim && v.trim() !== "") ? v : "-";
 }
