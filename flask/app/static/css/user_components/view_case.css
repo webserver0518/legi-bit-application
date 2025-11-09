@@ -1,104 +1,135 @@
 /* app/static/css/view_case.css */
+
+/* מבנה כללי */
 .view-case-page {
-  font-family: 'Alef', sans-serif;
-  color: #212529;
-  padding: 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-}
-
-.page-header {
+  direction: rtl;
   text-align: center;
-  margin-bottom: 25px;
-}
-.page-header h3 {
-  font-weight: 700;
-  color: var(--c1);
-}
-.page-header .subtitle {
-  font-size: 13px;
-  color: #666;
+  color: #212529;
+  font-family: "Alef", sans-serif;
 }
 
-.info-card {
-  background: #f9fbff;
-  border: 1px solid #e0e7ff;
-  border-right: 12px solid var(--c2);
-  border-top: 2px solid var(--c2);
-  border-left: 2px solid var(--c2);
-  border-bottom: 2px solid var(--c2);
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 20px;
+/* 🟦 כותרת עליונה */
+.case-header {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.case-header h3 {
+  font-weight: 700;
+  color: var(--c2, #1b2b5c);
+}
+
+.case-header .status-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+/* צבעים לפי סטטוס */
+.status-dot.open {
+  background-color: #28a745;
+}
+
+.status-dot.closed {
+  background-color: #6c757d;
+}
+
+.status-dot.archived {
+  background-color: #ffc107;
+}
+
+/* 🟩 מידע כללי על התיק */
+.case-info-row {
+  gap: 1rem;
+}
+
+.case-info-item {
+  min-width: 180px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
   transition: all 0.2s ease-in-out;
 }
-.info-card:hover {
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+
+.case-info-item:hover {
+  background-color: #eef4fb;
+  transform: translateY(-2px);
 }
 
-.info-card h5 {
-  color: var(--c1);
-  font-size: 16px;
+.case-info-item .label {
+  font-size: 14px;
+  color: #495057;
+}
+
+.case-info-item .value {
+  font-size: 15px;
+  color: #343a40;
+}
+
+/* 🟨 טבלאות כלליות */
+.case-section {
+  animation: fadeIn 0.3s ease;
+}
+
+.case-section h5.section-title {
+  color: var(--c2, #1b2b5c);
   font-weight: 600;
-  margin-bottom: 15px;
+  border-bottom: 2px solid #dee2e6;
+  display: inline-block;
+  padding-bottom: 4px;
 }
 
-.readonly {
-  background-color: #f1f3f6;
-  pointer-events: none;
+/* טבלאות */
+table.table {
+  direction: rtl;
+  vertical-align: middle;
 }
 
-.btn-outline-primary {
-  border-color: var(--c2);
-  color: var(--c2);
-}
-.btn-outline-primary:hover {
-  background-color: var(--c2);
-  color: white;
+table.table-hover tbody tr:hover {
+  background-color: #eaf2ff;
 }
 
+table thead th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #212529;
+  white-space: nowrap;
+}
 
-.modal-content {
+table td {
+  font-size: 14px;
+  color: #343a40;
+}
+
+/* badge רמה (main/secondary) */
+.badge-level {
+  display: inline-block;
+  padding: 3px 8px;
   border-radius: 10px;
-  box-shadow: 0 3px 15px rgba(0,0,0,0.2);
-}
-.modal-header {
-  border-bottom: none;
-}
-.modal-footer {
-  border-top: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
 }
 
-
-#drop-area {
-  border: 2px dashed var(--c2);
-  border-radius: 10px;
-  padding: 30px;
-  text-align: center;
-  color: #666;
-  cursor: pointer;
-  transition: 0.2s;
+.badge-level.main {
+  background-color: #007bff;
 }
 
-#drop-area.highlight {
-  background: #f0f6ff;
-  border-color: var(--c1);
+.badge-level.secondary {
+  background-color: #6c757d;
 }
 
+/* 🧩 אנימציה קטנה */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 
-/* גובה dropdown של Choices ~3 פריטים */
-.choices__list--dropdown { max-height: 230px; overflow: auto; }
-
-/* חץ משמאל עבור RTL */
-[dir="rtl"] .choices[data-type*='select-one'] .choices__inner {
-  padding-left: 2.25rem;
-  padding-right: .75rem;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-[dir="rtl"] .choices[data-type*='select-one'] .choices__inner::after {
-  left: .75rem;
-  right: auto;
-}
-
-/* שמירה על גובה שדה נעים */
-.choices__inner { min-height: 38px; }
