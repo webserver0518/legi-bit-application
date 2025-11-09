@@ -408,7 +408,7 @@ class MongoDBManager:
                     # debug func call
                     current_app.logger.debug(f"calling expansion functions")
                     cls._expand_case_user(doc, db_name)
-                    cls._expand_case_client(doc, db_name)
+                    cls._expand_case_clients(doc, db_name)
                     cls._expand_case_files(doc, db_name)
 
                 results.append(enriched)
@@ -450,29 +450,54 @@ class MongoDBManager:
         current_app.logger.debug(f"returning from _expand_case_user()")
 
     @classmethod
-    def _expand_case_client(cls, case_doc, office_serial):
-        current_app.logger.debug(f"inside _expand_case_client()")
+    def _expand_case_clients(cls, case_doc, office_serial):
+        current_app.logger.debug(f"inside _expand_case_clients()")
 
-        client_serial = case_doc.pop("client_serial", None)
-        if not client_serial:
-            current_app.logger.debug(f"no 'client_serial' found in case doc")
+        clients_serials = case_doc.pop("clients_serials", None)
+        if not clients_serials or not isinstance(clients_serials, dict):
+            current_app.logger.debug(f"no 'clients_serials' found in case doc or invalid type")
             return
 
-        # debug func call
-        current_app.logger.debug(f"calling get_entity() from _expand_case_client()")
-        res = cls.get_entity(
-            entity=MongoDBEntity.CLIENTS,
-            office_serial=office_serial,
-            filters={"serial": client_serial},
-            limit=1,
-            expand=False,
-        )
-        if ResponseManager.is_success(response=res):
-            client_entity = ResponseManager.get_data(response=res)[0]
-            client = client_entity.get(MongoDBEntity.CLIENTS, {})
-            case_doc["client"] = client
+        expanded_clients = []
+        current_app.logger.debug(f"found clients_serials: {clients_serials}")
 
-        current_app.logger.debug(f"returning from _expand_case_user()")
+        for serial_str, level in clients_serials.items():
+            try:
+                client_serial = int(serial_str)
+            except (ValueError, TypeError):
+                current_app.logger.debug(f"invalid client_serial value: {serial_str}")
+                continue
+
+            # debug func call
+            current_app.logger.debug(f"calling get_entity() from _expand_case_clients() for client_serial={client_serial}")
+            res = cls.get_entity(
+                entity=MongoDBEntity.CLIENTS,
+                office_serial=office_serial,
+                filters={"serial": client_serial},
+                limit=1,
+                expand=False,
+            )
+
+            if not ResponseManager.is_success(response=res):
+                current_app.logger.debug(f"failed to expand client_serial={client_serial}, "
+                                        f"error={ResponseManager.get_error(response=res)}")
+                continue
+
+            client_entities = ResponseManager.get_data(response=res)
+            if not client_entities:
+                current_app.logger.debug(f"no client found for serial={client_serial}")
+                continue
+
+            client_entity = client_entities[0].get(MongoDBEntity.CLIENTS, {})
+            client_entity["level"] = level
+            expanded_clients.append(client_entity)
+
+            current_app.logger.debug(f"successfully expanded client_serial={client_serial} with level={level}")
+
+        case_doc["clients"] = expanded_clients
+        current_app.logger.debug(f"returning from _expand_case_clients() with {len(expanded_clients)} expanded clients")
+
+
 
     @classmethod
     def _expand_case_files(cls, case_doc, office_serial):
