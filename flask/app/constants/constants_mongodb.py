@@ -23,9 +23,7 @@ class MongoDBFilters:
         return {"serial": serial}
 
     class Case:
-        open = {"status": "open"}
-        closed = {"status": "closed"}
-        active = {"status": {"$ne": "archived"}}
+        active = {"status": "active"}
         archived = {"status": "archived"}
 
     class User:
@@ -51,5 +49,5 @@ class MongoDBData:
 
         @staticmethod
         def status(value: str) -> dict:
-            valid_statuses = {"open", "closed", "archived"}
+            valid_statuses = {"active", "archived"}
             return {"status": value} if value in valid_statuses else None
