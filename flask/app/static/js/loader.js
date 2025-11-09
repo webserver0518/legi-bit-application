@@ -91,7 +91,6 @@ const Loader = (() => {
     if (pageID === currentPage && !forceState) return;
 
     /* 1. HTML */
-    console.log(`Loading page: ${pageID} from ${fetchUrl}`);
     const html = await fetch(`${fetchUrl}?v=${Date.now()}`)
       .then(r => { if (!r.ok) throw new Error(`loading error: ${r.status}`); return r.text(); });
 
@@ -128,7 +127,6 @@ const Loader = (() => {
 
 /* ───────── ניקוי SessionStorage ביציאה ───────── */
 function clearStorageAndLogout(e) {
-  console.log("clearStorageAndLogout");
   e.preventDefault();
   [current_site_content, current_dashboard_content, current_sub_sidebar].forEach(S.del);
   location.href = e.target.href;
