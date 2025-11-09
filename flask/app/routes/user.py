@@ -43,7 +43,6 @@ def get_office_name():
 
 @user_bp.route("/get_case")
 def get_case():
-
     office_serial = AuthorizationManager.get_office_serial()
     case_serial = request.args.get("serial")
     expand = request.args.get("expand", False)
@@ -54,6 +53,7 @@ def get_case():
         return ResponseManager.bad_request("Missing 'case_serial'")
 
     case_serial = int(case_serial)
+    current_app.logger.debug(f"🟦 [get_case] Fetching case={case_serial} expand={expand}")
 
     case_res = mongodb_service.get_entity(
         entity=MongoDBEntity.CASES,
@@ -62,15 +62,17 @@ def get_case():
         limit=1,
         expand=expand
     )
+
     if not ResponseManager.is_success(response=case_res):
         current_app.logger.debug("Internal Server Error", "danger")
         return case_res
 
-    case = ResponseManager.get_data(response=case_res)
-    case = case[0]  # limit = 1
-    # debug success
-    current_app.logger.debug(f"returning success with case")
-    return ResponseManager.success(data=case)
+    data = ResponseManager.get_data(response=case_res)
+    if not data:
+        return ResponseManager.not_found(error="Case not found")
+
+    current_app.logger.debug(f"✅ Returning case serial={case_serial}")
+    return ResponseManager.success(data=data)
 
 
 @user_bp.route("/get_office_cases")
@@ -96,7 +98,9 @@ def get_office_cases():
     field = request.args.get("field")
     status = request.args.get("status")
 
-    current_app.logger.debug(f"📥 Params → title_tokens={title_tokens}, client_tokens={client_tokens}, field={field}, status={status}")
+    current_app.logger.debug(
+        f"📥 Params → title_tokens={title_tokens}, client_tokens={client_tokens}, field={field}, status={status}"
+    )
 
     filters = {}
 
@@ -146,8 +150,12 @@ def get_office_cases():
             current_app.logger.debug("⚠️ No clients matched → returning []")
             return ResponseManager.success(data=[])
 
-        filters["client_serial"] = {"$in": client_serials}
-        current_app.logger.debug(f"🔗 Added client_serial filter: {filters['client_serial']}")
+        # ✅ שינוי חשוב: תואם למבנה החדש של clients_serials
+        filters["$or"] = [
+            {f"clients_serials.{serial}": {"$exists": True}}
+            for serial in client_serials
+        ]
+        current_app.logger.debug(f"🔗 Added clients_serials filter: {filters['$or']}")
 
     current_app.logger.debug(f"🧱 Final Mongo filters: {filters if filters else 'None'}")
 
@@ -173,6 +181,7 @@ def get_office_cases():
 
 
 
+
 @user_bp.route("/create_new_case", methods=["POST"])
 def create_new_case():
     current_app.logger.debug("inside create_new_case()")
@@ -195,7 +204,7 @@ def create_new_case():
     def construct_case_document(d: dict):
         return {
             "created_at": d.get("created_at"),
-            "status": "open",
+            "status": "active",
             "title": d.get("title"),
             "field": d.get("field"),
             "facts": d.get("facts", ""),
@@ -234,8 +243,8 @@ def create_new_case():
         current_app.logger.debug(f"[client {i}] new_client_doc: {new_client_doc}")
 
         # ✅ Require only minimal mandatory fields
-        mandatory_fields = ("first_name", "last_name", "id_card_number", "phone")
-        missing_fields = [k for k in mandatory_fields if not new_client_doc.get(k)]
+        mandatory_fields = ("first_name",)
+        missing_fields = [k for k in mandatory_fields if not new_client_doc.get(k, None)]
         if missing_fields:
             msg = f"Missing required fields for client {i}: {', '.join(missing_fields)}"
             current_app.logger.debug(msg)
@@ -267,10 +276,12 @@ def create_new_case():
     current_app.logger.debug(f"new_case_doc: {new_case_doc}")
 
     # validation (basic)
-    for k, v in new_case_doc.items():
-        if not v and k not in ("files_serials", "facts", "against", "against_type"):
-            current_app.logger.debug(f"returning bad_request: Missing case '{k}' attribute")
-            return ResponseManager.bad_request(f"Missing case '{k}' attribute")
+    mandatory_fields = ("title",)
+    missing_fields = [k for k in mandatory_fields if not new_case_doc.get(k, None)]
+    if missing_fields:
+        msg = f"Missing required fields for new case: {', '.join(missing_fields)}"
+        current_app.logger.debug(msg)
+        return ResponseManager.bad_request(msg)
 
     new_case_res = mongodb_service.create_entity(
         entity=MongoDBEntity.CASES,
