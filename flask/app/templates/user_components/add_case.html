@@ -18,9 +18,9 @@
             <div class="form-grid">
 
               <div class="position-relative">
-                <input name="client_first_name" class="form-control" id="client-first-name-input" autocomplete="off"
-                  autocorrect="off" spellcheck="false" maxlength="30" placeholder="שם פרטי">
-                <ul id="client-suggestions" class="list-group position-absolute w-100" style="z-index: 1000;"></ul>
+                <input name="client_first_name" class="form-control required-field" id="client-first-name-input"
+                  autocomplete="off" spellcheck="false" maxlength="30" placeholder="שם פרטי">
+                <span class="required-indicator">*</span>
               </div>
 
               <div class="position-relative">
@@ -57,8 +57,10 @@
               <input type="email" name="client_email" class="form-control" autocomplete="off" autocorrect="off"
                 spellcheck="false" maxlength="100" placeholder="אימייל">
 
-              <input type="date" name="client_birth_date" class="form-control" autocomplete="off" autocorrect="off"
-                placeholder="תאריך לידה">
+              <div class="position-relative birthdate-wrapper">
+                <input type="text" name="client_birth_date" id="client-birthdate-input" class="form-control"
+                  placeholder="תאריך לידה" autocomplete="off">
+              </div>
 
               <select id="client_role" class="form-select">
                 <option value="main">ראשי</option>
@@ -94,7 +96,7 @@
                 <tbody></tbody>
               </table>
             </div>
-            <small class="text-muted">יש להוסיף לפחות לקוח אחד ולפחות אחד מסוג ראשי.</small>
+            <small class="text-muted">יש להוסיף לפחות לקוח ראשי אחד</small>
           </div>
 
         </div>
@@ -112,9 +114,10 @@
           <div class="accordion-body section-content">
             <div class="form-grid">
 
-              <div>
-                <input name="title" id="case-title-input" class="form-control" required autocomplete="off"
-                  autocorrect="off" spellcheck="false" maxlength="40" placeholder="כותרת">
+              <div class="position-relative">
+                <input name="title" id="case-title-input" class="form-control required-field" autocomplete="off"
+                  spellcheck="false" maxlength="40" placeholder="כותרת">
+                <span class="required-indicator">*</span>
               </div>
               <div class="position-relative">
                 <input name="field" id="field-input" class="form-control" autocomplete="off" maxlength="40"
