@@ -17,16 +17,26 @@ def _ping_service():
         return ResponseManager.success(message="S3 service reachable")
     else:
         return ResponseManager.error(error=f"S3 service unhealthy (status {resp.status_code})")
+    
+def _safe_request(method: str, path: str, **kwargs) -> tuple:
+    """Safely perform an HTTP request to the S3 service."""
+    url = f"{get_s3_url()}{path}"
+    resp = requests.request(method, url, timeout=8, **kwargs)
+    status = resp.status_code
+    
+    # Try to parse response JSON
+    payload = resp.json()
 
+    if not isinstance(payload, dict) or "success" not in payload:
+        raise ValueError(f"Unexpected response format from {path}: {payload}")
 
-def _safe_request(method, path, **kwargs):
-    try:
-        resp = requests.request(method, f"{get_s3_url()}{path}", timeout=5, **kwargs)
-        resp.raise_for_status()
-        return resp.json()
-    except requests.exceptions.RequestException as e:
-        current_app.logger.error(f"S3 service error: {e}")
-        return {"success": False, "error": str(e)}
+    return ResponseManager._build(
+        success=payload.get("success"),
+        status=status,
+        message=payload.get("message"),
+        error=payload.get("error"),
+        data=payload.get("data"),
+    )
 
 def generate_presigned_post(filename, filetype, filesize, key_override=None):
     return _safe_request("POST", "/presign/post", json={
