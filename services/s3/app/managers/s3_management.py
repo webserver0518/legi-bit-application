@@ -11,9 +11,21 @@ logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(message)s")
 
 class S3Manager:
 
-    _bucket = os.getenv("S3_BUCKET")
-    _client = boto3.client("s3", region_name=os.getenv("AWS_REGION"))
-    MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB"))
+    _bucket = None
+    _client = None
+    MAX_UPLOAD_SIZE_MB = None
+
+    # ------------------------ Connection -------------------------
+
+    @classmethod
+    def init(cls):
+        """
+        Initialize the MongoClient once when the application starts.
+        """
+        cls._bucket = os.getenv("S3_BUCKET")
+        region_name = os.getenv("AWS_REGION")
+        cls._client = boto3.client("s3", region_name=region_name)
+        cls.MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB"))
 
     @staticmethod
     def _iter_keys(prefix: str = ""):
