@@ -33,7 +33,7 @@ class S3Manager:
 
     # ------------------------ List Keys -------------------------
     @classmethod
-    def all_keys(cls, mode: str = "yield", prefix: str = ""):
+    def all_keys(cls, prefix: str = ""):
         """Return all keys in the bucket."""
         try:
             paginator = cls._client.get_paginator("list_objects_v2")
@@ -55,6 +55,24 @@ class S3Manager:
         Generate a presigned POST URL so the client uploads directly to S3.
         Validates file extension and size.
         """
+
+        if not file_name:
+            # debug bad request
+            current_app.logger.debug(f"bad_request: 'file_name' is required")
+            return ResponseManager.bad_request(error="file_name is required")
+        if not file_type:
+            # debug bad request
+            current_app.logger.debug(f"bad_request: 'file_type' is required")
+            return ResponseManager.bad_request(error="file_type is required")
+        if not file_size:
+            # debug bad request
+            current_app.logger.debug(f"bad_request: 'file_size' is required")
+            return ResponseManager.bad_request(error="file_size is required")
+        if not key:
+            # debug bad request
+            current_app.logger.debug(f"bad_request: 'key' is required")
+            return ResponseManager.bad_request(error="key is required")
+        
         allowed_extensions = ['pdf']
 
         ext = file_name.rsplit(".", 1)[-1].lower()
@@ -91,6 +109,11 @@ class S3Manager:
     @classmethod
     def generate_presigned_get(cls, key: str):
         """Return a temporary download URL for a private S3 object."""
+        if not key:
+            # debug bad request
+            current_app.logger.debug(f"bad_request: 'key' is required")
+            return ResponseManager.bad_request(error="key is required")
+        
         try:
             url = cls._client.generate_presigned_url(
                 "get_object",
@@ -107,6 +130,16 @@ class S3Manager:
     @classmethod
     def create(cls, file_obj, key: str):
         """Upload a file object to S3."""
+
+        if not file_obj:
+            # debug bad request
+            current_app.logger.debug(f"bad_request: 'file_obj' is required")
+            return ResponseManager.bad_request(error="file_obj is required")
+        if not key:
+            # debug bad request
+            current_app.logger.debug(f"bad_request: 'key' is required")
+            return ResponseManager.bad_request(error="key is required")
+        
         mime = getattr(file_obj, "mimetype", "application/octet-stream")
         file_obj.seek(0)
 
@@ -131,6 +164,12 @@ class S3Manager:
     @classmethod
     def delete(cls, key: str):
         """Delete a file from S3 by key."""
+        
+        if not key:
+            # debug bad request
+            current_app.logger.debug(f"bad_request: 'key' is required")
+            return ResponseManager.bad_request(error="key is required")
+    
         try:
             cls._client.delete_object(
                 Bucket=cls._bucket,
