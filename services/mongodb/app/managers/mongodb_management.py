@@ -241,12 +241,18 @@ class MongoDBManager:
             int: Number of modified documents.
         """
         if not db_name:
+            # debug bad request
+            current_app.logger.debug(f"returning bad_request: 'db_name' is required")
             return ResponseManager.bad_request(error="db_name is required")
 
         if not collection_name:
+            # debug bad request
+            current_app.logger.debug(f"returning bad_request: 'collection_name' is required")
             return ResponseManager.bad_request(error="collection_name is required")
 
         if not operator.startswith("$"):
+            # debug bad request
+            current_app.logger.debug(f"returning bad_request: Invalid MongoDB operator (must start with '$')")
             return ResponseManager.bad_request(error="Invalid MongoDB operator (must start with '$')")
 
         collection = cls._get_collection(db_name, collection_name)
@@ -257,12 +263,21 @@ class MongoDBManager:
         else:
             result = collection.update_one(filters, update_query)
 
+        
         modified = result.modified_count
-        current_app.logger.info(
+
+        if modified == 0:
+            # debug not found
+            current_app.logger.debug(f"returning not found")
+            return ResponseManager.not_found(error="Not Found")
+
+        # debug success
+        current_app.logger.debug(
             f"[{db_name}@{collection_name}] Updated {modified} document(s) "
             f"with operator='{operator}', multiple={multiple}"
         )
-        return ResponseManager.success(data={"modified": result.modified_count})
+        current_app.logger.debug(f"returning success with modified count")
+        return ResponseManager.success(data=modified)
 
     # ---------- Deletes -----------
     @classmethod
