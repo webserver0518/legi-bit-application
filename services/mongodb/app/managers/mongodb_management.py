@@ -751,6 +751,21 @@ class MongoDBManager:
         inside a specific tenant DB or across all tenants.
 
         Wraps _update_fields() and always returns a ResponseManager object.
+
+        Args:
+            entity (str): Entity type (users, clients, cases, files).
+            office_serial (int, optional): Tenant office serial number.
+                If None, updates across all tenant DBs.
+            filters (dict): MongoDB query filter to match documents to update.
+            update_data (dict): The data to apply under the given operator.
+            multiple (bool):
+                - True → update all matching documents.
+                - False → update the first matching document.
+            operator (str): MongoDB operator (default: "$set").
+                Supported: "$set", "$inc", "$push", "$pull", "$addToSet", etc.
+        
+        Returns:
+            ResponseManager: success with update details, or error response.
         """
 
         current_app.logger.debug("inside update_entity()")
