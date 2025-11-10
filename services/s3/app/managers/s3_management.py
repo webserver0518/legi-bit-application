@@ -97,7 +97,7 @@ class S3Manager:
                 Params={"Bucket": cls._bucket, "Key": key},
                 ExpiresIn=3600,
             )
-            ResponseManager.success(data=url)
+            return ResponseManager.success(data=url)
         except botocore.exceptions.ClientError as e:
             current_app.logger.error(f"S3 presigned GET failed: {str(e)}")
             return ResponseManager.internal("Failed to generate download URL")
