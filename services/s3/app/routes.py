@@ -1,7 +1,7 @@
 # s3_app.py
 from flask import jsonify, request, Blueprint
 
-from .s3_management import S3Manager
+from .managers.s3_management import S3Manager
 
 
 bp = Blueprint('main', __name__)
