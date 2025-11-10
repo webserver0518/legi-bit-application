@@ -49,5 +49,10 @@ def generate_presigned_post(filename, filetype, filesize, key_override=None):
 def generate_presigned_get(key):
     return _safe_request("GET", "/presign/get", params={"key": key})
 
+def create(fileobj, key):
+    files = {"file": fileobj}
+    data = {"key": key}
+    return _safe_request("POST", "/create", files=files, data=data)
+
 def delete(key):
     return _safe_request("DELETE", "/delete", json={"key": key})
