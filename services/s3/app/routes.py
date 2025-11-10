@@ -24,12 +24,12 @@ def list_keys():
     try:
         if mode == "log":
             S3Manager.all_keys(mode="log", prefix=prefix)
-            return jsonify({"success": True, "data": "Keys logged"}), 200
+            return ResponseManager.success(data="Keys logged")
         else:
             keys = list(S3Manager.all_keys(mode="yield", prefix=prefix))
-            return jsonify({"success": True, "data": keys}), 200
+            return ResponseManager.success(data=keys)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return ResponseManager.internal(error=str(e))
 
 
 @bp.route("/generate_post", methods=["POST"])
@@ -45,9 +45,9 @@ def generate_post():
         file_size = int(data["file_size"])
         key = data["key"]
         result = S3Manager.generate_presigned_post(file_name, file_type, file_size, key)
-        return jsonify({"success": True, "data": result}), 200
+        return ResponseManager.success(data=result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 400
+        return ResponseManager.internal(error=str(e))
 
 
 @bp.route("/generate_get", methods=["GET"])
@@ -55,9 +55,9 @@ def generate_get():
     """Generate a presigned GET (download) URL for a file key."""
     key = request.args.get("key")
     if not key:
-        return jsonify({"success": False, "error": "Missing 'key' parameter"}), 400
+        return ResponseManager.bad_request(error="Missing 'key' parameter")
     result = S3Manager.generate_presigned_get(key)
-    return jsonify({"success": True, "data": result}), 200
+    return ResponseManager.success(data=result)
 
 
 @bp.route("/delete", methods=["DELETE"])
@@ -66,6 +66,6 @@ def delete_object():
     data = request.get_json()
     key = data.get("key")
     if not key:
-        return jsonify({"success": False, "error": "Missing key"}), 400
+        return ResponseManager.bad_request(error="Missing key")
     result = S3Manager.delete(key)
-    return jsonify({"success": True, "data": result}), 200
+    return ResponseManager.success(data=result)
