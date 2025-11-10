@@ -47,9 +47,36 @@ class MongoDBManager:
     # ------------------------ Connection -------------------------
 
     @classmethod
+    def init_client(cls):
+        """
+        Initialize the MongoClient once when the application starts.
+        """
+        if cls._client is not None:
+            return  # already initialized
+
+        if not cls.MONGO_URI:
+            raise RuntimeError("Missing MONGO_URI environment variable")
+
+        cls._client = MongoClient(
+            cls.MONGO_URI,
+            serverSelectionTimeoutMS=cls.MONGO_SERVER_SELECTION_TIMEOUT_MS,
+            socketTimeoutMS=cls.MONGO_SOCKET_TIMEOUT_MS,
+            maxPoolSize=cls.MONGO_MAX_POOL_SIZE,
+            retryWrites=True,
+            retryReads=True,
+        )
+
+        # optional: test connection
+        try:
+            cls._client.admin.command("ping")
+            current_app.logger.debug("✅ MongoDB connection established.")
+        except Exception as e:
+            current_app.logger.debug(f"❌ MongoDB connection failed: {e}")
+
+    @classmethod
     def _get_client(cls) -> MongoClient:
         """
-        Lazily initialize and return the MongoClient instance.
+        Lazy initialize and return the MongoClient instance.
 
         Args:
             None
@@ -59,20 +86,7 @@ class MongoDBManager:
         """
 
         if cls._client is None:
-            mongo_uri = os.getenv("MONGO_URI")
-            if not mongo_uri:
-                # debug bad request
-                current_app.logger.debug(f"internal server error: MONGO_URI env var is missing")
-                return ResponseManager.internal(error="internal server error")
-
-            cls._client = MongoClient(
-                mongo_uri,
-                serverSelectionTimeoutMS=int(os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "5000")),
-                socketTimeoutMS=int(os.getenv("MONGO_SOCKET_TIMEOUT_MS", "10000")),
-                maxPoolSize=int(os.getenv("MONGO_MAX_POOL_SIZE", "100")),
-                retryWrites=True,
-                retryReads=True,
-            )
+            cls.init_client()
 
         return cls._client
 
