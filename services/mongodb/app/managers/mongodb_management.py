@@ -478,22 +478,30 @@ class MongoDBManager:
 
         user_serial = case_doc.pop("user_serial", None)
         if not user_serial:
-            current_app.logger.debug(f"no 'user_serial' found in case doc")
-            return
+            # debug bad request
+            current_app.logger.debug(f"Missing 'user_serial' in case document")
+            return ResponseManager.bad_request(error="Missing 'user_serial' in case document")
 
         # debug func call
         current_app.logger.debug(f"calling get_entity() from get_entity()")
-        res = cls.get_entity(
+        user_res = cls.get_entity(
             entity=MongoDBEntity.USERS,
             office_serial=office_serial,
             filters={"serial": user_serial},
             limit= 1,
             expand=False,
         )
-        if ResponseManager.is_success(response=res):
-            user_entity = ResponseManager.get_data(response=res)[0]
-            user = user_entity.get(MongoDBEntity.USERS, {})
-            case_doc["user"] = user
+
+        if not ResponseManager.is_success(response=user_res):
+            # debug error
+            current_app.logger.debug(f"failed to expand user_serial={user_serial}, "
+                                    f"error={ResponseManager.get_error(response=user_res)}")
+            return user_res
+        
+        # debug success
+        user_entity = ResponseManager.get_data(response=user_res)[0]
+        user = user_entity.get(MongoDBEntity.USERS, {})
+        case_doc["user"] = user
 
         current_app.logger.debug(f"returning from _expand_case_user()")
 
