@@ -65,9 +65,9 @@ class S3Manager:
         if ext not in allowed_extensions:
             return {"error": "Invalid file type", "status": 400}
 
-        max_bytes = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+        max_bytes = cls.MAX_UPLOAD_SIZE_MB * 1024 * 1024
         if file_size > max_bytes:
-            return {"error": f"File too large (>{MAX_UPLOAD_SIZE_MB} MB)", "status": 400}
+            return {"error": f"File too large (>{cls.MAX_UPLOAD_SIZE_MB} MB)", "status": 400}
 
         try:
             presigned = S3Manager._client.generate_presigned_post(
