@@ -666,6 +666,15 @@ class MongoDBManager:
         """
         Delete entities from a given collection (and optionally tenant DB).
         Returns a ResponseManager response object.
+
+        Args:
+            entity (str): Entity type (users, clients, cases, files).
+            office_serial (int, optional): Tenant office serial number.
+                If None, deletes across all tenant DBs.
+            filters (dict): MongoDB query filter to match documents to delete.
+        
+        Returns:
+            ResponseManager: success with deletion details, or error response.
         """
 
         current_app.logger.debug("inside delete_entity()")
