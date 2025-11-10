@@ -22,7 +22,7 @@ class S3Manager:
         cls._bucket = os.getenv("S3_BUCKET")
         region_name = os.getenv("AWS_REGION")
         cls._client = boto3.client("s3", region_name=region_name)
-        cls.MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB"))
+        cls.MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", 10))
 
     @classmethod
     def _iter_keys(cls, prefix: str = ""):
