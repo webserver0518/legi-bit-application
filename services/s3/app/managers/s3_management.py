@@ -33,31 +33,19 @@ class S3Manager:
 
     # ------------------------ List Keys -------------------------
     @classmethod
-    def _iter_keys(cls, prefix: str = ""):
-        """Internal generator that always yields keys"""
-        paginator = cls._client.get_paginator("list_objects_v2")
-        for page in paginator.paginate(Bucket=cls._bucket, Prefix=prefix):
-            for obj in page.get("Contents", []):
-                yield obj["Key"]
-
-    @classmethod
     def all_keys(cls, mode: str = "yield", prefix: str = ""):
-        """
-        If mode == 'yield'  → returns generator.
-        If mode == 'log'    → logs keys directly and returns None.
-        """
+        """Return all keys in the bucket."""
         try:
-            if mode == "yield":
-                return cls._iter_keys(prefix)
-            elif mode == "log":
-                for key in cls._iter_keys(prefix):
-                    current_app.logger.debug(f"Found key: {key}")
-                return None
-            else:
-                current_app.logger.debug(f"Unexpected mode: {mode}")
+            paginator = cls._client.get_paginator("list_objects_v2")
+            keys = []
+            for page in paginator.paginate(Bucket=cls._bucket, Prefix=prefix):
+                for obj in page.get("Contents", []):
+                    keys.append(obj["Key"])
+
+            return ResponseManager.success(data={"keys": keys}, message=f"Found {len(keys)} keys")
         except botocore.exceptions.ClientError as e:
-            current_app.logger.error("S3 all_keys() failed: %s", str(e))
-            return [] if mode == "yield" else None
+            current_app.logger.error(f"S3 all_keys() failed: {e}")
+            return ResponseManager.internal("Failed to list S3 keys")
 
 
     # ------------------------ Generate Presigned POST -------------------------
