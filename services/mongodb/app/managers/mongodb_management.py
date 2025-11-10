@@ -266,16 +266,18 @@ class MongoDBManager:
         
         modified = result.modified_count
 
+        # debug db_name@collection_name number of deleted docs
+        current_app.logger.debug(
+            f"[{db_name}@{collection_name}] Updated {modified} document(s) "
+            f"with operator='{operator}', multiple={multiple}"
+        )
+
         if modified == 0:
             # debug not found
             current_app.logger.debug(f"returning not found")
             return ResponseManager.not_found(error="Not Found")
 
         # debug success
-        current_app.logger.debug(
-            f"[{db_name}@{collection_name}] Updated {modified} document(s) "
-            f"with operator='{operator}', multiple={multiple}"
-        )
         current_app.logger.debug(f"returning success with modified count")
         return ResponseManager.success(data=modified)
 
