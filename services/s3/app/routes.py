@@ -9,12 +9,12 @@ bp = Blueprint('main', __name__)
 
 
 # ---------------------- Core ----------------------
-
 @bp.route("/healthz", methods=["GET"])
 def healthz():
     return jsonify({"status": "ok"}), 200
 
 
+# ------------------------ List Keys -------------------------
 @bp.route("/list_keys", methods=["GET"])
 def list_keys():
     """List all S3 keys (optionally under a prefix)."""
@@ -22,8 +22,7 @@ def list_keys():
     return S3Manager.all_keys(prefix=prefix)
 
 
-# ---------------------- S3 Object Management ----------------------
-
+# ------------------------ Generate Presigned POST -------------------------
 @bp.route("/presign/post", methods=["POST"])
 def generate_post():
     """
@@ -36,21 +35,41 @@ def generate_post():
     file_size = data.get("file_size")
     key = data.get("key")
     
-    return S3Manager.generate_presigned_post(file_name, file_type, file_size, key)
+    return S3Manager.generate_presigned_post(
+        file_name=file_name,
+        file_type=file_type,
+        file_size=file_size,
+        key=key
+    )
 
 
+# ------------------------ Generate Presigned GET -------------------------
 @bp.route("/presign/get", methods=["GET"])
 def generate_get():
     """Generate a presigned GET (download) URL for a file key."""
     key = request.args.get("key")
     
-    return S3Manager.generate_presigned_get(key)
+    return S3Manager.generate_presigned_get(key=key)
 
-
+# ------------------------ Upload -------------------------
 @bp.route("/delete", methods=["DELETE"])
-def delete_object():
+def create():
+    """Delete an object from S3 by key."""
+    data = request.get_json()
+    file_obj = data.get("file_obj")
+    key = data.get("key")
+    
+    return S3Manager.create(
+        file_obj=file_obj, 
+        key=key
+    )
+
+
+# ------------------------ Delete -------------------------
+@bp.route("/delete", methods=["DELETE"])
+def delete():
     """Delete an object from S3 by key."""
     data = request.get_json()
     key = data.get("key")
     
-    return S3Manager.delete(key)
+    return S3Manager.delete(key=key)
