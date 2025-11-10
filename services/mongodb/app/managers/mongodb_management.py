@@ -69,13 +69,6 @@ class MongoDBManager:
 
         cls.MONGO_ADMINS_DB_NAME = str(os.getenv("MONGO_ADMINS_DB_NAME", "admins_db"))
         cls.MONGO_OFFICES_DB_NAME = str(os.getenv("MONGO_OFFICES_DB_NAME", "offices_db"))
-        
-        # optional: test connection
-        try:
-            cls._client.admin.command("ping")
-            current_app.logger.debug("✅ MongoDB connection established.")
-        except Exception as e:
-            current_app.logger.debug(f"❌ MongoDB connection failed: {e}")
 
     @classmethod
     def _get_client(cls) -> MongoClient:
