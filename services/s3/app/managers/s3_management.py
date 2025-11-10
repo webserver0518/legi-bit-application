@@ -28,13 +28,17 @@ class S3Manager:
             return ResponseManager.success(data="S3 initialized")
         except Exception as e:
             current_app.logger.error(f"S3 initialization failed: {e}")
-            return ResponseManager.internal("Failed to initialize S3 client")
+            return ResponseManager.internal(error="Failed to initialize S3 client")
     
 
     # ------------------------ List Keys -------------------------
     @classmethod
     def all_keys(cls, prefix: str = ""):
         """Return all keys in the bucket."""
+        current_app.logger.debug(f"inside all_keys()")
+        # debug inputs
+        current_app.logger.debug(f"prefix: {prefix}")
+
         try:
             paginator = cls._client.get_paginator("list_objects_v2")
             keys = []
@@ -42,10 +46,15 @@ class S3Manager:
                 for obj in page.get("Contents", []):
                     keys.append(obj["Key"])
 
+            # debug success
+            current_app.logger.debug(f"returning success with results")
             return ResponseManager.success(data=keys)
+        
         except botocore.exceptions.ClientError as e:
+            # debug error
             current_app.logger.error(f"S3 all_keys() failed: {e}")
-            return ResponseManager.internal("Failed to list S3 keys")
+            current_app.logger.debug(f"returning internal server error")
+            return ResponseManager.internal(error="Failed to list S3 keys")
 
 
     # ------------------------ Generate Presigned POST -------------------------
@@ -55,6 +64,12 @@ class S3Manager:
         Generate a presigned POST URL so the client uploads directly to S3.
         Validates file extension and size.
         """
+        current_app.logger.debug(f"inside generate_presigned_post()")
+        # debug inputs
+        current_app.logger.debug(f"file_name: {file_name}")
+        current_app.logger.debug(f"file_type: {file_type}")
+        current_app.logger.debug(f"file_size: {file_size}")
+        current_app.logger.debug(f"key: {key}")
 
         if not file_name:
             # debug bad request
@@ -77,11 +92,15 @@ class S3Manager:
 
         ext = file_name.rsplit(".", 1)[-1].lower()
         if ext not in allowed_extensions:
-            return ResponseManager.bad_request("Invalid file type")
+            # debug bad request
+            current_app.logger.debug(f"bad_request: Invalid file type '{ext}'")
+            return ResponseManager.bad_request(error="Invalid file type")
 
         max_bytes = cls.MAX_UPLOAD_SIZE_MB * 1024 * 1024
         if file_size > max_bytes:
-            return ResponseManager.bad_request(f"File too large (> {cls.MAX_UPLOAD_SIZE_MB} MB)")
+            # debug bad request
+            current_app.logger.debug(f"bad_request: File too large ({file_size} bytes > {max_bytes} bytes)")
+            return ResponseManager.bad_request(error=f"File too large ({file_size} bytes > {max_bytes} bytes)")
 
         try:
             presigned = cls._client.generate_presigned_post(
@@ -99,10 +118,16 @@ class S3Manager:
                 "key": key,
                 "safe_name": file_name,
             }
+            # debug success
+            current_app.logger.debug(f"returning success with keys {', '.join(data.keys())}")
+            current_app.logger.debug(f"returning success with values {', '.join(data.values())}")
             return ResponseManager.success(data=data)
+        
         except botocore.exceptions.BotoCoreError as e:
+            # debug error
             current_app.logger.error(f"S3 presigned URL generation failed: {str(e)}")
-            return ResponseManager.internal("Failed to generate presigned URL")
+            current_app.logger.debug(f"returning internal server error")
+            return ResponseManager.internal(error="Failed to generate presigned URL")
 
 
     # ------------------------ Generate Presigned GET -------------------------
@@ -120,10 +145,15 @@ class S3Manager:
                 Params={"Bucket": cls._bucket, "Key": key},
                 ExpiresIn=3600,
             )
+            # debug success
+            current_app.logger.debug(f"returning success with url: {url}")
             return ResponseManager.success(data=url)
+        
         except botocore.exceptions.ClientError as e:
+            # debug error
             current_app.logger.error(f"S3 presigned GET failed: {str(e)}")
-            return ResponseManager.internal("Failed to generate download URL")
+            current_app.logger.debug(f"returning internal server error")
+            return ResponseManager.internal(error="Failed to generate download URL")
 
 
     # ------------------------ Upload -------------------------
@@ -153,10 +183,13 @@ class S3Manager:
                     "ServerSideEncryption": "AES256"
                 }
             )
+            # debug success
+            current_app.logger.debug(f"returning created with key: {key}")
             return ResponseManager.created(data=key)
         except (botocore.exceptions.BotoCoreError, IOError) as e:
-            # throw error to log
+            # debug error
             current_app.logger.error(f"S3 upload failed: {str(e)}")
+            current_app.logger.debug(f"returning internal server error")
             return ResponseManager.internal(error="File upload failed")
 
 
@@ -164,7 +197,7 @@ class S3Manager:
     @classmethod
     def delete(cls, key: str):
         """Delete a file from S3 by key."""
-        
+
         if not key:
             # debug bad request
             current_app.logger.debug(f"bad_request: 'key' is required")
@@ -175,7 +208,11 @@ class S3Manager:
                 Bucket=cls._bucket,
                 Key=key
             )
+            # debug success
+            current_app.logger.debug(f"returning success with key: {key}")
             return ResponseManager.success(data=key)
         except botocore.exceptions.ClientError as e:
+            # debug error
             current_app.logger.error(f"S3 delete failed: {str(e)}")
-            return ResponseManager.internal("Failed to delete file from S3")
+            current_app.logger.debug(f"returning internal server error")
+            return ResponseManager.internal(error="Failed to delete file from S3")
