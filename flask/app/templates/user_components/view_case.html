@@ -1,40 +1,53 @@
+<!-- 🟦 Header (case title + status dot) -->
+<div class="case-header position-relative text-center mb-4">
+  <!-- Status dot (left side). JS will add class by status (active/archived). -->
+  <div class="status-dot" id="case-status-dot"></div>
+  <h3 class="fw-bold mb-0">
+    <span id="case-title">---</span> (מס' <span id="case-serial">-</span>)
+  </h3>
+</div>
+
 <!-- app/templates/view_case.html -->
 <div class="container mt-4 view-case-page">
 
-  <!-- 🟦 כותרת עליונה -->
-  <div class="case-header position-relative text-center mb-4">
-    <div class="status-dot position-absolute start-0 top-50 translate-middle-y" id="case-status-dot"></div>
-    <h3 id="case-title" class="fw-bold mb-0">
-      <span id="case-serial">-</span> / <span id="case-name">---</span>
-    </h3>
-  </div>
-
-  <!-- 🟩 מידע כללי על התיק -->
+  <!-- 🟩 Case general info row -->
   <div class="case-info-row d-flex flex-wrap justify-content-center gap-4 mb-4 text-center">
 
+    <!-- Created by -->
     <div class="case-info-item shadow-sm rounded p-3 bg-light">
       <span class="label d-block fw-semibold">נוצר ע"י</span>
       <span id="case-created-by" class="value text-muted">-</span>
     </div>
 
+    <!-- Field -->
     <div class="case-info-item shadow-sm rounded p-3 bg-light">
       <span class="label d-block fw-semibold">תחום</span>
       <span id="case-field" class="value text-muted">-</span>
     </div>
 
+    <!-- Against (combined: "name - type" in Hebrew) -->
     <div class="case-info-item shadow-sm rounded p-3 bg-light">
       <span class="label d-block fw-semibold">כנגד</span>
+      <!-- JS will populate as: "<against> - <against_type_hebrew>" -->
       <span id="case-against" class="value text-muted">-</span>
     </div>
 
+    <!-- Created date (date only, no time) -->
     <div class="case-info-item shadow-sm rounded p-3 bg-light">
-      <span class="label d-block fw-semibold">סוג כנגד</span>
-      <span id="case-against-type" class="value text-muted">-</span>
+      <span class="label d-block fw-semibold">תאריך יצירה</span>
+      <!-- JS will format with toLocaleDateString('he-IL') -->
+      <span id="case-created-at" class="value text-muted">-</span>
+    </div>
+
+    <!-- 🟪 Case facts (full width under the info blocks) -->
+    <div class="case-facts case-info-item shadow-sm rounded p-3 bg-light">
+      <span class="label d-block fw-semibold">עובדות התיק</span>
+      <div id="case-facts-text" class="value text-muted text-start" dir="rtl">-</div>
     </div>
 
   </div>
 
-  <!-- 🟨 טבלת קבצים -->
+  <!-- 🟨 Files table -->
   <div class="case-section mb-5">
     <h5 class="section-title mb-3">
       <i class="bi bi-paperclip me-1"></i> קבצים
@@ -59,7 +72,7 @@
     </div>
   </div>
 
-  <!-- 🟧 טבלת לקוחות -->
+  <!-- 🟧 Clients table -->
   <div class="case-section mb-5">
     <h5 class="section-title mb-3">
       <i class="bi bi-people me-1"></i> לקוחות
@@ -86,7 +99,7 @@
     </div>
   </div>
 
-  <!-- 🟥 טבלת אירועים -->
+  <!-- 🟥 Events table -->
   <div class="case-section mb-5">
     <h5 class="section-title mb-3">
       <i class="bi bi-calendar-event me-1"></i> אירועים
