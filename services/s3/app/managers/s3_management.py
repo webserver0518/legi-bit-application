@@ -1,4 +1,3 @@
-import time
 import logging
 import os
 from io import BytesIO
@@ -27,16 +26,16 @@ class S3Manager:
         cls._client = boto3.client("s3", region_name=region_name)
         cls.MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB"))
 
-    @staticmethod
-    def _iter_keys(prefix: str = ""):
+    @classmethod
+    def _iter_keys(cls, prefix: str = ""):
         """Internal generator that always yields keys"""
         paginator = S3Manager._client.get_paginator("list_objects_v2")
         for page in paginator.paginate(Bucket=S3Manager._bucket, Prefix=prefix):
             for obj in page.get("Contents", []):
                 yield obj["Key"]
 
-    @staticmethod
-    def all_keys(mode: str = "yield", prefix: str = ""):
+    @classmethod
+    def all_keys(cls, mode: str = "yield", prefix: str = ""):
         """
         If mode == 'yield'  → returns generator.
         If mode == 'log'    → logs keys directly and returns None.
@@ -54,8 +53,8 @@ class S3Manager:
             logging.error("S3 all_keys() failed: %s", str(e))
             return [] if mode == "yield" else None
 
-    @staticmethod
-    def generate_presigned_post(file_name: str, file_type: str, file_size: int, key: str):
+    @classmethod
+    def generate_presigned_post(cls, file_name: str, file_type: str, file_size: int, key: str):
         """
         Generate a presigned POST URL so the client uploads directly to S3.
         Validates file extension and size.
@@ -91,8 +90,8 @@ class S3Manager:
             logging.error("S3 presigned URL generation failed: %s", str(e))
             return {"error": "Failed to generate presigned URL", "status": 500}
 
-    @staticmethod
-    def generate_presigned_get(key: str):
+    @classmethod
+    def generate_presigned_get(cls, key: str):
         """Return a temporary download URL for a private S3 object."""
         try:
             url = S3Manager._client.generate_presigned_url(
@@ -106,8 +105,8 @@ class S3Manager:
             logging.error("S3 presigned GET failed: %s", str(e))
             return {"error": "Failed to generate download URL", "status": 500}
 
-    @staticmethod
-    def create(file_obj, key: str):
+    @classmethod
+    def create(cls, file_obj, key: str):
         mime = getattr(file_obj, "mimetype", "application/octet-stream")
 
         # read file into memory so it does not close
@@ -132,8 +131,8 @@ class S3Manager:
             logging.error("S3 upload failed: %s", str(e))
             return {"error": str(e)}
 
-    @staticmethod
-    def delete(key: str):
+    @classmethod
+    def delete(cls, key: str):
         """
         Delete a single file from S3 by key (path inside the bucket).
         Example: S3Manager.delete("office_name/123/file.pdf")
