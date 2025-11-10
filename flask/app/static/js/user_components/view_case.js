@@ -24,9 +24,9 @@ window.init_view_case = function init_view_case() {
 
       // כותרת
       const elSerial = document.getElementById("case-serial");
-      const elName = document.getElementById("case-name");
+      const elTitle = document.getElementById("case-title");
       if (elSerial) elSerial.textContent = safeValue(String(caseObj.serial ?? serial));
-      if (elName) elName.textContent = safeValue(caseObj.title);
+      if (elTitle) elTitle.textContent = safeValue(caseObj.title);
 
       // נקודת סטטוס (וודא שיש CSS לסטטוסים)
       const statusDot = document.getElementById("case-status-dot");
@@ -37,8 +37,19 @@ window.init_view_case = function init_view_case() {
       const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = safeValue(val); };
       setText("case-created-by", createdByText);
       setText("case-field", caseObj.field);
-      setText("case-against", caseObj.against);
-      setText("case-against-type", caseObj.against_type);
+      setText("case-against", caseObj.against + " - " + caseObj.against_type);
+
+      // Created date
+      const createdAt = caseObj.created_at ? new Date(caseObj.created_at) : null;
+      const createdAtText = (createdAt && !isNaN(createdAt)) ? createdAt.toLocaleDateString("he-IL") : "-";
+      setText("case-created-at", createdAtText);
+
+      // Facts block
+      const factsEl = document.getElementById("case-facts-text");
+      if (factsEl) {
+        const facts = caseObj.facts ?? "";
+        factsEl.textContent = safeValue(facts);
+      }
 
       // קבצים
       const filesTbody = document.querySelector("#filesTable tbody");
