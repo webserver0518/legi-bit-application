@@ -8,11 +8,10 @@ from .managers.response_management import ResponseManager
 bp = Blueprint('main', __name__)
 
 
-# ---------- Core ----------
+# ---------------------- Core ----------------------
 
 @bp.route("/healthz", methods=["GET"])
 def healthz():
-    """Simple health check."""
     return jsonify({"status": "ok"}), 200
 
 
@@ -31,6 +30,8 @@ def list_keys():
     except Exception as e:
         return ResponseManager.internal(error=str(e))
 
+
+# ---------------------- S3 Object Management ----------------------
 
 @bp.route("/generate_post", methods=["POST"])
 def generate_post():
