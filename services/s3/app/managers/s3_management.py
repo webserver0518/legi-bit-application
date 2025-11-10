@@ -42,7 +42,7 @@ class S3Manager:
                 for obj in page.get("Contents", []):
                     keys.append(obj["Key"])
 
-            return ResponseManager.success(data={"keys": keys}, message=f"Found {len(keys)} keys")
+            return ResponseManager.success(data=keys)
         except botocore.exceptions.ClientError as e:
             current_app.logger.error(f"S3 all_keys() failed: {e}")
             return ResponseManager.internal("Failed to list S3 keys")
