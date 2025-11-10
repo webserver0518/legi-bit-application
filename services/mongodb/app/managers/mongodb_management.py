@@ -61,6 +61,7 @@ class MongoDBManager:
         if cls._client is None:
             mongo_uri = os.getenv("MONGO_URI")
             if not mongo_uri:
+                # debug bad request
                 current_app.logger.debug(f"internal server error: MONGO_URI env var is missing")
                 return ResponseManager.internal(error="internal server error")
 
