@@ -129,26 +129,18 @@ function initClientsManager() {
 
     const pickInput = document.getElementById('fileElem');
     const tbody = document.querySelector('#fileTable tbody');
-    const form = document.getElementById('addCaseForm');
 
-    let realInput = document.getElementById('realFileInput');
-    if (!realInput) {
-      realInput = document.createElement('input');
-      realInput.type = 'file';
-      realInput.name = 'files[]';
-      realInput.id = 'realFileInput';
-      realInput.hidden = true;
-      realInput.multiple = true;
-      form.appendChild(realInput);
-    }
-
-    const dt = new DataTransfer();
+    // ✅ נשתמש במערך גלובלי במקום input מוסתר
+    window.filesList = [];
     const nameCount = {};
+
+    // למנוע התנהגות דיפולטית של גרירה
     const stop = e => { e.preventDefault(); e.stopPropagation(); };
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
       dropArea.addEventListener(ev, stop, false)
     );
 
+    // אירועים על drop area
     dropArea.addEventListener('click', () => pickInput.click());
     dropArea.addEventListener('dragover', () => dropArea.classList.add('highlight'));
     dropArea.addEventListener('dragleave', () => dropArea.classList.remove('highlight'));
@@ -158,15 +150,13 @@ function initClientsManager() {
     });
     pickInput.addEventListener('change', () => addFiles(pickInput.files));
 
+    // הוספת קבצים לרשימה ולטבלה
     function addFiles(list) {
-      [...list].forEach(f => {
-        dt.items.add(f);
-        addRow(f);
-      });
-      realInput.files = dt.files;
-      pickInput.value = '';
+      [...list].forEach(f => { addRow(f); });
+      pickInput.value = '';  // לאפשר בחירה חוזרת
     }
 
+    // מתן שם ייחודי לתצוגה בלבד
     function unique(name) {
       if (nameCount[name] === undefined) {
         nameCount[name] = 0;
@@ -185,10 +175,27 @@ function initClientsManager() {
       tr.innerHTML = `
         <td>${disp}</td>
         <td><select class="form-select form-select-sm" name="file_type_${disp}"><option>טוען...</option></select></td>
-        <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger">✖</button></td>
+        <td>
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar" role="progressbar" style="width: 0%;"></div>
+          </div>
+        </td>
+        <td class="text-center">
+          <button type="button" class="btn btn-sm btn-outline-danger">✖</button>
+        </td>
       `;
       tbody.appendChild(tr);
 
+      // ✅ הוספה לרשימה הגלובלית
+      window.filesList.push({
+        file,
+        type: null,   // יתעדכן לפי הבחירה של המשתמש
+        status: "pending",
+        key: null,
+        row: tr       // נשתמש בזה כדי לעדכן את ה־progress bar
+      });
+
+      // טעינת סוגי המסמכים
       try {
         const res = await fetch("/get_document_types");
         const types = await res.json();
@@ -200,15 +207,18 @@ function initClientsManager() {
           opt.textContent = t.label;
           select.appendChild(opt);
         });
+        // עדכון הסוג ברשימה
+        select.addEventListener("change", () => {
+          const entry = window.filesList.find(f => f.file === file);
+          if (entry) entry.type = select.value;
+        });
       } catch (err) {
         console.error("❌ שגיאה בטעינת סוגי המסמכים:", err);
       }
 
       tr.querySelector('button').onclick = () => {
-        const idx = [...tbody.children].indexOf(tr);
-        dt.items.remove(idx);
         tr.remove();
-        realInput.files = dt.files;
+        window.filesList = window.filesList.filter(f => f.file !== file);
       };
     }
   };
