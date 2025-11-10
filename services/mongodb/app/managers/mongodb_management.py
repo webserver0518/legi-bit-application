@@ -917,14 +917,6 @@ class MongoDBManager:
         return cls._get_next_counter(cls.MONGO_OFFICES_DB_NAME, cls.office_counter_name)
 
 
-    # ---------------------- Tenant ----------------------
-
-
-
-
-
-
-
 
     # ---------------------- Helpers ----------------------
 
@@ -937,6 +929,9 @@ class MongoDBManager:
 
         Args:
             office_serial (str): The unique serial (identifier) of the office.
+
+        Returns:
+            ResponseManager: success with db_name, or error response.
 
         """
 
