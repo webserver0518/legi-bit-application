@@ -1,5 +1,4 @@
 # app/routes.py
-import logging
 from flask import jsonify, request, Blueprint
 
 from .managers.mongodb_management import MongoDBManager

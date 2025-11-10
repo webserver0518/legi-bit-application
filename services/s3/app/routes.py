@@ -2,6 +2,7 @@
 from flask import jsonify, request, Blueprint
 
 from .managers.s3_management import S3Manager
+from .managers.response_management import ResponseManager
 
 
 bp = Blueprint('main', __name__)
