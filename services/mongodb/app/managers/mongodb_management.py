@@ -563,23 +563,24 @@ class MongoDBManager:
 
         file_serials = case_doc.pop("files_serials", None)
         if not file_serials:
-            current_app.logger.debug(f"no 'file_serials' found in case doc")
-            return
+            # debug bad request
+            current_app.logger.debug(f"Missing 'file_serials' in case document")
+            return ResponseManager.bad_request(error="Missing 'file_serials' in case document")
 
         case_doc["files"] = []
 
         for file_serial in file_serials:
             # debug func call
             current_app.logger.debug(f"calling get_entity() from _expand_case_files()")
-            res = cls.get_entity(
+            file_res = cls.get_entity(
                 entity=MongoDBEntity.FILES,
                 office_serial=office_serial,
                 filters={"serial": file_serial},
                 limit= 1,
                 expand=False,
             )
-            if ResponseManager.is_success(response=res):
-                file_entity = ResponseManager.get_data(response=res)[0]
+            if ResponseManager.is_success(response=file_res):
+                file_entity = ResponseManager.get_data(response=file_res)[0]
                 file = file_entity.get(MongoDBEntity.FILES, {})
                 case_doc["files"].append(file)
 
