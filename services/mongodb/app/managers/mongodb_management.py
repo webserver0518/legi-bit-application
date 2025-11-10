@@ -52,9 +52,6 @@ class MongoDBManager:
         """
         if cls._client is not None:
             return  # already initialized
-
-        if not cls.MONGO_URI:
-            raise RuntimeError("Missing MONGO_URI environment variable")
         
         cls.MONGO_URI = os.getenv("MONGO_URI")
         cls.MONGO_SERVER_SELECTION_TIMEOUT_MS = int(os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "5000"))
