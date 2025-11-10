@@ -511,18 +511,15 @@ class MongoDBManager:
 
         clients_serials = case_doc.pop("clients_serials", None)
         if not clients_serials or not isinstance(clients_serials, dict):
-            current_app.logger.debug(f"no 'clients_serials' found in case doc or invalid type")
-            return
+            # debug bad request
+            current_app.logger.debug(f"Missing 'clients_serials' in case document")
+            return ResponseManager.bad_request(error="Missing 'clients_serials' in case document")
 
         expanded_clients = []
         current_app.logger.debug(f"found clients_serials: {clients_serials}")
 
         for serial_str, level in clients_serials.items():
-            try:
-                client_serial = int(serial_str)
-            except (ValueError, TypeError):
-                current_app.logger.debug(f"invalid client_serial value: {serial_str}")
-                continue
+            client_serial = int(serial_str)
 
             # debug func call
             current_app.logger.debug(f"calling get_entity() from _expand_case_clients() for client_serial={client_serial}")
@@ -535,21 +532,26 @@ class MongoDBManager:
             )
 
             if not ResponseManager.is_success(response=res):
+                # debug error
                 current_app.logger.debug(f"failed to expand client_serial={client_serial}, "
                                         f"error={ResponseManager.get_error(response=res)}")
                 continue
-
+                
+            
             client_entities = ResponseManager.get_data(response=res)
             if not client_entities:
+                # debug not found
                 current_app.logger.debug(f"no client found for serial={client_serial}")
                 continue
-
+            
+            # debug success
             client_entity = client_entities[0].get(MongoDBEntity.CLIENTS, {})
             client_entity["level"] = level
             expanded_clients.append(client_entity)
 
             current_app.logger.debug(f"successfully expanded client_serial={client_serial} with level={level}")
 
+        # debug success
         case_doc["clients"] = expanded_clients
         current_app.logger.debug(f"returning from _expand_case_clients() with {len(expanded_clients)} expanded clients")
 
