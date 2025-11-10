@@ -164,6 +164,9 @@ class MongoDBManager:
             sort (tuple[str, int], optional): Sort key and direction (1=ASC, -1=DESC).
             limit (int, optional): Maximum number of results to return (0 = unlimited).
 
+        Returns:
+            ResponseManager: success with list of documents, or error response.
+
         """
         current_app.logger.debug(f"inside _get_records()")
         # debug inputs
