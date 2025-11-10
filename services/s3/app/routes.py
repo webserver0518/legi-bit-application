@@ -52,12 +52,11 @@ def generate_get():
     return S3Manager.generate_presigned_get(key=key)
 
 # ------------------------ Upload -------------------------
-@bp.route("/delete", methods=["DELETE"])
+@bp.route("/create", methods=["POST"])
 def create():
     """Delete an object from S3 by key."""
-    data = request.get_json()
-    file_obj = data.get("file_obj")
-    key = data.get("key")
+    file_obj = request.files.get("file")
+    key = request.form.get("key")
     
     return S3Manager.create(
         file_obj=file_obj, 
