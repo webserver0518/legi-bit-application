@@ -594,6 +594,14 @@ class MongoDBManager:
         """
         Generic create for all entities (users/clients/cases/files)
         Automatically assign serial from the correct counter.
+
+        Args:
+            entity (str): Entity type (users, clients, cases, files).
+            office_serial (int): Tenant office serial number.
+            document (dict): Document data to insert.
+        
+        Returns:
+            ResponseManager: success with new serial, or error response.
         """
 
         current_app.logger.debug(f"inside create_entity()")
