@@ -1,4 +1,4 @@
-import logging
+
 import os
 from io import BytesIO
 import boto3
@@ -86,7 +86,6 @@ class S3Manager:
                 "safe_name": file_name,
             }
         except botocore.exceptions.BotoCoreError as e:
-            import logging
             logging.error("S3 presigned URL generation failed: %s", str(e))
             return {"error": "Failed to generate presigned URL", "status": 500}
 
@@ -101,7 +100,6 @@ class S3Manager:
             )
             return {"url": url}
         except botocore.exceptions.ClientError as e:
-            import logging
             logging.error("S3 presigned GET failed: %s", str(e))
             return {"error": "Failed to generate download URL", "status": 500}
 
@@ -124,7 +122,6 @@ class S3Manager:
             return {"status": "ok", "key": key}
         except (botocore.exceptions.BotoCoreError, IOError) as e:
             # throw error to log
-            import logging
             logging.error("S3 upload failed: %s", str(e))
             return {"error": str(e)}
 
@@ -141,6 +138,5 @@ class S3Manager:
             )
             return {"status": "ok", "key": key}
         except botocore.exceptions.ClientError as e:
-            import logging
             logging.error("S3 delete failed: %s", str(e))
             return {"error": str(e)}
