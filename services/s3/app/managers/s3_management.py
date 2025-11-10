@@ -27,8 +27,7 @@ class S3Manager:
             cls.MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", 10))
             return ResponseManager.success(data="S3 initialized")
         except Exception as e:
-            current_app.logger.error(f"S3 initialization failed: {e}")
-            return ResponseManager.internal(error="Failed to initialize S3 client")
+            return ResponseManager.internal(error=f"Failed to initialize S3 client, error: {str(e)}")
     
 
     # ------------------------ List Keys -------------------------
