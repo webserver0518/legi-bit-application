@@ -20,11 +20,16 @@ class S3Manager:
         """
         Initialize the S3 once when the application starts.
         """
-        cls._bucket = os.getenv("S3_BUCKET")
-        region_name = os.getenv("AWS_REGION")
-        cls._client = boto3.client("s3", region_name=region_name)
-        cls.MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", 10))
-
+        try:
+            cls._bucket = os.getenv("S3_BUCKET")
+            region_name = os.getenv("AWS_REGION")
+            cls._client = boto3.client("s3", region_name=region_name)
+            cls.MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", 10))
+            return ResponseManager.success(data="S3 initialized")
+        except Exception as e:
+            current_app.logger.error(f"S3 initialization failed: {e}")
+            return ResponseManager.internal("Failed to initialize S3 client")
+        
     @classmethod
     def _iter_keys(cls, prefix: str = ""):
         """Internal generator that always yields keys"""
