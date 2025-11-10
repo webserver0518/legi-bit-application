@@ -44,12 +44,12 @@ class S3Manager:
                 return cls._iter_keys(prefix)
             elif mode == "log":
                 for key in cls._iter_keys(prefix):
-                    logging.info(f"Found key: {key}")
+                    current_app.logger.debug(f"Found key: {key}")
                 return None
             else:
-                logging.error(f"Unexpected mode: {mode}")
+                current_app.logger.debug(f"Unexpected mode: {mode}")
         except botocore.exceptions.ClientError as e:
-            logging.error("S3 all_keys() failed: %s", str(e))
+            current_app.logger.error("S3 all_keys() failed: %s", str(e))
             return [] if mode == "yield" else None
 
     @classmethod
@@ -85,7 +85,7 @@ class S3Manager:
                 "safe_name": file_name,
             }
         except botocore.exceptions.BotoCoreError as e:
-            logging.error("S3 presigned URL generation failed: %s", str(e))
+            current_app.logger.error("S3 presigned URL generation failed: %s", str(e))
             return {"error": "Failed to generate presigned URL", "status": 500}
 
     @classmethod
@@ -99,7 +99,7 @@ class S3Manager:
             )
             return {"url": url}
         except botocore.exceptions.ClientError as e:
-            logging.error("S3 presigned GET failed: %s", str(e))
+            current_app.logger.error("S3 presigned GET failed: %s", str(e))
             return {"error": "Failed to generate download URL", "status": 500}
 
     @classmethod
@@ -121,7 +121,7 @@ class S3Manager:
             return {"status": "ok", "key": key}
         except (botocore.exceptions.BotoCoreError, IOError) as e:
             # throw error to log
-            logging.error("S3 upload failed: %s", str(e))
+            current_app.logger.error("S3 upload failed: %s", str(e))
             return {"error": str(e)}
 
     @classmethod
@@ -137,5 +137,5 @@ class S3Manager:
             )
             return {"status": "ok", "key": key}
         except botocore.exceptions.ClientError as e:
-            logging.error("S3 delete failed: %s", str(e))
+            current_app.logger.error("S3 delete failed: %s", str(e))
             return {"error": str(e)}
