@@ -1,4 +1,4 @@
-# s3_app.py
+# app/routes.py
 from flask import jsonify, request, Blueprint
 
 from .managers.s3_management import S3Manager
