@@ -25,9 +25,9 @@ class S3Manager:
             region_name = os.getenv("AWS_REGION")
             cls._client = boto3.client("s3", region_name=region_name)
             cls.MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", 10))
-            return ResponseManager.success(data="S3 initialized")
+            return True
         except Exception as e:
-            return ResponseManager.internal(error=f"Failed to initialize S3 client, error: {str(e)}")
+            return False
     
 
     # ------------------------ List Keys -------------------------
