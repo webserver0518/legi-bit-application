@@ -13,8 +13,8 @@ class S3Manager:
     _client = None
     MAX_UPLOAD_SIZE_MB = None
 
-    # ------------------------ Connection -------------------------
 
+    # ------------------------ Connection -------------------------
     @classmethod
     def init(cls):
         """
@@ -29,7 +29,9 @@ class S3Manager:
         except Exception as e:
             current_app.logger.error(f"S3 initialization failed: {e}")
             return ResponseManager.internal("Failed to initialize S3 client")
-        
+    
+
+    # ------------------------ List Keys -------------------------
     @classmethod
     def _iter_keys(cls, prefix: str = ""):
         """Internal generator that always yields keys"""
@@ -57,6 +59,8 @@ class S3Manager:
             current_app.logger.error("S3 all_keys() failed: %s", str(e))
             return [] if mode == "yield" else None
 
+
+    # ------------------------ Generate Presigned POST -------------------------
     @classmethod
     def generate_presigned_post(cls, file_name: str, file_type: str, file_size: int, key: str):
         """
@@ -93,6 +97,8 @@ class S3Manager:
             current_app.logger.error("S3 presigned URL generation failed: %s", str(e))
             return {"error": "Failed to generate presigned URL", "status": 500}
 
+
+    # ------------------------ Generate Presigned GET -------------------------
     @classmethod
     def generate_presigned_get(cls, key: str):
         """Return a temporary download URL for a private S3 object."""
@@ -107,6 +113,8 @@ class S3Manager:
             current_app.logger.error("S3 presigned GET failed: %s", str(e))
             return {"error": "Failed to generate download URL", "status": 500}
 
+
+    # ------------------------ Upload -------------------------
     @classmethod
     def create(cls, file_obj, key: str):
         mime = getattr(file_obj, "mimetype", "application/octet-stream")
@@ -129,6 +137,8 @@ class S3Manager:
             current_app.logger.error("S3 upload failed: %s", str(e))
             return {"error": str(e)}
 
+
+    # ------------------------ Delete -------------------------
     @classmethod
     def delete(cls, key: str):
         """
