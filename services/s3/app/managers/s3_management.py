@@ -29,8 +29,8 @@ class S3Manager:
     @classmethod
     def _iter_keys(cls, prefix: str = ""):
         """Internal generator that always yields keys"""
-        paginator = S3Manager._client.get_paginator("list_objects_v2")
-        for page in paginator.paginate(Bucket=S3Manager._bucket, Prefix=prefix):
+        paginator = cls._client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=cls._bucket, Prefix=prefix):
             for obj in page.get("Contents", []):
                 yield obj["Key"]
 
@@ -42,9 +42,9 @@ class S3Manager:
         """
         try:
             if mode == "yield":
-                return S3Manager._iter_keys(prefix)
+                return cls._iter_keys(prefix)
             elif mode == "log":
-                for key in S3Manager._iter_keys(prefix):
+                for key in cls._iter_keys(prefix):
                     logging.info(f"Found key: {key}")
                 return None
             else:
@@ -70,8 +70,8 @@ class S3Manager:
             return {"error": f"File too large (>{cls.MAX_UPLOAD_SIZE_MB} MB)", "status": 400}
 
         try:
-            presigned = S3Manager._client.generate_presigned_post(
-                Bucket=S3Manager._bucket,
+            presigned = cls._client.generate_presigned_post(
+                Bucket=cls._bucket,
                 Key=key,
                 Fields={"Content-Type": file_type},
                 Conditions=[
@@ -94,9 +94,9 @@ class S3Manager:
     def generate_presigned_get(cls, key: str):
         """Return a temporary download URL for a private S3 object."""
         try:
-            url = S3Manager._client.generate_presigned_url(
+            url = cls._client.generate_presigned_url(
                 "get_object",
-                Params={"Bucket": S3Manager._bucket, "Key": key},
+                Params={"Bucket": cls._bucket, "Key": key},
                 ExpiresIn=3600,
             )
             return {"url": url}
@@ -115,9 +115,9 @@ class S3Manager:
         body = BytesIO(data)
 
         try:
-            S3Manager._client.upload_fileobj(
+            cls._client.upload_fileobj(
                 Fileobj=body,
-                Bucket=S3Manager._bucket,
+                Bucket=cls._bucket,
                 Key=key,
                 ExtraArgs={
                     "ContentType": mime,
@@ -135,11 +135,11 @@ class S3Manager:
     def delete(cls, key: str):
         """
         Delete a single file from S3 by key (path inside the bucket).
-        Example: S3Manager.delete("office_name/123/file.pdf")
+        Example: cls.delete("office_name/123/file.pdf")
         """
         try:
-            S3Manager._client.delete_object(
-                Bucket=S3Manager._bucket,
+            cls._client.delete_object(
+                Bucket=cls._bucket,
                 Key=key
             )
             return {"status": "ok", "key": key}
