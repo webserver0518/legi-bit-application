@@ -19,7 +19,7 @@ class S3Manager:
     @classmethod
     def init(cls):
         """
-        Initialize the MongoClient once when the application starts.
+        Initialize the S3 once when the application starts.
         """
         cls._bucket = os.getenv("S3_BUCKET")
         region_name = os.getenv("AWS_REGION")
