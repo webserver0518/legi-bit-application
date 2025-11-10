@@ -106,8 +106,8 @@ class S3Manager:
     # ------------------------ Upload -------------------------
     @classmethod
     def create(cls, file_obj, key: str):
+        """Upload a file object to S3."""
         mime = getattr(file_obj, "mimetype", "application/octet-stream")
-
         file_obj.seek(0)
 
         try:
@@ -120,26 +120,23 @@ class S3Manager:
                     "ServerSideEncryption": "AES256"
                 }
             )
-            return {"status": "ok", "key": key}
+            return ResponseManager.created(data=key)
         except (botocore.exceptions.BotoCoreError, IOError) as e:
             # throw error to log
             current_app.logger.error("S3 upload failed: %s", str(e))
-            return {"error": str(e)}
+            return ResponseManager.internal(error="File upload failed")
 
 
     # ------------------------ Delete -------------------------
     @classmethod
     def delete(cls, key: str):
-        """
-        Delete a single file from S3 by key (path inside the bucket).
-        Example: cls.delete("office_name/123/file.pdf")
-        """
+        """Delete a file from S3 by key."""
         try:
             cls._client.delete_object(
                 Bucket=cls._bucket,
                 Key=key
             )
-            return {"status": "ok", "key": key}
+            return ResponseManager.success(data=key)
         except botocore.exceptions.ClientError as e:
             current_app.logger.error("S3 delete failed: %s", str(e))
-            return {"error": str(e)}
+            return ResponseManager.internal("Failed to delete file from S3")
