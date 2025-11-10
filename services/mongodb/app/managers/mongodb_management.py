@@ -46,7 +46,7 @@ class MongoDBManager:
     # ------------------------ Connection -------------------------
 
     @classmethod
-    def init_client(cls):
+    def init(cls):
         """
         Initialize the MongoClient once when the application starts.
         """
