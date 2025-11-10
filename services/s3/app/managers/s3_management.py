@@ -109,7 +109,6 @@ class S3Manager:
     def create(cls, file_obj, key: str):
         mime = getattr(file_obj, "mimetype", "application/octet-stream")
 
-        # read file into memory so it does not close
         file_obj.seek(0)
 
         try:
