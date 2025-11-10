@@ -745,15 +745,17 @@ class MongoDBManager:
         current_app.logger.debug(f"multiple={multiple}")
         current_app.logger.debug(f"operator={operator}")
 
-        # --- validation ---
         if not entity:
             # debug bad request
+            current_app.logger.debug("returning bad_request: 'entity' is required")
             return ResponseManager.bad_request("Missing 'entity'")
         if not filters:
             # debug bad request
+            current_app.logger.debug("returning bad_request: 'filters' is required")
             return ResponseManager.bad_request("Missing 'filters'")
         if not update_data:
             # debug bad request
+            current_app.logger.debug("returning bad_request: 'update_data' is required")
             return ResponseManager.bad_request("Missing 'update_data'")
 
         db_names = [str(office_serial)] if office_serial else list(cls._iter_tenant_dbs())
