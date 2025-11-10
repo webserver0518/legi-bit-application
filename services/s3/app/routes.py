@@ -24,7 +24,7 @@ def list_keys():
 
 # ---------------------- S3 Object Management ----------------------
 
-@bp.route("/generate_post", methods=["POST"])
+@bp.route("/presign/post", methods=["POST"])
 def generate_post():
     """
     Generate a presigned POST URL.
@@ -39,7 +39,7 @@ def generate_post():
     return S3Manager.generate_presigned_post(file_name, file_type, file_size, key)
 
 
-@bp.route("/generate_get", methods=["GET"])
+@bp.route("/presign/get", methods=["GET"])
 def generate_get():
     """Generate a presigned GET (download) URL for a file key."""
     key = request.args.get("key")
