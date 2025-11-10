@@ -5,8 +5,7 @@ import boto3
 import botocore.exceptions
 from werkzeug.utils import secure_filename
 
-logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(message)s")
-
+from flask import current_app
 
 class S3Manager:
 
