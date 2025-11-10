@@ -352,7 +352,9 @@ class MongoDBManager:
             list[str]: Names of all indexes created or verified.
         """
         if not db_name:
-            return ResponseManager.bad_request(error="'db_name' is required for ensure_indexes()")
+            # debug bad request
+            current_app.logger.debug(f"returning bad_request: 'db_name' is required")
+            return ResponseManager.bad_request(error="'db_name' is required")
 
         created_indexes = []
         collections_names = [
@@ -380,12 +382,15 @@ class MongoDBManager:
 
             for idx in collection.list_indexes():
                 created_indexes.append(f"{collection_name}.{idx['name']}")
-
-        current_app.logger.info(f"[{db_name}] Indexes ensured successfully")
-        return ResponseManager.success(
-            data={"db": db_name, "indexes": created_indexes},
-            message=f"Indexes ensured for '{db_name}'"
-        )
+        
+        if len(created_indexes) == 0:
+            # debug not found
+            current_app.logger.debug(f"returning not found (no indexes created)")
+            return ResponseManager.not_found(error="no indexes created")
+        
+        # debug success
+        current_app.logger.debug(f"[{db_name}] Indexes ensured successfully")
+        return ResponseManager.success(data=created_indexes)
 
 
     # ------------------------ Entity Helpers -------------------------
