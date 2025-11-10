@@ -37,6 +37,11 @@ def _safe_request(method: str, path: str, **kwargs) -> tuple:
         data=payload.get("data"),
     )
 
+
+# ------------------------ List Keys -------------------------
+def list_keys(prefix=""):
+    return _safe_request("GET", "/list_keys", params={"prefix": prefix})
+
 # ------------------------ Generate Presigned POST -------------------------
 def generate_presigned_post(filename, filetype, filesize, key_override=None):
     return _safe_request("POST", "/presign/post", json={
