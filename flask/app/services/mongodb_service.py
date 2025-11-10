@@ -31,7 +31,6 @@ def _safe_request(method: str, path: str, **kwargs) -> tuple:
     if not isinstance(payload, dict) or "success" not in payload:
         raise ValueError(f"Unexpected response format from {path}: {payload}")
 
-    # Case 1: Remote already returns our schema → proxy 1:1
     return ResponseManager._build(
         success=payload.get("success"),
         status=status,
