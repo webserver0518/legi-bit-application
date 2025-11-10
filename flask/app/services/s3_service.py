@@ -6,7 +6,6 @@ from ..managers.response_management import ResponseManager
 
 
 # ------------------------ Core ------------------------
-
 def get_s3_url():
     return current_app.config["S3_SERVICE_URL"]
 
@@ -38,6 +37,7 @@ def _safe_request(method: str, path: str, **kwargs) -> tuple:
         data=payload.get("data"),
     )
 
+# ------------------------ Generate Presigned POST -------------------------
 def generate_presigned_post(filename, filetype, filesize, key_override=None):
     return _safe_request("POST", "/presign/post", json={
         "filename": filename,
@@ -46,13 +46,18 @@ def generate_presigned_post(filename, filetype, filesize, key_override=None):
         "key_override": key_override
     })
 
+# ------------------------ Generate Presigned GET -------------------------
 def generate_presigned_get(key):
     return _safe_request("GET", "/presign/get", params={"key": key})
 
+
+# ------------------------ Upload -------------------------
 def create(fileobj, key):
     files = {"file": fileobj}
     data = {"key": key}
     return _safe_request("POST", "/create", files=files, data=data)
 
+
+# ------------------------ Delete -------------------------
 def delete(key):
     return _safe_request("DELETE", "/delete", json={"key": key})
