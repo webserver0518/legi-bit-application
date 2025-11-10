@@ -10,7 +10,7 @@ def create_flask_app():
     app.secret_key = os.getenv("SECRET_KEY", "fallback-secret-key")
     configure_logging(app)
 
-    MongoDBManager.init_client()
+    MongoDBManager.init()
 
     # Register Blueprints
     from .routes import bp
