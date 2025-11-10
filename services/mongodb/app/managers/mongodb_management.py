@@ -306,10 +306,12 @@ class MongoDBManager:
         current_app.logger.debug(f"filters: {filters}")
 
         if not db_name:
+            # debug bad request
             current_app.logger.debug(f"returning bad_request: 'db_name' is required")
             return ResponseManager.bad_request(error="'db_name' is required")
 
         if not collection_name:
+            # debug bad request
             current_app.logger.debug(f"returning bad_request: 'collection_name' is required")
             return ResponseManager.bad_request(error="'collection_name' is required")
 
@@ -323,6 +325,7 @@ class MongoDBManager:
         current_app.logger.debug(f"[{db_name}@{collection_name}] Deleted {deleted_count} record(s)")
 
         if deleted_count == 0:
+            # debug not found
             current_app.logger.debug(f"returning not found (no documents matched filters)")
             return ResponseManager.not_found("No documents matched filters")
 
