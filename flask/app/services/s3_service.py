@@ -10,6 +10,14 @@ from ..managers.response_management import ResponseManager
 def get_s3_url():
     return current_app.config["S3_SERVICE_URL"]
 
+def _ping_service():
+    """Check if the S3 service is reachable."""
+    resp = requests.get(f"{get_s3_url()}/healthz", timeout=3)
+    if resp.status_code == 200:
+        return ResponseManager.success(message="S3 service reachable")
+    else:
+        return ResponseManager.error(error=f"S3 service unhealthy (status {resp.status_code})")
+
 
 def _safe_request(method, path, **kwargs):
     try:
