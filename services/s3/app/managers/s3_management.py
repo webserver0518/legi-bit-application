@@ -111,12 +111,10 @@ class S3Manager:
 
         # read file into memory so it does not close
         file_obj.seek(0)
-        data = file_obj.read()
-        body = BytesIO(data)
 
         try:
             cls._client.upload_fileobj(
-                Fileobj=body,
+                Fileobj=file_obj,
                 Bucket=cls._bucket,
                 Key=key,
                 ExtraArgs={
