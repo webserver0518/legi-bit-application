@@ -853,6 +853,9 @@ class MongoDBManager:
         Args:
             db_name (str): The tenant (office) database name.
             counter_name (str): The counter key (e.g., "user_counter").
+
+        Returns:
+            ResponseManager: success with new counter value, or error response.
         """
         if not db_name:
             # debug bad request
