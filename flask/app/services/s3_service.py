@@ -42,6 +42,7 @@ def _safe_request(method: str, path: str, **kwargs) -> tuple:
 def list_keys(prefix=""):
     return _safe_request("GET", "/list_keys", params={"prefix": prefix})
 
+
 # ------------------------ Generate Presigned POST -------------------------
 def generate_presigned_post(filename, filetype, filesize, key_override=None):
     return _safe_request("POST", "/presign/post", json={
@@ -50,6 +51,7 @@ def generate_presigned_post(filename, filetype, filesize, key_override=None):
         "filesize": filesize,
         "key_override": key_override
     })
+
 
 # ------------------------ Generate Presigned GET -------------------------
 def generate_presigned_get(key):
