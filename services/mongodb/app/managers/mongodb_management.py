@@ -15,19 +15,18 @@ class MongoDBManager:
     A simple MongoDB utility class to manage connections and CRUD operations.
     """
     _client = None
-    MONGO_URI = os.getenv("MONGO_URI")
-
-    MONGO_SERVER_SELECTION_TIMEOUT_MS = int(os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "5000"))
-    MONGO_SOCKET_TIMEOUT_MS = int(os.getenv("MONGO_SOCKET_TIMEOUT_MS", "10000"))
-    MONGO_MAX_POOL_SIZE = int(os.getenv("MONGO_MAX_POOL_SIZE", "100"))
+    MONGO_URI = None
+    MONGO_SERVER_SELECTION_TIMEOUT_MS = None
+    MONGO_SOCKET_TIMEOUT_MS = None
+    MONGO_MAX_POOL_SIZE = None
 
 
     # admins db
-    MONGO_ADMINS_DB_NAME = str(os.getenv("MONGO_ADMINS_DB_NAME", "admins_db"))
+    MONGO_ADMINS_DB_NAME = None
     admin_login_collection_name = "login_passwords_hashed"
 
     # offices db
-    MONGO_OFFICES_DB_NAME = str(os.getenv("MONGO_OFFICES_DB_NAME", "offices_db"))
+    MONGO_OFFICES_DB_NAME = None
     offices_collection_name = "offices_col"
     office_counter_name = "office_counter"
 
@@ -56,6 +55,11 @@ class MongoDBManager:
 
         if not cls.MONGO_URI:
             raise RuntimeError("Missing MONGO_URI environment variable")
+        
+        cls.MONGO_URI = os.getenv("MONGO_URI")
+        cls.MONGO_SERVER_SELECTION_TIMEOUT_MS = int(os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "5000"))
+        cls.MONGO_SOCKET_TIMEOUT_MS = int(os.getenv("MONGO_SOCKET_TIMEOUT_MS", "10000"))
+        cls.MONGO_MAX_POOL_SIZE = int(os.getenv("MONGO_MAX_POOL_SIZE", "100"))
 
         cls._client = MongoClient(
             cls.MONGO_URI,
@@ -66,6 +70,9 @@ class MongoDBManager:
             retryReads=True,
         )
 
+        cls.MONGO_ADMINS_DB_NAME = str(os.getenv("MONGO_ADMINS_DB_NAME", "admins_db"))
+        cls.MONGO_OFFICES_DB_NAME = str(os.getenv("MONGO_OFFICES_DB_NAME", "offices_db"))
+        
         # optional: test connection
         try:
             cls._client.admin.command("ping")
