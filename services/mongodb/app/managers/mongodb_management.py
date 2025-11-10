@@ -329,7 +329,7 @@ class MongoDBManager:
         if deleted_count == 0:
             # debug not found
             current_app.logger.debug(f"returning not found (no documents matched filters)")
-            return ResponseManager.not_found("No documents matched filters")
+            return ResponseManager.not_found(error="No documents matched filters")
 
         # debug success
         current_app.logger.debug(f"returning success with deleted count")
