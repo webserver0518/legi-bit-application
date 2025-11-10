@@ -4,10 +4,9 @@ import os
 from typing import Optional
 
 from pymongo import MongoClient, ReturnDocument
-from werkzeug.security import check_password_hash
 
 from .response_management import ResponseManager
-from ..constants.constants_mongodb import MongoDBEntity, MongoDBFilters
+from ..constants.constants_mongodb import MongoDBEntity
 
 
 
@@ -51,12 +50,19 @@ class MongoDBManager:
     def _get_client(cls) -> MongoClient:
         """
         Lazily initialize and return the MongoClient instance.
+
+        Args:
+            None
+        
+        Returns:
+            MongoClient: A pymongo MongoClient instance.
         """
 
         if cls._client is None:
             mongo_uri = os.getenv("MONGO_URI")
             if not mongo_uri:
-                raise ValueError("MONGO_URI env var is missing")
+                current_app.logger.debug(f"internal server error: MONGO_URI env var is missing")
+                return ResponseManager.internal(error="internal server error")
 
             cls._client = MongoClient(
                 mongo_uri,
@@ -66,7 +72,6 @@ class MongoDBManager:
                 retryWrites=True,
                 retryReads=True,
             )
-            # debug client connection
 
         return cls._client
 
