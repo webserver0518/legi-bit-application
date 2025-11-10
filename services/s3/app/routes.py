@@ -54,7 +54,7 @@ def generate_get():
 # ------------------------ Upload -------------------------
 @bp.route("/create", methods=["POST"])
 def create():
-    """Delete an object from S3 by key."""
+    """Upload a file object to S3."""
     file_obj = request.files.get("file")
     key = request.form.get("key")
     
