@@ -1,6 +1,5 @@
 
 import os
-from io import BytesIO
 import boto3
 import botocore.exceptions
 from werkzeug.utils import secure_filename
