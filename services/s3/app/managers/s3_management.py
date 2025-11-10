@@ -83,7 +83,7 @@ class S3Manager:
             }
             return ResponseManager.success(data=data)
         except botocore.exceptions.BotoCoreError as e:
-            current_app.logger.error("S3 presigned URL generation failed: %s", str(e))
+            current_app.logger.error(f"S3 presigned URL generation failed: {str(e)}")
             return ResponseManager.internal("Failed to generate presigned URL")
 
 
@@ -99,7 +99,7 @@ class S3Manager:
             )
             ResponseManager.success(data=url)
         except botocore.exceptions.ClientError as e:
-            current_app.logger.error("S3 presigned GET failed: %s", str(e))
+            current_app.logger.error(f"S3 presigned GET failed: {str(e)}")
             return ResponseManager.internal("Failed to generate download URL")
 
 
@@ -123,7 +123,7 @@ class S3Manager:
             return ResponseManager.created(data=key)
         except (botocore.exceptions.BotoCoreError, IOError) as e:
             # throw error to log
-            current_app.logger.error("S3 upload failed: %s", str(e))
+            current_app.logger.error(f"S3 upload failed: {str(e)}")
             return ResponseManager.internal(error="File upload failed")
 
 
@@ -138,5 +138,5 @@ class S3Manager:
             )
             return ResponseManager.success(data=key)
         except botocore.exceptions.ClientError as e:
-            current_app.logger.error("S3 delete failed: %s", str(e))
+            current_app.logger.error(f"S3 delete failed: {str(e)}")
             return ResponseManager.internal("Failed to delete file from S3")
