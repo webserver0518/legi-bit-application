@@ -59,11 +59,11 @@ class S3Manager:
 
         ext = file_name.rsplit(".", 1)[-1].lower()
         if ext not in allowed_extensions:
-            return {"error": "Invalid file type", "status": 400}
+            return ResponseManager.bad_request("Invalid file type")
 
         max_bytes = cls.MAX_UPLOAD_SIZE_MB * 1024 * 1024
         if file_size > max_bytes:
-            return {"error": f"File too large (>{cls.MAX_UPLOAD_SIZE_MB} MB)", "status": 400}
+            return ResponseManager.bad_request(f"File too large (> {cls.MAX_UPLOAD_SIZE_MB} MB)")
 
         try:
             presigned = cls._client.generate_presigned_post(
@@ -76,14 +76,15 @@ class S3Manager:
                 ],
                 ExpiresIn=3600,  # 1 hour
             )
-            return {
+            data = {
                 "presigned": presigned,
                 "key": key,
                 "safe_name": file_name,
             }
+            return ResponseManager.success(data=data)
         except botocore.exceptions.BotoCoreError as e:
             current_app.logger.error("S3 presigned URL generation failed: %s", str(e))
-            return {"error": "Failed to generate presigned URL", "status": 500}
+            return ResponseManager.internal("Failed to generate presigned URL")
 
 
     # ------------------------ Generate Presigned GET -------------------------
