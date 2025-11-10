@@ -332,8 +332,8 @@ class MongoDBManager:
             return ResponseManager.not_found("No documents matched filters")
 
         # debug success
-        current_app.logger.debug(f"returning success with deleted_count")
-        return ResponseManager.success(data={"deleted_count": deleted_count})
+        current_app.logger.debug(f"returning success with deleted count")
+        return ResponseManager.success(data=deleted_count)
 
 
     # ---------------------- Index Management ----------------------
