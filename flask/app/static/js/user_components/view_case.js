@@ -63,7 +63,7 @@ window.init_view_case = function init_view_case() {
                   <td>${safeValue(f.name)}</td>
                   <td>${safeValue(f.type)}</td>
                   <td>${date}</td>
-                  <td><button class="btn btn-sm btn-outline-primary" onclick="window.open('${f.url}', '_blank')">צפה</button></td>
+                  <td><button class="btn btn-sm btn-outline-primary" onclick="viewFile(${caseObj.serial}, ${f.serial}, '${f.name}')">צפה</button></td>
                 </tr>`;
           }).join("");
       }
@@ -104,3 +104,41 @@ window.init_view_case = function init_view_case() {
     })
     .catch(err => console.error("❌ Error loading case:", err));
 };
+
+
+
+
+
+/* ==============================
+   🧩 VIEW FILE BUTTON HANDLER
+   ============================== */
+async function viewFile(caseSerial, fileSerial, fileName) {
+  try {
+    // הצגת הודעת טעינה קטנה (אופציונלי)
+    console.log(`📁 Requesting presigned URL for: ${fileName}`);
+
+    const res = await fetch(
+      `/get_file_url?case_serial=${encodeURIComponent(caseSerial)}&file_serial=${encodeURIComponent(fileSerial)}&file_name=${encodeURIComponent(fileName)}`
+    );
+
+    const payload = await res.json();
+    if (!payload?.success) {
+      console.error("❌ Failed to generate presigned URL:", payload?.error || payload);
+      alert("לא ניתן לצפות בקובץ כרגע");
+      return;
+    }
+
+    const url = payload.data;
+    if (!url) {
+      console.error("❌ No URL returned from server:", payload);
+      alert("לא ניתן לצפות בקובץ כרגע");
+      return;
+    }
+
+    // ✅ פתיחה בטאב חדש
+    window.open(url, "_blank");
+  } catch (err) {
+    console.error("❌ Error viewing file:", err);
+    alert("שגיאה בעת ניסיון לפתוח את הקובץ");
+  }
+}
