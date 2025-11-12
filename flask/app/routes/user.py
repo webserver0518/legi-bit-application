@@ -16,7 +16,28 @@ def auth_debug():
     return AuthorizationManager.get()
 
 # ---------------- HELPERS ---------------- #
+@user_bp.route("/presign/post", methods=["POST"])
+def proxy_presign_post():
+    """
+    Proxy route – frontend -> backend -> S3 service
+    """
+    data = request.get_json()
+    file_name = data.get("file_name")
+    file_type = data.get("file_type")
+    file_size = data.get("file_size")
+    key = data.get("key")
 
+    if not all([file_name, file_type, file_size, key]):
+        return ResponseManager.bad_request("Missing required fields")
+
+    s3_res = s3_service.generate_presigned_post(
+        filename=file_name,
+        filetype=file_type,
+        filesize=file_size,
+        key=key
+    )
+
+    return s3_res
 
 # ---------------- BASE DASHBOARD ---------------- #
 
@@ -38,6 +59,123 @@ def get_office_name():
         return "Not Found"
     else:
         return office_name
+
+
+@user_bp.route("/get_office_serial", methods=["GET"])
+def get_office_serial():
+    office_serial = AuthorizationManager.get_office_serial()
+    if not office_serial:
+        return ResponseManager.bad_request("Missing office_serial in auth")
+    return ResponseManager.success(data={"office_serial": office_serial})
+# ---------------- FILES MANAGEMENT ---------------- #
+
+@user_bp.route("/create_new_file", methods=["POST"])
+def create_new_file():
+    current_app.logger.debug("inside create_new_file()")
+
+    office_serial = AuthorizationManager.get_office_serial()
+    user_serial = AuthorizationManager.get_user_serial()
+    if not office_serial:
+        current_app.logger.debug("returning bad_request: 'office_serial' is required")
+        return ResponseManager.bad_request("Missing 'office_serial' in auth")
+    if not user_serial:
+        current_app.logger.debug("returning bad_request: 'user_serial' is required")
+        return ResponseManager.bad_request("Missing 'user_serial' in auth")
+
+    data = request.get_json(force=True)
+    if not data:
+        current_app.logger.debug("returning bad_request: Missing request JSON")
+        return ResponseManager.bad_request("Missing request JSON")
+
+    new_file_doc = {
+        "created_at": data.get("created_at"),
+        "user_serial": user_serial,
+        "case_serial": data.get("case_serial"),
+        "name": data.get("file_name"),
+        "type": data.get("file_type"),
+        "status": "pending"
+    }
+
+    new_file_res = mongodb_service.create_entity(
+        entity=MongoDBEntity.FILES,
+        office_serial=office_serial,
+        document=new_file_doc
+    )
+
+    if not ResponseManager.is_success(new_file_res):
+        current_app.logger.debug(f"Failed to create file")
+        return ResponseManager.internal(f"Failed to create file")
+
+    new_file_serial = ResponseManager.get_data(new_file_res)
+    current_app.logger.debug(f"Created new file with serial={new_file_serial}")
+    return ResponseManager.success(data=new_file_serial)
+
+
+@user_bp.route("/update_file", methods=["PATCH"])
+def update_file():
+    office_serial = AuthorizationManager.get_office_serial()
+    if not office_serial:
+        return ResponseManager.bad_request("Missing 'office_serial' in auth")
+
+    file_serial = int(request.args.get("serial"))
+    if not file_serial:
+        return ResponseManager.bad_request("Missing file serial")
+
+    update_data = request.get_json(force=True) or {}
+    if not update_data:
+        return ResponseManager.bad_request("Missing update payload")
+
+    res = mongodb_service.update_entity(
+        entity=MongoDBEntity.FILES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(file_serial)),
+        update_data=update_data
+    )
+
+    if not ResponseManager.is_success(res):
+        return ResponseManager.internal("Failed to update file")
+
+    return ResponseManager.success()
+
+
+@user_bp.route("/get_file_url", methods=["GET"])
+def get_file_url():
+    """
+    Generate a temporary presigned GET URL for viewing a file from S3.
+    Expected query parameters:
+        - case_serial
+        - file_serial
+        - file_name
+    office_serial is retrieved automatically from the user's auth.
+    """
+    office_serial = AuthorizationManager.get_office_serial()
+    case_serial = request.args.get("case_serial")
+    file_serial = request.args.get("file_serial")
+    file_name = request.args.get("file_name")
+
+    if not office_serial:
+        current_app.logger.error("Missing 'office_serial' in auth")
+        return ResponseManager.error("Missing 'office_serial' in auth")
+    if not file_serial:
+        current_app.logger.error("Missing 'file_serial'")
+        return ResponseManager.error("Missing 'file_serial'")
+    if not file_name:
+        current_app.logger.error("Missing 'file_name'")
+        return ResponseManager.error("Missing 'file_name'")
+
+    # 🧩 Build key using standard naming convention
+    key = f"uploads/{office_serial}/{case_serial}/{file_serial}-{file_name}"
+    current_app.logger.debug(f"🔑 [get_file_url] Generated key: {key}")
+
+    # 🧠 Request presigned URL from S3 service
+    s3_res = s3_service.generate_presigned_get(key)
+    if not ResponseManager.is_success(response=s3_res):
+        current_app.logger.error(f"❌ [get_file_url] S3 service error: {s3_res['error']}")
+        return s3_res
+
+    presigned_url = ResponseManager.get_data(response=s3_res)
+    current_app.logger.debug(f"✅ [get_file_url] Returning presigned URL for key: {key}")
+    return ResponseManager.success(data=presigned_url)
 
 # ---------------- CASES MANAGEMENT ---------------- #
 
@@ -89,7 +227,7 @@ def get_office_cases():
     office_serial = AuthorizationManager.get_office_serial()
     expand = request.args.get("expand", False)
     if not office_serial:
-        current_app.logger.error("❌ Missing office_serial in auth")
+        current_app.logger.error("Missing office_serial in auth")
         return ResponseManager.error("Missing office_serial in auth")
 
     # --- Extract query params ---
@@ -200,6 +338,14 @@ def create_new_case():
             "postal_code": d.get("postal_code"),
             "birth_date": d.get("birth_date"),
         }
+    
+    def construct_file_document(d: dict):
+        return {
+            "created_at": d.get("created_at"),
+            "user_serial": d.get("user_serial"),
+            "name": d.get("file_name"),
+            "type": d.get("file_type")
+        }
 
     def construct_case_document(d: dict):
         return {
@@ -227,6 +373,7 @@ def create_new_case():
         current_app.logger.debug("returning bad_request: Missing request JSON")
         return ResponseManager.bad_request("Missing request JSON")
 
+    # === Create all Clients ===
     clients = data.get("clients", [])
     if not isinstance(clients, list) or len(clients) == 0:
         current_app.logger.debug("returning bad_request: No clients provided")
@@ -234,7 +381,6 @@ def create_new_case():
 
     client_serials_map = {}  # { serial: role }
 
-    # === Create all Clients ===
     for i, c in enumerate(clients, start=1):
         new_client_doc = construct_client_document(c)
         new_client_doc["user_serial"] = user_serial
