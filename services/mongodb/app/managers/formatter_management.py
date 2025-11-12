@@ -81,3 +81,17 @@ def configure_logging(app):
     werkzeug_logger.setLevel(logging.ERROR)
 
     app.logger.info("✅ Logging system initialized")
+
+
+def disable_all_logging(app):
+    # נקה את כל ההנדלרים הקיימים
+    app.logger.handlers.clear()
+    logging.getLogger("werkzeug").handlers.clear()
+
+    # קבע רמות לוג גבוהות כדי שלא יודפס כלום
+    app.logger.setLevel(logging.CRITICAL + 1)
+    logging.getLogger("werkzeug").setLevel(logging.CRITICAL + 1)
+    logging.disable(logging.CRITICAL)  # חוסם את כל הלוגים הגלובליים
+
+    app.logger.disabled = True
+    logging.getLogger("werkzeug").disabled = True
