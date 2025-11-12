@@ -118,8 +118,8 @@ class S3Manager:
                 "safe_name": file_name,
             }
             # debug success
-            current_app.logger.debug(f"returning success with keys {', '.join(data.keys())}")
-            current_app.logger.debug(f"returning success with values {', '.join(data.values())}")
+            current_app.logger.debug(f"returning success with keys {str(data.keys())}")
+            current_app.logger.debug(f"returning success with values {(str(data.values()))}")
             return ResponseManager.success(data=data)
         
         except botocore.exceptions.BotoCoreError as e:
