@@ -15,9 +15,9 @@ const parseApiResponse = (payload) => {
   if (!payload || typeof payload !== 'object') {
     return { data: null, error: 'Invalid server response', success: false, message: '' };
   }
-  const hasData = Object.prototype.hasOwnProperty.call(payload, 'data');
+
   return {
-    data: hasData ? payload.data : payload,
+    data: payload?.data ?? null,
     error: payload.error,
     success: payload.success,
     message: payload.message,
@@ -225,19 +225,36 @@ function initClientsManager() {
 })();
 
 
+
+
+
+
 /**
- * 🧠 Upload all files in window.filesList to S3 via the Flask /presign/post service
+ * 🧠 Upload all files in files to S3 via the Flask /presign/post service
  * Uses presigned URLs and updates progress bars in real time
  */
-async function uploadAllFilesToS3() {
-  if (!window.filesList || window.filesList.length === 0) {
+async function uploadAllFilesToS3(files, office_serial, case_serial) {
+  if (!files || files.length === 0) {
     console.log("⚠️ No files to upload");
     return true;
   }
 
   // סינון רק קבצים שטרם הועלו או שנכשלו
-  const toUpload = window.filesList.filter(f => f.status === "pending" || f.status === "failed");
+  const toUpload = files.filter(f => f.status === "pending" || f.status === "failed");
   if (toUpload.length === 0) return true;
+
+  const now = new Date();
+  const tzOffset = -now.getTimezoneOffset();
+  const sign = tzOffset >= 0 ? "+" : "-";
+  const pad = n => String(Math.floor(Math.abs(n))).padStart(2, "0");
+  const offsetHours = pad(tzOffset / 60);
+  const offsetMinutes = pad(tzOffset % 60);
+  const timestamp = now.getFullYear() + "-" +
+    pad(now.getMonth() + 1) + "-" +
+    pad(now.getDate()) + "T" +
+    pad(now.getHours()) + ":" +
+    pad(now.getMinutes()) +
+    sign + offsetHours + ":" + offsetMinutes;
 
   for (const fileEntry of toUpload) {
     const { file, row } = fileEntry;
@@ -248,8 +265,34 @@ async function uploadAllFilesToS3() {
       progressBar.style.width = "10%";
       progressBar.classList.remove("bg-success", "bg-danger");
       progressBar.classList.add("bg-info");
-      fileEntry.status = "requesting_url";
+      fileEntry.status = "creating_record";
 
+      const createFileRes = await fetch("/create_new_file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          created_at: timestamp,
+          case_serial: case_serial,
+          file_name: file.name,
+          file_type: file.type
+        }),
+      });
+
+      const createJson = await createFileRes.json();
+      const parsedCreate = parseApiResponse(createJson);
+      if (!parsedCreate.success || !parsedCreate.data) {
+        throw new Error(parsedCreate.error || "Failed to create file record");
+      }
+
+      const file_serial = parsedCreate.data; // ✅ לפי איך שאתה מחזיר מהשרת
+      fileEntry.serial = file_serial;
+
+      // 2️⃣ צור key ייחודי הכולל office, case, file
+      const key = `uploads/${office_serial}/${case_serial}/${file_serial}-${file.name}`;
+      fileEntry.key = key;
+
+
+      // 3️⃣ בקשת presigned URL ל-S3
       const presignRes = await fetch("/presign/post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -257,7 +300,7 @@ async function uploadAllFilesToS3() {
           file_name: file.name,
           file_type: file.type,
           file_size: file.size,
-          key: `uploads/${file.name}`
+          key: key
         })
       });
 
@@ -268,9 +311,8 @@ async function uploadAllFilesToS3() {
       }
 
       const { url, fields } = parsed.data.presigned;
-      const s3Key = parsed.data.key;
 
-      // --- 2️⃣ בניית FormData והעלאה אמיתית ל-S3 ---
+      // 4️⃣ העלאה אמיתית ל-S3
       fileEntry.status = "uploading";
       const formData = new FormData();
       Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
@@ -293,7 +335,6 @@ async function uploadAllFilesToS3() {
             progressBar.classList.remove("bg-info");
             progressBar.classList.add("bg-success");
             fileEntry.status = "done";
-            fileEntry.key = s3Key;
             resolve();
           } else {
             reject(new Error(`Upload failed with status ${xhr.status}`));
@@ -304,7 +345,15 @@ async function uploadAllFilesToS3() {
         xhr.send(formData);
       });
 
-      console.log(`✅ Uploaded ${file.name} to S3 (${s3Key})`);
+      console.log(`✅ Uploaded ${file.name} to S3 (${key})`);
+
+      await fetch(`/update_file?serial=${Number(fileEntry.serial)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "active"
+        })
+      });
     } catch (err) {
       console.error("❌ Upload failed for:", file.name, err);
       progressBar.classList.remove("bg-info");
@@ -314,9 +363,22 @@ async function uploadAllFilesToS3() {
     }
   }
 
-  const allOk = window.filesList.every(f => f.status === "done");
-  return allOk;
+  return {
+    success: files.every(f => f.status === "done"),
+    uploaded: files
+      .filter(f => f.status === "done")
+      .map(f => ({
+        name: f.file.name,
+        key: f.key,
+        serial: f.serial
+      }))
+  };
 }
+
+
+
+
+
 
 
 /* Accordion open/close animation handler */
@@ -365,17 +427,19 @@ window.initCaseFormPreview = function () {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // 🧷 מניעת לחיצה כפולה
+    // prevent multiple submissions
     const submitBtn = form.querySelector("button[type='submit']");
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.textContent = "מעלה נתונים...";
+      submitBtn.textContent = "יוצר תיק...";
     }
 
     // ✅ Require at least one main client before submission
     const hasMain = (window.clientsList || []).some(c => c.role === "main");
     if (!hasMain) {
-      alert("יש להוסיף לפחות לקוח ראשי אחד לפני פתיחת תיק");
+      showToast("יש להוסיף לפחות לקוח ראשי אחד לפני פתיחת תיק", true);
+      submitBtn.disabled = false;
+      submitBtn.textContent = "פתח תיק";
       return;
     }
 
@@ -395,14 +459,9 @@ window.initCaseFormPreview = function () {
 
 
     if (!fd.get('title')) {
-      alert("יש למלא כותרת לתיק");
-      return;
-    }
-
-    // 🟢 נעלה קודם את הקבצים ל-S3
-    const uploadSuccess = await uploadAllFilesToS3();
-    if (!uploadSuccess) {
-      alert("חלק מהקבצים לא הועלו בהצלחה. אנא נסה שוב.");
+      showToast("יש למלא כותרת לתיק", true);
+      submitBtn.disabled = false;
+      submitBtn.textContent = "פתח תיק";
       return;
     }
 
@@ -413,14 +472,7 @@ window.initCaseFormPreview = function () {
       facts: fd.get('facts'),
       against: fd.get('against'),
       against_type: document.getElementById('against-type')?.value || '',
-      clients: window.clientsList || [],
-      files: (window.filesList || [])
-        .filter(f => f.status === "done")
-        .map(f => ({
-          key: f.key,
-          name: f.file.name,
-          type: f.type
-        }))
+      clients: window.clientsList || []
     };
 
     // 🟢 שליחת הנתונים לשרת
@@ -433,18 +485,69 @@ window.initCaseFormPreview = function () {
 
       const json = await res.json();
       const parsed = parseApiResponse(json);
-      if (!parsed.success) {
+      if (!parsed.success || !parsed.data) {
         showToast(`❌ Failed to create case: ${parsed.error}`, true);
         return;
       }
       showToast("✅ Case created successfully");
+
+      const case_serial = parsed.data;
+
+      // כעת נשלוף את מזהה המשרד
+      let office_serial;
+      try {
+        office_serial = await getOfficeSerial();
+      } catch {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "פתח תיק";
+        return; // עצור אם לא הצלחנו לקבל מזהה משרד
+      }
+
+      if (!window.filesList || window.filesList.length === 0) {
+        showToast("⚠️ לא נבחרו קבצים, התיק ייווצר ללא מסמכים");
+      }
+
+      /* 2️⃣ העלאת קבצים עם key לפי office+case */
+      submitBtn.textContent = "מעלה קבצים...";
+      const { success, uploaded } = await uploadAllFilesToS3(window.filesList, office_serial, case_serial);
+
+      if (!success) {
+        throw new Error("חלק מהקבצים לא הועלו בהצלחה");
+      }
+
+      /* 3️⃣ שמירת רשומות FILES במונגו */
+      submitBtn.textContent = "שומר קבצים...";
+      const fileSerials = uploaded.map(f => f.serial);
+
+      const updateRes = await fetch(`/update_case?serial=${case_serial}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          files_serials: fileSerials
+        }),
+      });
+
+      const updateJson = await updateRes.json();
+      const parsedUpdate = parseApiResponse(updateJson);
+
+      if (!parsedUpdate.success) {
+        throw new Error(parsedUpdate.error || "שגיאה בשמירת הקבצים");
+      }
+
+      showToast("✅ Case Files Uploaded");
       localStorage.setItem("selectedSubMenu", "all_cases");
       showSubMenu("all_cases");
       loadContent("cases", true, "user");
     } catch (error) {
       console.error(error);
       showToast("⚠️ Error contacting server", true);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "פתח תיק";
+      }
     }
+
   });
 };
 
@@ -515,13 +618,30 @@ function initHebrewBirthDatePicker() {
     allowInput: true,
     disableMobile: false,
     defaultDate: null,
-    onReady(_, __, fp) {
+    onReady(_, __, instance) {
       const clearBtn = document.createElement("button");
       clearBtn.type = "button";
       clearBtn.className = "btn btn-outline-secondary btn-sm ms-2";
       clearBtn.textContent = "נקה";
-      clearBtn.onclick = () => fp.clear();
-      fp.calendarContainer.appendChild(clearBtn);
+      clearBtn.onclick = () => instance.clear();
+      instance.calendarContainer.appendChild(clearBtn);
     }
   });
+}
+
+
+async function getOfficeSerial() {
+  try {
+    const res = await fetch("/get_office_serial");
+    const json = await res.json();
+    const parsed = parseApiResponse(json);
+    if (!parsed.success || !parsed.data?.office_serial) {
+      throw new Error("Office serial not found");
+    }
+    return parsed.data.office_serial;
+  } catch (err) {
+    console.error("❌ Failed to get office_serial:", err);
+    showToast("⚠️ שגיאה בשליפת מזהה משרד", true);
+    throw err;
+  }
 }
