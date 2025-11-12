@@ -20,6 +20,7 @@ class MongoDBEntity:
 class MongoDBFilters:
     @staticmethod
     def by_serial(serial: int):
+        serial = int(serial)
         return {"serial": serial}
 
     class Case:
