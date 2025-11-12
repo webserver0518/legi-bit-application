@@ -812,7 +812,7 @@ class MongoDBManager:
                 )
                 continue
 
-            modified = ResponseManager.get_data(update_res).get("modified", 0)
+            modified = ResponseManager.get_data(update_res)
             total_modified += modified
 
             results.append({
