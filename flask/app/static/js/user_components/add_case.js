@@ -224,6 +224,101 @@ function initClientsManager() {
   };
 })();
 
+
+/**
+ * 🧠 Upload all files in window.filesList to S3 via the Flask /presign/post service
+ * Uses presigned URLs and updates progress bars in real time
+ */
+async function uploadAllFilesToS3() {
+  if (!window.filesList || window.filesList.length === 0) {
+    console.log("⚠️ No files to upload");
+    return true;
+  }
+
+  // סינון רק קבצים שטרם הועלו או שנכשלו
+  const toUpload = window.filesList.filter(f => f.status === "pending" || f.status === "failed");
+  if (toUpload.length === 0) return true;
+
+  for (const fileEntry of toUpload) {
+    const { file, row } = fileEntry;
+    const progressBar = row.querySelector(".progress-bar");
+
+    try {
+      // --- 1️⃣ קבלת כתובת חתומה מהשרת ---
+      progressBar.style.width = "10%";
+      progressBar.classList.remove("bg-success", "bg-danger");
+      progressBar.classList.add("bg-info");
+      fileEntry.status = "requesting_url";
+
+      const presignRes = await fetch("/presign/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+          key: `uploads/${file.name}`
+        })
+      });
+
+      const presignJson = await presignRes.json();
+      const parsed = parseApiResponse(presignJson);
+      if (!parsed.success || !parsed.data?.presigned?.url) {
+        throw new Error(parsed.error || "Failed to get presigned URL");
+      }
+
+      const { url, fields } = parsed.data.presigned;
+      const s3Key = parsed.data.key;
+
+      // --- 2️⃣ בניית FormData והעלאה אמיתית ל-S3 ---
+      fileEntry.status = "uploading";
+      const formData = new FormData();
+      Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
+      formData.append("file", file);
+
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+
+        xhr.upload.onprogress = (evt) => {
+          if (evt.lengthComputable) {
+            const percent = Math.round((evt.loaded / evt.total) * 100);
+            progressBar.style.width = `${percent}%`;
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status === 204) {
+            progressBar.style.width = "100%";
+            progressBar.classList.remove("bg-info");
+            progressBar.classList.add("bg-success");
+            fileEntry.status = "done";
+            fileEntry.key = s3Key;
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.send(formData);
+      });
+
+      console.log(`✅ Uploaded ${file.name} to S3 (${s3Key})`);
+    } catch (err) {
+      console.error("❌ Upload failed for:", file.name, err);
+      progressBar.classList.remove("bg-info");
+      progressBar.classList.add("bg-danger");
+      progressBar.style.width = "100%";
+      fileEntry.status = "failed";
+    }
+  }
+
+  const allOk = window.filesList.every(f => f.status === "done");
+  return allOk;
+}
+
+
 /* Accordion open/close animation handler */
 window.initAccordionSections = function () {
   const headers = document.querySelectorAll(".section-header");
@@ -270,6 +365,13 @@ window.initCaseFormPreview = function () {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    // 🧷 מניעת לחיצה כפולה
+    const submitBtn = form.querySelector("button[type='submit']");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "מעלה נתונים...";
+    }
+
     // ✅ Require at least one main client before submission
     const hasMain = (window.clientsList || []).some(c => c.role === "main");
     if (!hasMain) {
@@ -297,6 +399,13 @@ window.initCaseFormPreview = function () {
       return;
     }
 
+    // 🟢 נעלה קודם את הקבצים ל-S3
+    const uploadSuccess = await uploadAllFilesToS3();
+    if (!uploadSuccess) {
+      alert("חלק מהקבצים לא הועלו בהצלחה. אנא נסה שוב.");
+      return;
+    }
+
     const form_data = {
       created_at: timestamp,
       title: fd.get('title'),
@@ -304,9 +413,17 @@ window.initCaseFormPreview = function () {
       facts: fd.get('facts'),
       against: fd.get('against'),
       against_type: document.getElementById('against-type')?.value || '',
-      clients: window.clientsList || [], // ✅ include all clients
+      clients: window.clientsList || [],
+      files: (window.filesList || [])
+        .filter(f => f.status === "done")
+        .map(f => ({
+          key: f.key,
+          name: f.file.name,
+          type: f.type
+        }))
     };
 
+    // 🟢 שליחת הנתונים לשרת
     try {
       const res = await fetch("/create_new_case", {
         method: "POST",
