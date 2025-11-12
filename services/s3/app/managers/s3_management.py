@@ -87,10 +87,10 @@ class S3Manager:
             current_app.logger.debug(f"bad_request: 'key' is required")
             return ResponseManager.bad_request(error="key is required")
         
-        allowed_extensions = ['pdf']
 
         ext = file_name.rsplit(".", 1)[-1].lower()
-        if ext not in allowed_extensions:
+        forbidden_extensions = []
+        if ext in forbidden_extensions:
             # debug bad request
             current_app.logger.debug(f"bad_request: Invalid file type '{ext}'")
             return ResponseManager.bad_request(error="Invalid file type")
