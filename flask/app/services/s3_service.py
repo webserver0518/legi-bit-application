@@ -22,6 +22,7 @@ def _safe_request(method: str, path: str, **kwargs) -> tuple:
     url = f"{get_s3_url()}{path}"
     resp = requests.request(method, url, timeout=8, **kwargs)
     status = resp.status_code
+    current_app.logger.debug(f"S3 service {method} {path} returned status {status}")
     
     # Try to parse response JSON
     payload = resp.json()
@@ -29,6 +30,7 @@ def _safe_request(method: str, path: str, **kwargs) -> tuple:
     if not isinstance(payload, dict) or "success" not in payload:
         raise ValueError(f"Unexpected response format from {path}: {payload}")
 
+    current_app.logger.debug(f"called S3 service {method} {path} with payload: {payload}")
     return ResponseManager._build(
         success=payload.get("success"),
         status=status,
@@ -44,12 +46,12 @@ def list_keys(prefix=""):
 
 
 # ------------------------ Generate Presigned POST -------------------------
-def generate_presigned_post(filename, filetype, filesize, key_override=None):
+def generate_presigned_post(filename, filetype, filesize, key=None):
     return _safe_request("POST", "/presign/post", json={
-        "filename": filename,
-        "filetype": filetype,
-        "filesize": filesize,
-        "key_override": key_override
+        "file_name": filename,
+        "file_type": filetype,
+        "file_size": filesize,
+        "key": key
     })
 
 
