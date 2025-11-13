@@ -5,6 +5,18 @@ function removeExtension(filename) {
   return lastDot > 0 ? filename.substring(0, lastDot) : filename;
 }
 
+function fileIconPath(mime) {
+  mime = mime.toLowerCase();
+  if (mime === "application/pdf") return "/static/images/icons/PDF.svg";
+  if (mime.includes("word")) return "/static/images/icons/WORD.svg";
+  if (mime.includes("excel") || mime.includes("spreadsheet")) return "/static/images/icons/EXCEL.svg";
+  if (mime.startsWith("image/")) return "/static/images/icons/IMAGE.svg";
+  if (mime.startsWith("video/")) return "/static/images/icons/VIDEO.svg";
+  if (mime.startsWith("audio/")) return "/static/images/icons/AUDIO.svg";
+  if (mime.includes("zip") || mime.includes("rar") || mime.includes("7z")) return "/static/images/icons/ARCHIVE.svg";
+  return "/static/images/icons/GENERIC.svg";
+}
+
 window.init_view_case = function init_view_case() {
   const safeValue = (v) => (v && v.trim && v.trim() !== "" ? v : "-");
 
@@ -66,8 +78,7 @@ window.init_view_case = function init_view_case() {
             const date = f.created_at ? new Date(f.created_at).toLocaleDateString("he-IL") : "-";
             return `
                 <tr data-file-serial="${f.serial}" style="cursor:pointer;" onclick="viewFile(${caseObj.serial},${f.serial},'${f.name}')">
-                  <td>${safeValue(removeExtension(f.name))}</td>
-                  <td>${safeValue(f.type)}</td>
+                  <td class="file-name-cell"><img src="${fileIconPath(f.type)}" class="file-icon">   ${safeValue(removeExtension(f.name))}</td>
                   <td>${date}</td>
                   <td><button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteFile(${caseObj.serial}, ${f.serial}, '${f.name}')">מחק</button></td>
                 </tr>`;
