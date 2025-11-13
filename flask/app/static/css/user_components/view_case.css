@@ -188,3 +188,135 @@ table td {
   margin-left: 6px;
   /* רווח בין האייקון לשם */
 }
+
+
+
+
+
+
+/* ==========================================================
+   📁 FILES TABLE — SAME DESIGN AS CASES TABLE
+   ========================================================== */
+
+/* התאמה לעיצוב טבלת התיקים */
+.bg-light {
+  background-color: #c3daf5 !important;
+}
+
+#filesTable thead th {
+  background-color: #c3daf5 !important;
+}
+
+
+#filter-file-type {
+  min-width: 160px;
+  padding-right: 30px;
+}
+
+/* טבלה RTL */
+#filesTable {
+  direction: rtl;
+  text-align: center;
+}
+
+/* תאים */
+#filesTable th,
+#filesTable td {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/* אפקט hover */
+#filesTable tbody tr:hover>* {
+  background-color: #c3daf5 !important;
+}
+
+/* עיצוב כפתור קומפקטי */
+#filesTable .btn-compact {
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+/* טקסט truncate לקבצים ארוכים */
+#filesTable .text-truncate {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* אנימציית הופעת שורות */
+#filesTable tbody tr {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: fileRowFade 0.6s ease-out forwards;
+}
+
+#filesTable tbody tr:nth-child(odd) {
+  animation-delay: 0.1s;
+}
+
+#filesTable tbody tr:nth-child(even) {
+  animation-delay: 0.2s;
+}
+
+@keyframes fileRowFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* אייקון קובץ */
+#filesTable .file-icon {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+/* תא שם קובץ מיושר לימין */
+#filesTable .file-name-cell {
+  text-align: right !important;
+  direction: rtl;
+  white-space: nowrap;
+}
+
+/* פאגינציה RTL/ללא length/info (כמו בתיקים) */
+#filesTable_wrapper .dataTables_paginate {
+  direction: ltr !important;
+}
+
+#filesTable_wrapper .dataTables_length,
+#filesTable_wrapper .dataTables_info {
+  display: none !important;
+}
+
+/* שורת הסינון */
+#filter-file-name,
+#filter-file-type {
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+
+
+/* חיצי מיון כמו בטבלת התיקים */
+#filesTable th.asc::after {
+  content: " ↑";
+}
+
+#filesTable th.desc::after {
+  content: " ↓";
+}
+
+#filesTable th {
+  cursor: pointer;
+  user-select: none;
+}
