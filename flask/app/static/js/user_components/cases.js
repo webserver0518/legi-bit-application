@@ -101,7 +101,7 @@
           searching: false,
           ordering: true,
           info: true,
-          pageLength: 10,
+          pageLength: 17,
           dom: 'lrtip',
           language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/he.json' }
         });

@@ -312,7 +312,7 @@ window.loadFiles = function loadFiles() {
         searching: false,
         ordering: true,
         info: false,
-        pageLength: 10,
+        pageLength: 17,
         language: {
           url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/he.json"
         },
