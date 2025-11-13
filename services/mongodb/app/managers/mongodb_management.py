@@ -714,7 +714,7 @@ class MongoDBManager:
                 )
                 continue
 
-            deleted_count = ResponseManager.get_data(response=delete_res).get("deleted_count", 0)
+            deleted_count = ResponseManager.get_data(response=delete_res)
             total_deleted += deleted_count
 
             results.append({
@@ -730,9 +730,7 @@ class MongoDBManager:
 
         # debug success
         current_app.logger.debug(f"returning success with results and total_deleted={total_deleted}")
-        return ResponseManager.success(
-            data={"total_deleted": total_deleted, "details": results}
-        )
+        return ResponseManager.success(data={"total_deleted": total_deleted, "details": results})
 
     @classmethod
     def update_entity(cls,

@@ -177,6 +177,93 @@ def get_file_url():
     current_app.logger.debug(f"✅ [get_file_url] Returning presigned URL for key: {key}")
     return ResponseManager.success(data=presigned_url)
 
+
+# --------------------------------------------------------
+# DELETE FILE
+# --------------------------------------------------------
+@user_bp.route("/delete_file", methods=["DELETE"])
+def delete_file():
+    """
+    Delete a file:
+      1. Validate auth + params
+      2. Delete from S3
+      3. Delete from MongoDB (FILES collection)
+    """
+
+    office_serial = AuthorizationManager.get_office_serial()
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+
+    case_serial = request.args.get("case_serial")
+    file_serial = request.args.get("file_serial")
+    file_name = request.args.get("file_name")
+
+    if not case_serial:
+        return ResponseManager.bad_request("Missing 'case_serial'")
+    if not file_serial:
+        return ResponseManager.bad_request("Missing 'file_serial'")
+    if not file_name:
+        return ResponseManager.bad_request("Missing 'file_name'")
+
+    # Normalize
+    file_serial = int(file_serial)
+    case_serial = int(case_serial)
+
+    # ----------------------------------------------------
+    # Build S3 key
+    # ----------------------------------------------------
+    key = f"uploads/{office_serial}/{case_serial}/{file_serial}-{file_name}"
+    current_app.logger.debug(f"🗑️ [delete_file] Deleting key: {key}")
+
+    # ----------------------------------------------------
+    # Delete from S3
+    # ----------------------------------------------------
+    s3_res = s3_service.delete(key)
+    if not ResponseManager.is_success(s3_res):
+        current_app.logger.error(
+            f"❌ [delete_file] Failed to delete from S3: {s3_res['error']}"
+        )
+        return s3_res
+
+    # ----------------------------------------------------
+    # Delete from Mongo (FILES entity)
+    # ----------------------------------------------------
+    mongo_res = mongodb_service.delete_entity(
+        entity=MongoDBEntity.FILES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(file_serial)
+    )
+
+    if not ResponseManager.is_success(mongo_res):
+        current_app.logger.error(
+            f"❌ [delete_file] Failed to delete Mongo file serial={file_serial}"
+        )
+        # File already deleted from S3 — but object remains in DB
+        return mongo_res
+
+    # ----------------------------------------------------
+    # Remove file_serial from CASE.files_serials
+    # ----------------------------------------------------
+    case_update_res = mongodb_service.update_entity(
+        entity=MongoDBEntity.CASES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(case_serial),
+        operator="$pull",
+        update_data={"files_serials": file_serial}
+    )
+
+    if not ResponseManager.is_success(case_update_res):
+        current_app.logger.error(
+            f"❌ [delete_file] Failed to pull file_serial={file_serial} from case={case_serial}"
+        )
+
+    current_app.logger.info(
+        f"🟢 [delete_file] File serial={file_serial} deleted successfully"
+    )
+    return ResponseManager.success(message="File deleted")
+
+
+
 # ---------------- CASES MANAGEMENT ---------------- #
 
 @user_bp.route("/get_case")
