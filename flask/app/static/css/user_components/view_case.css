@@ -174,3 +174,17 @@ table td {
     transform: translateY(0);
   }
 }
+
+
+.file-name-cell {
+  direction: rtl;
+  text-align: right;
+}
+
+.file-name-cell .file-icon {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  margin-left: 6px;
+  /* רווח בין האייקון לשם */
+}
