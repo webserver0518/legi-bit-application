@@ -1,4 +1,10 @@
 // static/js/user_components/view_case.js
+function removeExtension(filename) {
+  if (!filename || typeof filename !== "string") return filename;
+  const lastDot = filename.lastIndexOf(".");
+  return lastDot > 0 ? filename.substring(0, lastDot) : filename;
+}
+
 window.init_view_case = function init_view_case() {
   const safeValue = (v) => (v && v.trim && v.trim() !== "" ? v : "-");
 
@@ -59,11 +65,11 @@ window.init_view_case = function init_view_case() {
           : files.map(f => {
             const date = f.created_at ? new Date(f.created_at).toLocaleDateString("he-IL") : "-";
             return `
-                <tr>
-                  <td>${safeValue(f.name)}</td>
+                <tr data-file-serial="${f.serial}" style="cursor:pointer;" onclick="viewFile(${caseObj.serial},${f.serial},'${f.name}')">
+                  <td>${safeValue(removeExtension(f.name))}</td>
                   <td>${safeValue(f.type)}</td>
                   <td>${date}</td>
-                  <td><button class="btn btn-sm btn-outline-primary" onclick="viewFile(${caseObj.serial}, ${f.serial}, '${f.name}')">צפה</button></td>
+                  <td><button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteFile(${caseObj.serial}, ${f.serial}, '${f.name}')">מחק</button></td>
                 </tr>`;
           }).join("");
       }
@@ -142,3 +148,40 @@ async function viewFile(caseSerial, fileSerial, fileName) {
     alert("שגיאה בעת ניסיון לפתוח את הקובץ");
   }
 }
+
+
+
+// --------------------
+// DELETE FILE HANDLER
+// --------------------
+window.deleteFile = async function deleteFile(caseSerial, fileSerial, fileName) {
+  const displayName = fileName;
+  if (!confirm(`האם אתה בטוח שברצונך למחוק את הקובץ "${displayName}"?`)) {
+    return;
+  }
+
+  try {
+    const url = `/delete_file?case_serial=${caseSerial}&file_serial=${fileSerial}&file_name=${encodeURIComponent(fileName)}`;
+
+    const res = await fetch(url, {
+      method: "DELETE"
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(`⚠️ שגיאה במחיקת הקובץ: ${data.error || "Unknown error"}`);
+      return;
+    }
+
+    // מחיקה מוצלחת → להסיר את השורה מהטבלה
+    const row = document.querySelector(`tr[data-file-serial="${fileSerial}"]`);
+    if (row) row.remove();
+
+    alert("🟢 הקובץ נמחק בהצלחה.");
+
+  } catch (err) {
+    console.error("Delete file error:", err);
+    alert("❌ שגיאה בתקשורת עם השרת.");
+  }
+};
