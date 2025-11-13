@@ -113,7 +113,17 @@ window.addEventListener('DOMContentLoaded', () => {
   fetch('/get_office_name')
     .then(r => r.text())
     .then(name => {
-      utils.setText(utils.qs('#office-name'), name);
+      const officeEl = utils.qs('#office-name');
+      if (officeEl) officeEl.innerHTML = `<span><img src="/static/images/icons/OFFICE.svg" class="sidebar-icon"> ${name}</span>`;
+    })
+    .catch(() => { });
+
+  // user full name
+  fetch('/get_username')
+    .then(r => r.text())
+    .then(name => {
+      const el = utils.qs('#username');
+      if (el) el.innerHTML = `<img src="/static/images/icons/USER.svg" class="sidebar-icon"> ${name}`;
     })
     .catch(() => { });
 
