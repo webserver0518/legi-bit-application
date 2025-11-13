@@ -25,7 +25,7 @@ def _safe_request(method: str, path: str, **kwargs) -> tuple:
     url = f"{get_mongodb_url()}{path}"
     start = time.perf_counter()
     
-    resp = requests.request(method, url, timeout=8, **kwargs)
+    resp = requests.request(method, url, timeout=80, **kwargs)
     elapsed = (time.perf_counter() - start) * 1000
 
     status = resp.status_code
