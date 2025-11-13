@@ -1,0 +1,42 @@
+<svg width="42" height="42" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- עיגול outline -->
+  <circle cx="21" cy="21" r="20" fill="none" stroke="white" stroke-width="2"></circle>
+
+  <!-- הזזה שמאלה נוספת ב־0.725px -->
+  <g transform="translate(-5.08, -7) scale(1.25)">
+
+    <!-- שמאלי – נמוך -->
+    <rect x="12" y="18" width="6" height="12" fill="white"></rect>
+      <rect x="13" y="19" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="15" y="19" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="13" y="21" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="15" y="21" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="13" y="23" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="15" y="23" width="1" height="1" fill="#8a8a8a"></rect>
+
+    <!-- מרכזי – גבוה -->
+    <rect x="18" y="14" width="6" height="16" fill="white"></rect>
+      <rect x="19" y="15" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="21" y="15" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="19" y="17" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="21" y="17" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="19" y="19" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="21" y="19" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="19" y="21" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="21" y="21" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="19" y="23" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="21" y="23" width="1" height="1" fill="#8a8a8a"></rect>
+
+    <!-- ימני – נמוך -->
+    <rect x="24" y="18" width="6" height="12" fill="white"></rect>
+      <rect x="25" y="19" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="27" y="19" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="25" y="21" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="27" y="21" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="25" y="23" width="1" height="1" fill="#8a8a8a"></rect>
+      <rect x="27" y="23" width="1" height="1" fill="#8a8a8a"></rect>
+
+  </g>
+
+</svg>
