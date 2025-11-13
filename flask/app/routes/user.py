@@ -67,6 +67,21 @@ def get_office_serial():
     if not office_serial:
         return ResponseManager.bad_request("Missing office_serial in auth")
     return ResponseManager.success(data={"office_serial": office_serial})
+
+
+# ---------------- User MANAGEMENT ---------------- #
+@user_bp.route("/get_username")
+def get_username():
+    """ Return the current logged-in office name from auth """
+    user_full_name = AuthorizationManager.get_username()
+    if not user_full_name:
+        current_app.logger.debug("No user full name found")
+        return "Not Found"
+    else:
+        return user_full_name
+
+
+
 # ---------------- FILES MANAGEMENT ---------------- #
 
 @user_bp.route("/create_new_file", methods=["POST"])
