@@ -69,22 +69,6 @@ window.init_view_case = function init_view_case() {
         factsEl.textContent = safeValue(facts);
       }
 
-      // קבצים
-      const filesTbody = document.querySelector("#filesTable tbody");
-      if (filesTbody) {
-        filesTbody.innerHTML = (files.length === 0)
-          ? `<tr><td colspan="100%" class="text-muted py-3">אין קבצים להצגה</td></tr>`
-          : files.map(f => {
-            const date = f.created_at ? new Date(f.created_at).toLocaleDateString("he-IL") : "-";
-            return `
-                <tr data-file-serial="${f.serial}" style="cursor:pointer;" onclick="viewFile(${caseObj.serial},${f.serial},'${f.name}')">
-                  <td class="file-name-cell"><img src="${fileIconPath(f.type)}" class="file-icon">   ${safeValue(removeExtension(f.name))}</td>
-                  <td>${date}</td>
-                  <td><button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteFile(${caseObj.serial}, ${f.serial}, '${f.name}')">מחק</button></td>
-                </tr>`;
-          }).join("");
-      }
-
       // לקוחות
       const clientsTbody = document.querySelector("#clientsTable tbody");
       if (clientsTbody) {
@@ -118,6 +102,8 @@ window.init_view_case = function init_view_case() {
                 <td>${safeValue(e.performed_by)}</td>
               </tr>`).join("");
       }
+
+      loadFiles();
     })
     .catch(err => console.error("❌ Error loading case:", err));
 };
@@ -196,3 +182,159 @@ window.deleteFile = async function deleteFile(caseSerial, fileSerial, fileName) 
     alert("❌ שגיאה בתקשורת עם השרת.");
   }
 };
+
+
+
+
+
+// ================================
+// 📁 FILES TABLE — FILTERED DATA
+// ================================
+
+// יצירת debounce
+function debounce(fn, delay = 400) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+// בניית פרמטרים של הפילטרים
+function buildFileFilters() {
+  const params = {};
+
+  const name = document.getElementById("filter-file-name")?.value.trim();
+  const type = document.getElementById("filter-file-type")?.value.trim();
+
+  if (name) params.name = name;
+  if (type) params.type = type;
+
+  return params;
+}
+
+// ניקוי פילטרים
+window.clearFileFilters = function () {
+  document.getElementById("filter-file-name").value = "";
+  document.getElementById("filter-file-type").value = "";
+  loadFiles();
+};
+
+
+// ================================
+// 📥 טעינת קבצים
+// ================================
+let filesTableInstance = null;
+
+window.loadFiles = function loadFiles() {
+  const serial = sessionStorage.getItem("selectedCaseSerial");
+  if (!serial) return;
+
+  const tbody = document.querySelector("#filesTable tbody");
+  tbody.innerHTML = `<tr><td colspan="100%" class="text-muted py-3">טוען קבצים...</td></tr>`;
+
+  fetch(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)
+    .then(r => r.json())
+    .then(payload => {
+
+      // ניתוק DataTables אם קיים
+      if (filesTableInstance) {
+        filesTableInstance.clear().destroy();
+        filesTableInstance = null;
+      }
+
+      const item = payload.data?.[0] ?? {};
+      const caseObj = item.cases ?? item;
+      const allFiles = Array.isArray(caseObj.files) ? caseObj.files : [];
+
+      // הפעלת פילטרים
+      const filters = buildFileFilters();
+      let filtered = allFiles;
+
+      if (filters.name) {
+        filtered = filtered.filter(f =>
+          f.name.toLowerCase().includes(filters.name.toLowerCase())
+        );
+      }
+
+      if (filters.type) {
+        filtered = filtered.filter(f =>
+          fileIconPath(f.type).toLowerCase().includes(filters.type.toLowerCase())
+        );
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="100%" class="text-muted py-3">לא נמצאו קבצים</td></tr>`;
+        return;
+      }
+
+      // פונקציה להסרת סיומת
+      const removeExtension = (filename) => {
+        if (!filename || typeof filename !== "string") return filename;
+        const i = filename.lastIndexOf(".");
+        return i > 0 ? filename.substring(0, i) : filename;
+      };
+
+      // בניית השורות
+      const rows = filtered.map(f => {
+        const date = f.created_at
+          ? new Date(f.created_at).toLocaleDateString("he-IL")
+          : "-";
+        const icon = fileIconPath(f.type);
+
+        return `
+            <tr data-file-serial="${f.serial}"
+                style="cursor:pointer;"
+                onclick="viewFile(${caseObj.serial}, ${f.serial}, '${f.name}')">
+
+                <td class="file-name-cell">
+                    <img src="${icon}" class="file-icon" />
+                    ${removeExtension(f.name)}
+                </td>
+
+                <td>${date}</td>
+
+                <td>
+                    <button class="btn btn-sm btn-outline-danger"
+                            onclick="event.stopPropagation(); deleteFile(${caseObj.serial}, ${f.serial}, '${f.name}')">
+                        מחק
+                    </button>
+                </td>
+            </tr>
+        `;
+      }).join("");
+
+      tbody.innerHTML = rows;
+
+      // הפעלת DataTables
+      filesTableInstance = $("#filesTable").DataTable({
+        paging: true,
+        searching: false,
+        ordering: true,
+        info: false,
+        pageLength: 10,
+        language: {
+          url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/he.json"
+        },
+        columnDefs: [
+          { orderable: true, targets: [0, 1] },
+          { orderable: false, targets: [2] }
+        ]
+      });
+    })
+    .catch(err => {
+      console.error("Error loading files:", err);
+      tbody.innerHTML = `<tr><td colspan="100%" class="text-danger py-3">שגיאה בטעינת הקבצים</td></tr>`;
+    });
+};
+
+
+// ================================
+// הפעלת מנגנון פילטר בזמן הקלדה
+// ================================
+const debouncedLoadFiles = debounce(loadFiles);
+
+["filter-file-name", "filter-file-type"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("input", debouncedLoadFiles);
+});
