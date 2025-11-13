@@ -136,7 +136,6 @@ body:not(.sidebar-collapsed) .marginClient {
 
 #current-date,
 #current-time,
-#office-name,
 #place-holder {
   pointer-events: none;
   cursor: default;
@@ -173,4 +172,57 @@ body:not(.sidebar-collapsed) .marginClient {
 #casesTable tbody tr:hover {
   background-color: #f0f8ff;
   cursor: pointer;
+}
+
+
+.sidebar a,
+.sub-sidebar a {
+  white-space: normal !important;
+  /* מאפשר שבירת שורה */
+  word-break: break-word;
+  /* מונע גלישה מחוץ לרוחב */
+  line-height: 1.3;
+}
+
+
+#office-name {
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  direction: rtl;
+}
+
+/* ברירת מחדל – בלי אנימציה */
+#office-name span {
+  display: inline-block;
+  white-space: nowrap;
+  direction: rtl !important;
+  unicode-bidi: bidi-override;
+  transform: translateX(0%);
+  /* התחלה רגילה */
+}
+
+/* כשהעכבר מעל → להפעיל את האנימציה */
+#office-name:hover span {
+  animation: slideLR 5s ease-in-out infinite alternate;
+}
+
+/* מימין → שמאלה → חזרה לימין */
+@keyframes slideLR {
+  0% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(75%);
+  }
+}
+
+
+
+.sidebar-icon {
+  width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  vertical-align: middle;
 }
