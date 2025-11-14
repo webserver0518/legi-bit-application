@@ -8,14 +8,14 @@ window.init_add_case = function () {
   initClientsManager();        // ✅ Multi-client management
   initRequiredIndicators();    // ✅ Required fields indicators
   initHebrewBirthDatePicker(); // ✅ Birth date input display handling
+  initClientAutocomplete();
 };
 
 /* Parse API responses safely into a unified object */
-const parseApiResponse = (payload) => {
+window.parseApiResponse = (payload) => {
   if (!payload || typeof payload !== 'object') {
     return { data: null, error: 'Invalid server response', success: false, message: '' };
   }
-
   return {
     data: payload?.data ?? null,
     error: payload.error,
@@ -27,6 +27,40 @@ const parseApiResponse = (payload) => {
 /* ==============================
    🧩 MULTI-CLIENT MANAGEMENT
    ============================== */
+
+// 🧾 Render client list in the table
+window.renderClientsTable = function () {
+  const table = document.getElementById("clients-table");
+  const tableBody = table.querySelector("tbody");
+
+  if (clientsList.length === 0) {
+    table.style.display = "none"; // או table.classList.add('d-none');
+    tableBody.innerHTML = "";
+    return;
+  }
+
+  // אם יש לקוחות — נציג את הטבלה
+  table.style.display = "table"; // או table.classList.remove('d-none');
+  tableBody.innerHTML = clientsList.map((c, i) => `
+      <tr>
+        <td>${c.first_name}</td>
+        <td>${c.last_name}</td>
+        <td>${c.id_card_number || "-"}</td>
+        <td>${c.phone || "-"}</td>
+        <td>${c.city || "-"}</td>
+        <td>${c.street || "-"}</td>
+        <td>${c.home_number || "-"}</td>
+        <td>${c.postal_code || "-"}</td>
+        <td>${c.email || "-"}</td>
+        <td>${c.birth_date || "-"}</td>
+        <td>${c.role === "main" ? "ראשי" : "משני"}</td>
+        <td><button class="btn btn-sm btn-outline-danger" onclick="removeClient(${i})">✖</button></td>
+      </tr>
+    `).join("");
+
+  document.getElementById("clients-json-input").value = JSON.stringify(clientsList);
+};
+
 function initClientsManager() {
   const addBtn = document.getElementById("add-client-btn");
   const roleSelect = document.getElementById("client_role");
@@ -38,7 +72,7 @@ function initClientsManager() {
   window.clientsList = [];
 
   // ➕ Add client button
-  addBtn.addEventListener("click", () => {
+  addBtn.addEventListener("click", async () => {
     const fd = new FormData(form);
 
     const client = {
@@ -61,9 +95,30 @@ function initClientsManager() {
       return;
     }
 
-    clientsList.push(client);
-    renderClientsTable();
-    clearClientFields();
+    try {
+      // 🧠 שליחה לשרת כדי לשמור לקוח חדש
+      const res = await fetch("/create_new_client", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(client)
+      });
+      const json = await res.json();
+      if (!json.success) {
+        showToast("❌ שגיאה בהוספת לקוח לשרת", true);
+        return;
+      }
+
+      const client_serial = json.data;
+      client.serial = client_serial;
+      clientsList.push(client);
+      renderClientsTable();
+      clearClientFields();
+      showToast(`✅ לקוח נוסף בהצלחה (מספר ${client_serial})`);
+    } catch (err) {
+      console.error("שגיאה בשליחת לקוח:", err);
+      showToast("⚠️ בעיה בחיבור לשרת", true);
+    }
+
   });
 
   // 🧹 Clear input fields after adding
@@ -78,36 +133,7 @@ function initClientsManager() {
     });
   }
 
-  // 🧾 Render client list in the table
-  function renderClientsTable() {
-    const table = document.getElementById("clients-table");
-    const tableBody = table.querySelector("tbody");
 
-    if (clientsList.length === 0) {
-      table.style.display = "none"; // או table.classList.add('d-none');
-      tableBody.innerHTML = "";
-      return;
-    }
-
-    // אם יש לקוחות — נציג את הטבלה
-    table.style.display = "table"; // או table.classList.remove('d-none');
-    tableBody.innerHTML = clientsList.map((c, i) => `
-      <tr>
-        <td>${c.first_name}</td>
-        <td>${c.last_name}</td>
-        <td>${c.id_card_number || "-"}</td>
-        <td>${c.phone || "-"}</td>
-        <td>${c.city || "-"}</td>
-        <td>${c.street || "-"}</td>
-        <td>${c.home_number || "-"}</td>
-        <td>${c.postal_code || "-"}</td>
-        <td>${c.email || "-"}</td>
-        <td>${c.birth_date || "-"}</td>
-        <td>${c.role === "main" ? "ראשי" : "משני"}</td>
-        <td><button class="btn btn-sm btn-outline-danger" onclick="removeClient(${i})">✖</button></td>
-      </tr>
-    `).join("");
-  }
 
   // ❌ Remove client by index
   window.removeClient = function (i) {
@@ -234,6 +260,7 @@ function initClientsManager() {
  * Uses presigned URLs and updates progress bars in real time
  */
 async function uploadAllFilesToS3(files, office_serial, case_serial) {
+  console.log(files.length)
   if (!files || files.length === 0) {
     console.log("⚠️ No files to upload");
     return true;
@@ -472,7 +499,10 @@ window.initCaseFormPreview = function () {
       facts: fd.get('facts'),
       against: fd.get('against'),
       against_type: document.getElementById('against-type')?.value || '',
-      clients: window.clientsList || []
+      clients: (window.clientsList || []).map(c => ({
+        client_serial: c.serial,
+        role: c.role
+      }))
     };
 
     // 🟢 שליחת הנתונים לשרת
@@ -505,6 +535,14 @@ window.initCaseFormPreview = function () {
 
       if (!window.filesList || window.filesList.length === 0) {
         showToast("⚠️ לא נבחרו קבצים, התיק ייווצר ללא מסמכים");
+        localStorage.setItem("selectedSubMenu", "all_cases");
+        showSubMenu("all_cases");
+        loadContent("cases", true, "user");
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "פתח תיק";
+        }
+        return;
       }
 
       /* 2️⃣ העלאת קבצים עם key לפי office+case */
@@ -535,12 +573,16 @@ window.initCaseFormPreview = function () {
       }
 
       showToast("✅ Case Files Uploaded");
+
+
       localStorage.setItem("selectedSubMenu", "all_cases");
       showSubMenu("all_cases");
       loadContent("cases", true, "user");
+
     } catch (error) {
       console.error(error);
       showToast("⚠️ Error contacting server", true);
+
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -644,4 +686,94 @@ async function getOfficeSerial() {
     showToast("⚠️ שגיאה בשליפת מזהה משרד", true);
     throw err;
   }
+}
+
+
+
+
+
+async function initClientAutocomplete() {
+  const input = document.getElementById("client-first-name-input");
+  const suggestions = document.getElementById("client-name-suggestions");
+  if (!input || !suggestions) return;
+
+  let officeClients = [];
+  try {
+    const res = await fetch("/get_office_clients");
+    const json = await res.json();
+    if (json.success && Array.isArray(json.data)) {
+      officeClients = json.data;
+    }
+  } catch (err) {
+    console.error("❌ שגיאה בשליפת לקוחות מהמשרד:", err);
+  }
+
+  // 🧠 הצגת הצעות בזמן הקלדה
+  input.addEventListener("input", () => {
+    const value = input.value.trim();
+    if (!value) {
+      suggestions.style.display = "none";
+      return;
+    }
+
+    const matches = officeClients.filter(c =>
+      (c.first_name + " " + c.last_name).includes(value)
+    );
+
+    if (matches.length === 0) {
+      suggestions.style.display = "none";
+      return;
+    }
+
+    suggestions.innerHTML = matches
+      .map(c => `
+        <li class="list-group-item list-group-item-action" data-serial="${c.serial}">
+          ${c.first_name} ${c.last_name}
+        </li>
+      `)
+      .join("");
+    suggestions.style.display = "block";
+  });
+
+  // 🧩 בחירת לקוח קיים → הוספה ישירה לטבלה
+  suggestions.addEventListener("click", (e) => {
+    const li = e.target.closest("li");
+    if (!li) return;
+    const serial = li.dataset.serial;
+    const selected = officeClients.find(c => c.serial == serial);
+    if (!selected) return;
+
+    // בדוק אם כבר בטבלה
+    const alreadyExists = (window.clientsList || []).some(c => c.serial == selected.serial);
+    if (alreadyExists) {
+      showToast("⚠️ הלקוח כבר נוסף לרשימה");
+      suggestions.style.display = "none";
+      input.value = "";
+      return;
+    }
+
+    // אם אין רשימה גלובלית – צור
+    if (!window.clientsList) window.clientsList = [];
+
+    // הוסף לקוח לרשימה
+    window.clientsList.push({
+      ...selected,
+      role: selected.role || "secondary"
+    });
+
+    // רענן את הטבלה
+    if (typeof renderClientsTable === "function") {
+      renderClientsTable();
+    }
+
+    showToast(`✅ ${selected.first_name} ${selected.last_name} נוסף לתיק`);
+    input.value = "";
+    suggestions.style.display = "none";
+  });
+
+  // סגור הצעות בלחיצה בחוץ
+  document.addEventListener("click", (e) => {
+    if (!suggestions.contains(e.target) && e.target !== input)
+      suggestions.style.display = "none";
+  });
 }
