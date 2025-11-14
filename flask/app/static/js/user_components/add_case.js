@@ -735,6 +735,34 @@ async function initClientAutocomplete() {
     suggestions.style.display = "block";
   });
 
+  // 🟢 הצג הצעות ברגע שממקדים את השדה (בלי להקליד)
+  input.addEventListener("focus", () => {
+    const value = input.value.trim();
+
+    // אם אין ערך – נציג את כל הלקוחות
+    const matches = value
+      ? officeClients.filter(c =>
+        (c.first_name + " " + c.last_name).includes(value)
+      )
+      : officeClients;
+
+    if (matches.length === 0) {
+      suggestions.style.display = "none";
+      return;
+    }
+
+    suggestions.innerHTML = matches
+      .map(c => `
+      <li class="list-group-item list-group-item-action" data-serial="${c.serial}">
+        ${c.first_name} ${c.last_name}
+      </li>
+    `)
+      .join("");
+
+    suggestions.style.display = "block";
+  });
+
+
   // 🧩 בחירת לקוח קיים → הוספה ישירה לטבלה
   suggestions.addEventListener("click", (e) => {
     const li = e.target.closest("li");
