@@ -293,6 +293,7 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
       progressBar.classList.remove("bg-success", "bg-danger");
       progressBar.classList.add("bg-info");
       fileEntry.status = "creating_record";
+      //showToast(`📄 יוצר רשומת קובץ עבור "${file.name}"...`);
 
       const createFileRes = await fetch("/create_new_file", {
         method: "POST",
@@ -344,6 +345,7 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
       const formData = new FormData();
       Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
       formData.append("file", file);
+      //showToast(`⬆️ מעלה את "${file.name}" לשרת...`);
 
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -362,9 +364,11 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
             progressBar.classList.remove("bg-info");
             progressBar.classList.add("bg-success");
             fileEntry.status = "done";
+            //showToast(`✅ הקובץ "${file.name}" הועלה בהצלחה!`);
             resolve();
           } else {
             reject(new Error(`Upload failed with status ${xhr.status}`));
+            showToast(`❌ העלאת "${file.name}" נכשלה`, true);
           }
         };
 
@@ -460,6 +464,9 @@ window.initCaseFormPreview = function () {
       submitBtn.disabled = true;
       submitBtn.textContent = "יוצר תיק...";
     }
+
+    // open files section
+    document.querySelector("[data-target='#collapseFiles']")?.click();
 
     // ✅ Require at least one main client before submission
     const hasMain = (window.clientsList || []).some(c => c.role === "main");
