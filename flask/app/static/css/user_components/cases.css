@@ -94,7 +94,7 @@
 
 /* === HOVER EFFECT === */
 .customTable tbody tr:hover {
-    background: #c3daf5;
+    background: #c3daf5 !important;
 }
 
 
@@ -114,6 +114,22 @@
     text-align: left !important;
     direction: rtl;
 }
+
+/* ✨ מצב טעינה של שורת הסינון */
+.filter-bar.loading {
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+/* כשהיא חוזרת לפעילות */
+.filter-bar {
+    transition: opacity 0.3s ease;
+}
+
+.filter-bar.loading * {
+    cursor: not-allowed !important;
+}
+
 
 
 
