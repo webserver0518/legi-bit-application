@@ -1,151 +1,139 @@
 <!-- 🟦 Header (case title + status dot) -->
 <div class="case-header position-relative text-center mb-4">
-  <!-- Status dot (left side). JS will add class by status (active/archived). -->
-  <div class="status-dot" id="case-status-dot"></div>
-  <h3 class="fw-bold mb-0">
-    <span id="case-title">---</span> (מס' <span id="case-serial">-</span>)
-  </h3>
+    <!-- Status dot (left side). JS will add class by status (active/archived). -->
+    <div class="status-dot" id="case-status-dot"></div>
+    <h3 class="fw-bold mb-0">
+        <span id="case-title">---</span> (מס' <span id="case-serial">-</span>)
+    </h3>
 </div>
 
 <!-- app/templates/view_case.html -->
 <div class="container mt-4 view-case-page">
 
-  <!-- 🟩 Case general info row -->
-  <div class="case-info-row d-flex flex-wrap justify-content-center gap-4 mb-4 text-center">
+    <!-- 🟩 Case general info row -->
+    <div class="case-info-row d-flex flex-wrap justify-content-center gap-4 mb-4 text-center">
 
-    <!-- Created by -->
-    <div class="case-info-item shadow-sm rounded p-3 bg-light">
-      <span class="label d-block fw-semibold">נוצר ע"י</span>
-      <span id="case-created-by" class="value text-muted">-</span>
+        <!-- Created by -->
+        <div class="case-info-item shadow-sm rounded p-3 bg-light">
+            <span class="label d-block fw-semibold">נוצר ע"י</span>
+            <span id="case-created-by" class="value text-muted">-</span>
+        </div>
+
+        <!-- Field -->
+        <div class="case-info-item shadow-sm rounded p-3 bg-light">
+            <span class="label d-block fw-semibold">תחום</span>
+            <span id="case-field" class="value text-muted">-</span>
+        </div>
+
+        <!-- Against (combined: "name - type" in Hebrew) -->
+        <div class="case-info-item shadow-sm rounded p-3 bg-light">
+            <span class="label d-block fw-semibold">כנגד</span>
+            <!-- JS will populate as: "<against> - <against_type_hebrew>" -->
+            <span id="case-against" class="value text-muted">-</span>
+        </div>
+
+        <!-- Created date (date only, no time) -->
+        <div class="case-info-item shadow-sm rounded p-3 bg-light">
+            <span class="label d-block fw-semibold">תאריך יצירה</span>
+            <!-- JS will format with toLocaleDateString('he-IL') -->
+            <span id="case-created-at" class="value text-muted">-</span>
+        </div>
+
+        <!-- 🟪 Case facts (full width under the info blocks) -->
+        <div class="case-facts case-info-item shadow-sm rounded p-3 bg-light">
+            <span class="label d-block fw-semibold">עובדות התיק</span>
+            <div id="case-facts-text" class="value text-muted text-start" dir="rtl">-</div>
+        </div>
+
     </div>
 
-    <!-- Field -->
-    <div class="case-info-item shadow-sm rounded p-3 bg-light">
-      <span class="label d-block fw-semibold">תחום</span>
-      <span id="case-field" class="value text-muted">-</span>
+    <!-- 🟨 Files table (NEW unified design like cases table) -->
+    <div class="file-section mb-5">
+
+        <h5 class="section-title mb-3">
+            <i class="bi bi-paperclip me-1"></i> קבצים
+        </h5>
+
+        <div class="filter-bar">
+            <input id="file-search" class="filter-input" type="text" placeholder="חיפוש בכל התיק...">
+
+            <select id="file-type" class="filter-select">
+                <option value="">סוג</option>
+            </select>
+
+            <button id="clear-file-filters" class="filter-btn" type="button">נקה</button>
+        </div>
+
+        <!-- 📋 טבלת קבצים -->
+        <table id="filesTable" class="customTable">
+            <thead class="table-primary">
+                <tr>
+                    <th class="col-wide">שם</th>
+                    <th>תאריך העלאה</th>
+                    <th>פעולות</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="100%" class="text-muted py-3">טוען קבצים...</td>
+                </tr>
+            </tbody>
+        </table>
+
+
     </div>
 
-    <!-- Against (combined: "name - type" in Hebrew) -->
-    <div class="case-info-item shadow-sm rounded p-3 bg-light">
-      <span class="label d-block fw-semibold">כנגד</span>
-      <!-- JS will populate as: "<against> - <against_type_hebrew>" -->
-      <span id="case-against" class="value text-muted">-</span>
+
+    <!-- 🟧 Clients table -->
+    <div class="case-section mb-5">
+        <h5 class="section-title mb-3">
+            <i class="bi bi-people me-1"></i> לקוחות
+        </h5>
+
+        <div class="table-responsive shadow-sm rounded">
+            <table id="clientsTable" class="table table-hover align-middle text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th>שם פרטי</th>
+                        <th>שם משפחה</th>
+                        <th>תעודת זהות</th>
+                        <th>טלפון</th>
+                        <th>דוא"ל</th>
+                        <th>רמה</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <!-- Created date (date only, no time) -->
-    <div class="case-info-item shadow-sm rounded p-3 bg-light">
-      <span class="label d-block fw-semibold">תאריך יצירה</span>
-      <!-- JS will format with toLocaleDateString('he-IL') -->
-      <span id="case-created-at" class="value text-muted">-</span>
+    <!-- 🟥 Events table -->
+    <div class="case-section mb-5">
+        <h5 class="section-title mb-3">
+            <i class="bi bi-calendar-event me-1"></i> אירועים
+        </h5>
+
+        <div class="table-responsive shadow-sm rounded">
+            <table id="eventsTable" class="table table-hover align-middle text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th>תאריך</th>
+                        <th>סוג</th>
+                        <th>תיאור</th>
+                        <th>בוצע ע"י</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="100%" class="text-muted py-3">אין אירועים להצגה</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-
-    <!-- 🟪 Case facts (full width under the info blocks) -->
-    <div class="case-facts case-info-item shadow-sm rounded p-3 bg-light">
-      <span class="label d-block fw-semibold">עובדות התיק</span>
-      <div id="case-facts-text" class="value text-muted text-start" dir="rtl">-</div>
-    </div>
-
-  </div>
-
-  <!-- 🟨 Files table (NEW unified design like cases table) -->
-  <div class="case-section mb-5">
-
-    <h5 class="section-title mb-3">
-      <i class="bi bi-paperclip me-1"></i> קבצים
-    </h5>
-
-    <!-- 🔍 שורת סינון (מותאם לקבצים) -->
-    <div class="d-flex flex-wrap gap-2 align-items-center bg-light p-3 rounded shadow-sm mb-3">
-      <label class="mb-0 fw-bold">סינון:</label>
-
-      <input id="filter-file-name" type="text" class="form-control w-auto flex-grow-1" placeholder="שם קובץ">
-
-      <select id="filter-file-type" class="form-select w-auto">
-        <option value="">סוג קובץ</option>
-        <option value="pdf">PDF</option>
-        <option value="word">Word</option>
-        <option value="excel">Excel</option>
-        <option value="image">תמונה</option>
-        <option value="video">וידאו</option>
-        <option value="audio">אודיו</option>
-        <option value="archive">ארכיון</option>
-        <option value="other">אחר</option>
-      </select>
-
-      <button class="btn btn-outline-secondary btn-sm" onclick="clearFileFilters()">נקה</button>
-    </div>
-
-    <!-- 📋 טבלת קבצים -->
-    <div class="table-responsive shadow-sm rounded">
-      <table id="filesTable" class="table table-striped table-sm text-center">
-        <thead class="table-primary">
-          <tr>
-            <th>שם</th>
-            <th>תאריך העלאה</th>
-            <th>פעולות</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colspan="100%" class="text-muted py-3">טוען קבצים...</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-  </div>
-
-
-  <!-- 🟧 Clients table -->
-  <div class="case-section mb-5">
-    <h5 class="section-title mb-3">
-      <i class="bi bi-people me-1"></i> לקוחות
-    </h5>
-
-    <div class="table-responsive shadow-sm rounded">
-      <table id="clientsTable" class="table table-hover align-middle text-center">
-        <thead class="table-light">
-          <tr>
-            <th>שם פרטי</th>
-            <th>שם משפחה</th>
-            <th>תעודת זהות</th>
-            <th>טלפון</th>
-            <th>דוא"ל</th>
-            <th>רמה</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- 🟥 Events table -->
-  <div class="case-section mb-5">
-    <h5 class="section-title mb-3">
-      <i class="bi bi-calendar-event me-1"></i> אירועים
-    </h5>
-
-    <div class="table-responsive shadow-sm rounded">
-      <table id="eventsTable" class="table table-hover align-middle text-center">
-        <thead class="table-light">
-          <tr>
-            <th>תאריך</th>
-            <th>סוג</th>
-            <th>תיאור</th>
-            <th>בוצע ע"י</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colspan="100%" class="text-muted py-3">אין אירועים להצגה</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
 
 </div>
