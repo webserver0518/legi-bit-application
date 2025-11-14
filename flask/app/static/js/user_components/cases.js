@@ -58,6 +58,9 @@ function caseToSuperString(c) {
   // LOAD CASES FROM SERVER
   // -----------------------
   function loadCases() {
+    document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
+      .forEach(el => el.disabled = true);
+
     const url = `/get_office_cases?expand=true`;
 
     fetch(url)
@@ -88,6 +91,11 @@ function caseToSuperString(c) {
         tbody.html(
           `<tr><td colspan="100%" class="text-center text-danger py-3">Load error</td></tr>`
         );
+      })
+      .finally(() => {
+        // 🔓 נפתח את הסינון בכל מקרה
+        document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
+          .forEach(el => el.disabled = false);
       });
   }
 
