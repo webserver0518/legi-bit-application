@@ -1,247 +1,140 @@
-.bg-light {
-    background-color: #c3daf5 !important;
+/* סרגל סינון – רק מבנה */
+.filter-bar {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    background: #c3daf5;
+    /* רקע עדין */
+    border: 1px solid #ddd;
+    /* מסגרת קלה */
+    border-radius: 8px;
+    /* עיגול פינות */
+    padding: 12px 14px;
+    /* ריווח פנימי */
 }
 
+/* === FILTER INPUT === */
+.filter-input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+}
 
-#casesTable {
+/* מצב פוקוס */
+.filter-input:focus {
+    border-color: #888;
+}
+
+/* === FILTER SELECT === */
+.filter-select {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    background: white;
+    min-width: 140px;
+}
+
+.filter-select:focus {
+    border-color: #888;
+}
+
+/* === FILTER BUTTON === */
+.filter-btn {
+    padding: 8px 14px;
+    font-size: 14px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    background: #f2f2f2;
+    cursor: pointer;
+}
+
+.filter-btn:hover {
+    background: #e6e6e6;
+}
+
+/* === TABLE BASE === */
+.customTable {
+    width: 100%;
+    border-collapse: collapse;
     direction: rtl;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* === TABLE HEADER === */
+.customTable thead th {
+    background: #c3daf5;
+    /* רקע עדין לכותרת */
+    padding: 4px 6px;
+    border-bottom: 2px solid #444d58;
+    font-weight: 600;
+    text-align: center !important;
+    white-space: nowrap;
+}
+
+/* === TABLE BODY CELLS === */
+.customTable td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #eee;
+    /* קו דק בין שורות */
     text-align: center;
 }
 
-#casesTable th,
-#casesTable td {
-    text-align: center !important;
+/* === ROW HEIGHT === */
+.customTable tr {
+    height: 32px;
+}
+
+/* === HOVER EFFECT === */
+.customTable tbody tr:hover {
+    background: #c3daf5;
 }
 
 
-/* מונע "גלישה" של הכפתור ושומר אותו קומפקטי */
-#casesTable .btn-compact {
-    padding: 2px 8px;
-    font-size: 12px;
-    line-height: 1.1;
-    white-space: nowrap;
+/* כותרת בטבלה */
+.customTable th.col-wide {
+    width: 350px;
 }
 
-/* יישור אנכי נעים באמצע לתאים */
-#casesTable td,
-#casesTable th {
-    vertical-align: middle;
-}
-
-/* במידת הצורך: הגבלת רוחב כותרת עם קיצור ... */
-#casesTable .text-truncate {
-    max-width: 220px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-
-#casesTable th.asc::after {
-    content: " ↑";
-}
-
-#casesTable th.desc::after {
-    content: " ↓";
-}
-
-#casesTable th {
-    cursor: pointer;
-    user-select: none;
-}
-
-
-#casesTable {
-    direction: rtl;
-}
-
-.dataTables_filter input {
-    border-radius: 5px;
-    padding: 5px;
-}
-
-.dataTables_wrapper .dataTables_paginate {
-    direction: ltr;
-    /* כדי שהכפתורים של הדפדוף לא יתהפכו */
-}
-
-
-.dataTables_wrapper {
-    direction: rtl;
-    text-align: right;
-    font-family: "Alef", sans-serif;
-}
-
-.dataTables_filter {
-    float: left !important;
-    text-align: left !important;
-}
-
-.dataTables_length {
-    float: right !important;
-    text-align: right !important;
-}
-
-.dataTables_info {
-    float: right !important;
+/* התאים באותה עמודה (מבוסס מיקום) */
+.customTable td.col-wide {
+    width: 350px;
     text-align: right !important;
 }
 
 .dataTables_paginate {
     float: left !important;
-    direction: ltr !important;
-    /* כדי שכפתורי 'הבא'/'קודם' יופיעו נכון */
-}
-
-table.dataTable thead th {
-    text-align: center !important;
-    vertical-align: middle !important;
-}
-
-table.dataTable {
-    width: 100% !important;
-    border-collapse: collapse;
-}
-
-.dataTables_filter input {
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    padding: 4px 6px;
-    margin-right: 6px;
-    outline: none;
-}
-
-.filters {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr) auto;
-    /* 👈 5 שדות + עמודת כפתורים */
-    gap: 10px 12px;
+    text-align: left !important;
     direction: rtl;
-    align-items: center;
-    background: #f8f9fa;
-    padding: 12px 16px;
-    border-radius: 8px;
-    box-shadow: 0 0 3px rgba(0, 0, 0, 0.08);
-}
-
-.filters input,
-.filters select {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.filter-buttons {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-start;
-}
-
-.filter-buttons .btn {
-    width: auto;
-    min-width: 65px;
-    padding: 5px 10px;
-    font-size: 13px;
-    height: 34px;
-    border-radius: 6px;
-}
-
-/* 📱 רספונסיביות למסכים קטנים */
-@media (max-width: 992px) {
-    .filters {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    }
-
-    .filter-buttons {
-        justify-content: flex-end;
-    }
-}
-
-/* כל שורה רגילה בתיק – נראית לחיצה */
-#casesTable tbody tr {
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-/* אפקט hover כללי */
-#casesTable tbody tr:hover>* {
-    background-color: #c3daf5 !important;
 }
 
 
 
 
-/* ✅ ממרכז את נקודת הסטטוס בתא */
-#casesTable td:nth-child(4) {
-    text-align: center;
-    vertical-align: middle;
-}
 
-
-
-/* ✅ עיצוב נקודה */
+/* הנקודה עצמה */
 .status-dot {
     display: inline-block;
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    vertical-align: middle;
+    margin-left: 6px;
 }
 
-/* ירוק = פעיל */
+/* סטטוסים */
 .status-dot.active {
     background-color: #28a745;
+    /* ירוק */
 }
 
-/* אדום = ארכיון */
 .status-dot.archived {
     background-color: #dc3545;
-}
-
-
-/* Title column wider */
-#casesTable th.col-title,
-#casesTable td:nth-child(1) {
-    min-width: 260px;
-    max-width: 340px;
-    text-align: right !important;
-    white-space: nowrap;
-}
-
-
-
-.dataTables_length {
-    display: none !important;
-}
-
-.dataTables_info {
-    display: none !important;
-}
-
-
-
-
-#casesTable tbody tr {
-    opacity: 0;
-    transform: translateY(8px);
-    animation: rowFade 0.6s ease-out forwards;
-}
-
-#casesTable tbody tr:nth-child(odd) {
-    animation-delay: 0.1s;
-}
-
-#casesTable tbody tr:nth-child(even) {
-    animation-delay: 0.2s;
-}
-
-@keyframes rowFade {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    /* אפור */
 }
