@@ -51,8 +51,8 @@ function highlightInSidebar(link, sidebarClass) {
 
 function updateDateTime() {
   const n = new Date();
-  utils.setText(utils.qs('#current-date'), n.toLocaleDateString('he-IL'));
-  utils.setText(utils.qs('#current-time'), n.toLocaleTimeString('he-IL'));
+  utils.setText(utils.qs('#current-date-text'), n.toLocaleDateString('he-IL'));
+  utils.setText(utils.qs('#current-time-text'), n.toLocaleTimeString('he-IL'));
 }
 setInterval(updateDateTime, 1000); updateDateTime();
 
