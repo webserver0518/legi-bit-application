@@ -29,7 +29,13 @@ window.init_view_case = function init_view_case() {
   if (!serial) return;
 
   fetch(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)
-    .then(r => r.json())
+    .then(r => {
+      const filterBar = document.querySelector(".filter-bar");
+      filterBar?.classList.add("loading");
+      document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
+        .forEach(el => el.disabled = true);
+      return r.json();
+    })
     .then(payload => {
 
       if (!payload?.success || !payload?.data?.length) return;
@@ -99,6 +105,12 @@ window.init_view_case = function init_view_case() {
       window.__allFiles = files;
       buildFileTypesDropdown(files);
       loadFiles();
+    })
+    .finally(() => {
+      const filterBar = document.querySelector(".filter-bar");
+      filterBar?.classList.remove("loading");
+      document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
+        .forEach(el => el.disabled = false);
     });
 };
 
