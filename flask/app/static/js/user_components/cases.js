@@ -97,10 +97,14 @@ function caseToSuperString(c) {
         );
       })
       .finally(() => {
-        // 🔓 נפתח את הסינון בכל מקרה
-        filterBar?.classList.remove("loading");
-        document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
-          .forEach(el => el.disabled = false);
+        const hasCases = (CURRENT_ROWS?.length || 0) > 0;
+        // 🔓 רק אם יש תיקים — נפתח את הסינון
+        if (hasCases) {
+          filterBar?.classList.remove("loading");
+          document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
+            .forEach(el => el.disabled = false);
+        }
+
       });
   }
 
