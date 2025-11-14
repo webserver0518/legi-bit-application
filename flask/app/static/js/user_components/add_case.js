@@ -734,58 +734,18 @@ async function initClientAutocomplete() {
     suggestions.style.display = "block";
   }
 
-  // 🧠 הצגת הצעות בזמן הקלדה
+  // typing
   input.addEventListener("input", () => {
-    const value = input.value.trim();
-    if (!value) {
-      suggestions.style.display = "none";
-      return;
+    if (!input.value.trim()) {
+      renderClientSuggestions(""); // show all
+    } else {
+      renderClientSuggestions(input.value);
     }
-
-    const matches = officeClients.filter(c =>
-      (c.first_name + " " + c.last_name).includes(value)
-    );
-
-    if (matches.length === 0) {
-      suggestions.style.display = "none";
-      return;
-    }
-
-    suggestions.innerHTML = matches
-      .map(c => `
-        <li class="list-group-item list-group-item-action" data-serial="${c.serial}">
-          ${c.first_name} ${c.last_name}
-        </li>
-      `)
-      .join("");
-    suggestions.style.display = "block";
   });
 
-  // 🟢 הצג הצעות ברגע שממקדים את השדה (בלי להקליד)
+  // focusing
   input.addEventListener("focus", () => {
-    const value = input.value.trim();
-
-    // אם אין ערך – נציג את כל הלקוחות
-    const matches = value
-      ? officeClients.filter(c =>
-        (c.first_name + " " + c.last_name).includes(value)
-      )
-      : officeClients;
-
-    if (matches.length === 0) {
-      suggestions.style.display = "none";
-      return;
-    }
-
-    suggestions.innerHTML = matches
-      .map(c => `
-      <li class="list-group-item list-group-item-action" data-serial="${c.serial}">
-        ${c.first_name} ${c.last_name}
-      </li>
-    `)
-      .join("");
-
-    suggestions.style.display = "block";
+    renderClientSuggestions(input.value || "");
   });
 
 
