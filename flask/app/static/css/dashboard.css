@@ -148,11 +148,6 @@ body:not(.sidebar-collapsed) .marginClient {
   height: 40px;
 }
 
-
-#toast {
-  transition: opacity 0.5s ease;
-}
-
 #dynamicContent {
   transition: opacity 40s ease;
 }
@@ -236,31 +231,41 @@ body:not(.sidebar-collapsed) .marginClient {
 }
 
 
+/* עטיפה כללית לכל ההודעות */
+#toasts {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column-reverse;
+  /* כדי שהסטיקי תמיד מעל */
+  align-items: center;
+  z-index: 9999;
+  gap: 12px;
+}
+
+/* כל קונטיינר בנפרד */
+.toast-container {
+  display: flex;
+  flex-direction: column-reverse;
+  /* הודעה חדשה למעלה */
+  align-items: center;
+  gap: 8px;
+}
+
+/* טוסט בודד */
 .toast {
+  max-width: 340px;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   opacity: 0;
   transform: translateY(20px);
-  transition: all .35s ease;
+  transition: all 0.35s ease;
 }
 
 .toast.show {
   opacity: 1;
   transform: translateY(0);
-}
-
-
-.toast-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  /* רווח בין קבוצות */
-  bottom: 0;
-}
-
-.toast-container {
-  display: flex;
-  flex-direction: column-reverse;
-  /* כך הודעה חדשה תופיע למעלה */
-  align-items: center;
-  gap: 6px;
 }
