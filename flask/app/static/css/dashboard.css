@@ -92,10 +92,15 @@ body {
 
 
 .main-content {
-  width: 100%;
-  padding: 20px;
-  transition: margin-right 2s linear;
+  opacity: 1;
+  transition: margin-right 0.3s ease-in-out !important;
 }
+
+.main-content.exiting {
+  opacity: 0;
+  transition: margin-right 0.3s ease-in-out !important;
+}
+
 
 body.sidebar-collapsed .main-content {
   margin-right: 0;
@@ -146,10 +151,6 @@ body:not(.sidebar-collapsed) .marginClient {
 
 #place-holder {
   height: 40px;
-}
-
-#dynamicContent {
-  transition: opacity 40s ease;
 }
 
 
