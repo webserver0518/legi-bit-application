@@ -113,10 +113,10 @@ function initClientsManager() {
       clientsList.push(client);
       renderClientsTable();
       clearClientFields();
-      showToast(`לקוח חדש נוצר ונוסף לתיק (מס' ${client_serial})`);
+      showToast(`לקוח חדש נוצר ונוסף לתיק (מס' ${client_serial})`, "success");
     } catch (err) {
       console.error("שגיאה בשליחת לקוח:", err);
-      showToast("⚠️ בעיה בחיבור לשרת", "danger");
+      showToast("בעיה בחיבור לשרת", "warning");
     }
 
   });
@@ -262,7 +262,7 @@ function initClientsManager() {
 async function uploadAllFilesToS3(files, office_serial, case_serial) {
   console.log(files.length)
   if (!files || files.length === 0) {
-    console.log("⚠️ No files to upload");
+    console.log("No files to upload", "warning");
     return true;
   }
 
@@ -293,7 +293,7 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
       progressBar.classList.remove("bg-success", "bg-danger");
       progressBar.classList.add("bg-info");
       fileEntry.status = "creating_record";
-      //showToast(`📄 יוצר רשומת קובץ עבור "${file.name}"...`);
+      //showToast(`📄 יוצר רשומת קובץ עבור "${file.name}"...`, "success");
 
       const createFileRes = await fetch("/create_new_file", {
         method: "POST",
@@ -345,7 +345,7 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
       const formData = new FormData();
       Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
       formData.append("file", file);
-      //showToast(`⬆️ מעלה את "${file.name}" לשרת...`);
+      //showToast(`⬆️ מעלה את "${file.name}" לשרת...`, "success");
 
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -364,7 +364,7 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
             progressBar.classList.remove("bg-info");
             progressBar.classList.add("bg-success");
             fileEntry.status = "done";
-            //showToast(`✅ הקובץ "${file.name}" הועלה בהצלחה!`);
+            //showToast(`✅ הקובץ "${file.name}" הועלה בהצלחה!`, "success");
             resolve();
           } else {
             reject(new Error(`Upload failed with status ${xhr.status}`));
@@ -523,7 +523,7 @@ window.initCaseFormPreview = function () {
         showToast(`❌ Failed to create case: ${parsed.error}`, "danger");
         return;
       }
-      showToast("✅ Case created successfully");
+      showToast("✅ Case created successfully", "success");
 
       // open files section
       document.querySelector("[data-target='#collapseFiles']")?.click();
@@ -541,7 +541,7 @@ window.initCaseFormPreview = function () {
       }
 
       if (!window.filesList || window.filesList.length === 0) {
-        showToast("⚠️ לא נבחרו קבצים, התיק ייווצר ללא מסמכים");
+        showToast("לא נבחרו קבצים, התיק ייווצר ללא מסמכים", "warning");
         localStorage.setItem("selectedSubMenu", "all_cases");
         showSubMenu("all_cases");
         loadContent("cases", true, "user");
@@ -579,7 +579,7 @@ window.initCaseFormPreview = function () {
         throw new Error(parsedUpdate.error || "שגיאה בשמירת הקבצים");
       }
 
-      showToast("✅ Case Files Uploaded");
+      showToast("✅ Case Files Uploaded", "success");
 
 
       localStorage.setItem("selectedSubMenu", "all_cases");
@@ -588,7 +588,7 @@ window.initCaseFormPreview = function () {
 
     } catch (error) {
       console.error(error);
-      showToast("⚠️ Error contacting server", "danger");
+      showToast("Error contacting server", "warning");
 
     } finally {
       if (submitBtn) {
@@ -690,7 +690,7 @@ async function getOfficeSerial() {
     return parsed.data.office_serial;
   } catch (err) {
     console.error("❌ Failed to get office_serial:", err);
-    showToast("⚠️ שגיאה בשליפת מזהה משרד", "danger");
+    showToast("שגיאה בשליפת מזהה משרד", "warning");
     throw err;
   }
 }
@@ -767,7 +767,7 @@ async function initClientAutocomplete() {
     // בדוק אם כבר בטבלה
     const alreadyExists = (window.clientsList || []).some(c => c.serial == selected.serial);
     if (alreadyExists) {
-      showToast("⚠️ הלקוח כבר נוסף לרשימה");
+      showToast("הלקוח כבר נוסף לרשימה", "warning");
       suggestions.style.display = "none";
       input.value = "";
       return;
@@ -787,7 +787,7 @@ async function initClientAutocomplete() {
       renderClientsTable();
     }
 
-    showToast(`לקוח קיים נוסף לתיק: ${selected.first_name} ${selected.last_name}`);
+    showToast(`לקוח קיים נוסף לתיק: ${selected.first_name} ${selected.last_name}`, "success");
     input.value = "";
     suggestions.style.display = "none";
   });
