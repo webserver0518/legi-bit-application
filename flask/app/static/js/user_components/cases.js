@@ -1,146 +1,238 @@
+// -----------------------
+// SUPER STRING BUILDER
+// -----------------------
+function caseToSuperString(c) {
+  let parts = [];
+
+  // שדות אסורים
+  const BLOCKED_KEYS = new Set([
+    "password",
+    "password_hash",
+    "password_hashes",
+    "passwordHash",
+    "passwordHashes",
+    "secret",
+    "token"
+  ]);
+
+  function walk(key, value) {
+    if (value == null) return;
+    if (key && BLOCKED_KEYS.has(key)) return;
+
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      parts.push(String(value));
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach(v => walk(null, v));
+      return;
+    }
+
+    if (typeof value === "object") {
+      Object.entries(value).forEach(([k, v]) => {
+        if (!BLOCKED_KEYS.has(k)) walk(k, v);
+      });
+    }
+  }
+
+  walk(null, c);
+  return parts.join("\n").toLowerCase();
+}
+
+// -----------------------
+// MAIN MODULE
+// -----------------------
 (() => {
-  const table = $('#casesTable');
-  const tbody = table.find('tbody');
+  const table = $("#casesTable");
+  const tbody = table.find("tbody");
   let dataTableInstance = null;
 
-  // delay repeated calls while typing
-  function debounce(fn, delay = 500) {
-    let timer;
-    return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => fn(...args), delay);
-    };
-  }
+  let CURRENT_ROWS = [];
 
-  // build query string from filters
-  function buildQueryParams() {
-    const params = new URLSearchParams({ expand: true });
-
-    const title = document.getElementById('filter-title')?.value.trim();
-    const field = document.getElementById('filter-field')?.value.trim();
-    const status = document.getElementById('filter-status')?.value.trim();
-    const client = document.getElementById('filter-client')?.value.trim();
-
-    if (title) {
-      const tokens = title.split(/[\s-]+/).filter(Boolean);
-      for (const token of tokens) params.append('title_tokens', token);
-    }
-    if (field) params.append('field', field);
-    if (status) params.append('status', status);
-    if (client) {
-      const tokens = client.split(/[\s-]+/).filter(Boolean);
-      for (const token of tokens) params.append('client_tokens', token);
-    }
-
-    return params.toString();
-  }
-
-  // fetch and render cases
+  // -----------------------
+  // LOAD CASES FROM SERVER
+  // -----------------------
   function loadCases() {
-    const url = `/get_office_cases?${buildQueryParams()}`;
+    const url = `/get_office_cases?expand=true`;
 
     fetch(url)
       .then(r => r.json())
       .then(payload => {
-
         if (dataTableInstance) {
           dataTableInstance.clear().destroy();
           dataTableInstance = null;
         }
-        tbody.empty().html(`<tr><td colspan="100%" class="text-muted py-3">Loading...</td></tr>`);
+
+        tbody.html(
+          `<tr><td colspan="100%" class="text-muted py-3">Loading...</td></tr>`
+        );
 
         const rows = Array.isArray(payload?.data) ? payload.data : [];
+        CURRENT_ROWS = rows;
 
-        if (!payload?.success || rows.length === 0) {
-          tbody.html(`<tr><td colspan="100%" class="text-center text-muted py-3">No cases found</td></tr>`);
-          return;
-        }
-
-        // build table rows
-        const htmlRows = rows.map(obj => {
-          const c = obj.cases || {};
-          const user = c.user || {};
-          const isArchived = c.status === "archived";
-
-          let client = {};
-          if (Array.isArray(c.clients)) {
-            // pick main client or first one
-            client = c.clients.find(cl => cl.level === "main") || c.clients[0] || {};
-          }
-
-          const createdDate = c.created_at
-            ? new Date(c.created_at).toLocaleDateString('he-IL')
-            : '-';
-
-          const statusDot = c.status
-            ? `<span class="status-dot ${c.status}"></span>`
-            : '-';
-
-          return `
-            <tr class="${isArchived ? 'archived-row' : ''}" onclick="storeCaseAndOpen('${c.serial}')">
-              <td>${safeValue(c.title)}</td>
-              <td>${c.serial}</td>
-              <td>${safeValue(c.field ?? c.category)}</td>
-              <td>${statusDot}</td>
-              <td>${safeValue(client.first_name)}</td>
-              <td>${safeValue(client.last_name)}</td>
-              <td>${safeValue(client.id_card_number)}</td>
-              <td>${safeValue(client.phone)}</td>
-              <td>${safeValue(user.first_name ?? user.username)}</td>
-              <td>${safeValue(createdDate)}</td>
-              <td>${Array.isArray(c.files) ? c.files.length : '0'}</td>
-            </tr>
-          `;
-        }).join('');
-
-        tbody.html(htmlRows);
-
-        // init DataTable
-        dataTableInstance = table.DataTable({
-          paging: true,
-          searching: false,
-          ordering: true,
-          info: true,
-          pageLength: 17,
-          dom: 'lrtip',
-          language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/he.json' }
+        // Superstring for each case
+        rows.forEach(obj => {
+          const c = obj.cases || obj;
+          c.__super = caseToSuperString(c);
         });
+
+        renderCases(rows);
       })
       .catch(err => {
-        console.error('Error loading cases:', err);
-        tbody.html(`<tr><td colspan="100%" class="text-center text-danger py-3">Load error</td></tr>`);
+        console.error("Error loading cases:", err);
+        tbody.html(
+          `<tr><td colspan="100%" class="text-center text-danger py-3">Load error</td></tr>`
+        );
       });
   }
 
-  // reset all filters
-  window.clearFilters = () => {
-    document.querySelectorAll('#filter-title, #filter-field, #filter-client')
-      .forEach(el => el.value = '');
+  // -----------------------
+  // CLEAR FILTERS
+  // -----------------------
+  document.getElementById("clear-filters").addEventListener("click", () => {
+    // איפוס שדה חיפוש
+    const searchInput = document.getElementById("case-search");
+    searchInput.value = "";
 
-    const statusSelect = document.getElementById('filter-status');
-    if (statusSelect) statusSelect.value = '';
+    // איפוס סטטוס
+    const statusSelect = document.getElementById("case-status");
+    statusSelect.value = "";
 
-    loadCases();
-  };
-
-  // responsive search triggers
-  const debouncedLoad = debounce(loadCases);
-  ['filter-title', 'filter-field', 'filter-status', 'filter-client'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('input', debouncedLoad);
+    // רנדר מחדש את כל התיקים
+    renderCases(CURRENT_ROWS);
   });
+  // -----------------------
+  // CLIENT-SIDE FILTERS (search + status)
+  // -----------------------
+  function applyCaseFilters() {
+    const search = document
+      .getElementById("case-search")
+      .value.trim()
+      .toLowerCase();
 
-  // initial load
+    const status = document.getElementById("case-status")?.value || "";
+
+    let filtered = [...CURRENT_ROWS];
+
+    // 🔍 סינון לפי חיפוש
+    if (search) {
+      const tokens = search.split(/\s+/).filter(Boolean);
+      filtered = filtered.filter(obj => {
+        const text = obj.cases.__super || "";
+        return tokens.every(t => text.includes(t));
+      });
+    }
+
+    // 🏷️ סינון לפי סטטוס
+    if (status) {
+      filtered = filtered.filter(obj => obj.cases.status === status);
+    }
+
+    renderCases(filtered);
+  }
+
+  document
+    .getElementById("case-search")
+    .addEventListener("input", applyCaseFilters);
+
+  document
+    .getElementById("case-status")
+    .addEventListener("change", applyCaseFilters);
+
+  // -----------------------
+  // RENDER TABLE
+  // -----------------------
+  function renderCases(list) {
+    if (dataTableInstance) {
+      dataTableInstance.clear().destroy();
+      dataTableInstance = null;
+    }
+
+    if (!list.length) {
+      tbody.html(
+        `<tr><td colspan="100%" class="text-center text-muted py-3">לא נמצאו תיקים</td></tr>`
+      );
+      return;
+    }
+
+    const htmlRows = list
+      .map(obj => {
+        const c = obj.cases || {};
+        const user = c.user || {};
+        const isArchived = c.status === "archived";
+
+        let client = {};
+        if (Array.isArray(c.clients)) {
+          client =
+            c.clients.find(cl => cl.level === "main") ||
+            c.clients[0] ||
+            {};
+        }
+
+        const createdDate = c.created_at
+          ? new Date(c.created_at).toLocaleDateString("he-IL")
+          : "-";
+
+        const statusDot = c.status
+          ? `<span class="status-dot ${c.status}"></span>`
+          : "-";
+
+        return `
+          <tr onclick="storeCaseAndOpen('${c.serial}')">
+            <td class="col-wide">${safeValue(c.title)}</td>
+            <td>${c.serial}</td>
+            <td>${safeValue(c.field ?? c.category)}</td>
+            <td>${statusDot}</td>
+            <td>${safeValue(client.first_name)}</td>
+            <td>${safeValue(client.last_name)}</td>
+            <td>${safeValue(client.id_card_number)}</td>
+            <td>${safeValue(client.phone)}</td>
+            <td>${safeValue(user.first_name ?? user.username)}</td>
+            <td>${safeValue(createdDate)}</td>
+            <td>${Array.isArray(c.files) ? c.files.length : "0"}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    tbody.html(htmlRows);
+
+    dataTableInstance = table.DataTable({
+      paging: true,
+      searching: false,
+      ordering: true,
+      info: false,
+      lengthChange: false,
+      pageLength: 14,
+      dom: "lrtip",
+      language: {
+        paginate: {
+          previous: 'הקודם',
+          next: 'הבא'
+        }
+      }
+    });
+  }
+
+  // -----------------------
+  // INITIAL LOAD
+  // -----------------------
   loadCases();
 })();
 
-// open single case page
+// -----------------------
+// HELPERS
+// -----------------------
 function storeCaseAndOpen(serial) {
-  sessionStorage.setItem('selectedCaseSerial', serial);
-  loadContent('view_case', true, 'user');
+  sessionStorage.setItem("selectedCaseSerial", serial);
+  loadContent("view_case", true, "user");
 }
 
 function safeValue(v) {
-  return (v && v.trim && v.trim() !== "") ? v : "-";
+  return v && v.trim && v.trim() !== "" ? v : "-";
 }
