@@ -1,26 +1,23 @@
 <div class="container">
 
-    <!-- 🔍 שורת סינון -->
-    <div class="d-flex flex-wrap gap-2 align-items-center bg-light p-3 rounded shadow-sm mb-3">
-        <label class="mb-0 fw-bold">סינון לפי: </label>
-        <input id="filter-title" type="text" class="form-control w-auto flex-grow-1" placeholder="כותרת">
-        <input id="filter-field" type="text" class="form-control w-auto flex-grow-1" placeholder="תחום">
-        <select id="filter-status" class="form-select w-auto">
-            <option value="">סטטוס</option>
-            <option value="active">פעיל</option>
+    <!-- סרגל סינון תיקים -->
+    <div class="filter-bar">
+        <input id="case-search" class="filter-input" type="text" placeholder="חיפוש בכל התיק...">
+
+        <select id="case-status" class="filter-select">
+            <option value="">כל הסטטוסים</option>
+            <option value="active">פתוח</option>
             <option value="archived">ארכיון</option>
         </select>
-        <input id="filter-client" type="text" class="form-control w-auto flex-grow-1" placeholder="שם לקוח ראשי/משני">
-        <div class="btn-group">
-            <button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">נקה</button>
-        </div>
+
+        <button id="clear-filters" class="filter-btn" type="button">נקה</button>
     </div>
 
-    <!-- 📋 טבלת תיקים -->
-    <table class="table table-striped table-sm text-center" id="casesTable">
-        <thead class="table-primary">
+    <!-- טבלת תיקים -->
+    <table id="casesTable" class="customTable">
+        <thead>
             <tr>
-                <th rowspan="2" class="col-title">כותרת</th>
+                <th rowspan="2" class="col-wide">כותרת</th>
                 <th rowspan="2">מס' סידורי</th>
                 <th rowspan="2">תחום</th>
                 <th rowspan="2">סטטוס</th>
@@ -36,7 +33,12 @@
                 <th>טלפון</th>
             </tr>
         </thead>
-        <tbody></tbody>
+        <tbody>
+            <tr>
+                <td colspan="100%">טוען תיקים...</td>
+            </tr>
+        </tbody>
     </table>
+
 
 </div>
