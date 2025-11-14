@@ -107,10 +107,13 @@ window.init_view_case = function init_view_case() {
       loadFiles();
     })
     .finally(() => {
-      const filterBar = document.querySelector(".filter-bar");
-      filterBar?.classList.remove("loading");
-      document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
-        .forEach(el => el.disabled = false);
+      if (files.length > 0) {
+        const filterBar = document.querySelector(".filter-bar");
+        filterBar?.classList.remove("loading");
+        document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
+          .forEach(el => el.disabled = false);
+      }
+
     });
 };
 
