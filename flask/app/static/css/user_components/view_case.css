@@ -198,125 +198,143 @@ table td {
    📁 FILES TABLE — SAME DESIGN AS CASES TABLE
    ========================================================== */
 
-/* התאמה לעיצוב טבלת התיקים */
-.bg-light {
-  background-color: #c3daf5 !important;
+/* סרגל סינון – רק מבנה */
+.filter-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  background: #c3daf5;
+  /* רקע עדין */
+  border: 1px solid #ddd;
+  /* מסגרת קלה */
+  border-radius: 8px;
+  /* עיגול פינות */
+  padding: 12px 14px;
+  /* ריווח פנימי */
 }
 
-#filesTable thead th {
-  background-color: #c3daf5 !important;
+/* === FILTER INPUT === */
+.filter-input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
 }
 
-
-#filter-file-type {
-  min-width: 160px;
-  padding-right: 30px;
+/* מצב פוקוס */
+.filter-input:focus {
+  border-color: #888;
 }
 
-/* טבלה RTL */
-#filesTable {
+/* === FILTER SELECT === */
+.filter-select {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  background: white;
+  min-width: 140px;
+}
+
+.filter-select:focus {
+  border-color: #888;
+}
+
+/* === FILTER BUTTON === */
+.filter-btn {
+  padding: 8px 14px;
+  font-size: 14px;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  background: #f2f2f2;
+  cursor: pointer;
+}
+
+.filter-btn:hover {
+  background: #e6e6e6;
+}
+
+/* === TABLE BASE === */
+.customTable {
+  width: 100%;
+  border-collapse: collapse;
   direction: rtl;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* === TABLE HEADER === */
+.customTable thead th {
+  background: #c3daf5;
+  /* רקע עדין לכותרת */
+  padding: 4px 6px;
+  border-bottom: 2px solid #444d58;
+  font-weight: 600;
+  text-align: center !important;
+  white-space: nowrap;
+}
+
+/* === TABLE BODY CELLS === */
+.customTable td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #eee;
+  /* קו דק בין שורות */
   text-align: center;
 }
 
-/* תאים */
-#filesTable th,
-#filesTable td {
-  text-align: center !important;
-  vertical-align: middle !important;
+/* === ROW HEIGHT === */
+.customTable tr {
+  height: 32px;
 }
 
-/* אפקט hover */
-#filesTable tbody tr:hover>* {
-  background-color: #c3daf5 !important;
+/* === HOVER EFFECT === */
+.customTable tbody tr:hover {
+  background: #c3daf5;
 }
 
-/* עיצוב כפתור קומפקטי */
-#filesTable .btn-compact {
-  padding: 2px 8px;
-  font-size: 12px;
-  line-height: 1.1;
-  white-space: nowrap;
+
+/* כותרת בטבלה */
+.customTable th.col-wide {
+  width: 350px;
 }
 
-/* טקסט truncate לקבצים ארוכים */
-#filesTable .text-truncate {
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* התאים באותה עמודה (מבוסס מיקום) */
+.customTable td.col-wide {
+  width: 350px;
+  text-align: right !important;
 }
 
-/* אנימציית הופעת שורות */
-#filesTable tbody tr {
-  opacity: 0;
-  transform: translateY(8px);
-  animation: fileRowFade 0.6s ease-out forwards;
+.dataTables_paginate {
+  float: left !important;
+  text-align: left !important;
+  direction: rtl;
 }
 
-#filesTable tbody tr:nth-child(odd) {
-  animation-delay: 0.1s;
-}
 
-#filesTable tbody tr:nth-child(even) {
-  animation-delay: 0.2s;
-}
 
-@keyframes fileRowFade {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-/* אייקון קובץ */
-#filesTable .file-icon {
-  width: 20px;
-  height: 20px;
-  vertical-align: middle;
+/* הנקודה עצמה */
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
   margin-left: 6px;
 }
 
-/* תא שם קובץ מיושר לימין */
-#filesTable .file-name-cell {
-  text-align: right !important;
-  direction: rtl;
-  white-space: nowrap;
+/* סטטוסים */
+.status-dot.active {
+  background-color: #28a745;
+  /* ירוק */
 }
 
-/* פאגינציה RTL/ללא length/info (כמו בתיקים) */
-#filesTable_wrapper .dataTables_paginate {
-  direction: ltr !important;
-}
-
-#filesTable_wrapper .dataTables_length,
-#filesTable_wrapper .dataTables_info {
-  display: none !important;
-}
-
-/* שורת הסינון */
-#filter-file-name,
-#filter-file-type {
-  border-radius: 6px;
-  padding: 5px 8px;
-}
-
-
-/* חיצי מיון כמו בטבלת התיקים */
-#filesTable th.asc::after {
-  content: " ↑";
-}
-
-#filesTable th.desc::after {
-  content: " ↓";
-}
-
-#filesTable th {
-  cursor: pointer;
-  user-select: none;
+.status-dot.archived {
+  background-color: #dc3545;
+  /* אפור */
 }
