@@ -378,7 +378,7 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          status: "active"
+          status: "available"
         })
       });
     } catch (err) {
