@@ -113,7 +113,7 @@ function initClientsManager() {
       clientsList.push(client);
       renderClientsTable();
       clearClientFields();
-      showToast(`✅ לקוח נוסף בהצלחה (מספר ${client_serial})`);
+      showToast(`לקוח חדש נוצר ונוסף לתיק (מס' ${client_serial})`);
     } catch (err) {
       console.error("שגיאה בשליחת לקוח:", err);
       showToast("⚠️ בעיה בחיבור לשרת", true);
@@ -780,7 +780,7 @@ async function initClientAutocomplete() {
       renderClientsTable();
     }
 
-    showToast(`✅ ${selected.first_name} ${selected.last_name} נוסף לתיק`);
+    showToast(`לקוח קיים נוסף לתיק: ${selected.first_name} ${selected.last_name}`);
     input.value = "";
     suggestions.style.display = "none";
   });
