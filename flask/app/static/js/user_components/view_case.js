@@ -1,4 +1,3 @@
-// static/js/user_components/view_case.js
 function removeExtension(filename) {
   if (!filename || typeof filename !== "string") return filename;
   const lastDot = filename.lastIndexOf(".");
@@ -18,21 +17,23 @@ function fileIconPath(mime) {
 }
 
 window.init_view_case = function init_view_case() {
-  const safeValue = (v) => (v && v.trim && v.trim() !== "" ? v : "-");
 
+  document.getElementById("clear-file-filters")?.addEventListener("click", () => {
+    document.getElementById("file-search").value = "";
+    document.getElementById("file-type").value = "";
+    loadFiles();
+  });
+
+  const safeValue = (v) => (v && v.trim && v.trim() !== "" ? v : "-");
   const serial = sessionStorage.getItem("selectedCaseSerial");
-  if (!serial) { console.error("❌ No case serial found in sessionStorage"); return; }
-  console.log("ℹ️ Loading case with serial:", serial);
+  if (!serial) return;
 
   fetch(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)
     .then(r => r.json())
     .then(payload => {
-      if (!payload?.success || !payload?.data?.length) {
-        console.error("❌ Case not found or invalid response");
-        return;
-      }
 
-      // תואם לשתי צורות אפשריות: [{ cases: {...}, ... }] או [{ ... ישירות ... }]
+      if (!payload?.success || !payload?.data?.length) return;
+
       const item = payload.data[0] ?? {};
       const caseObj = item.cases ?? item;
 
@@ -40,301 +41,208 @@ window.init_view_case = function init_view_case() {
       const clients = Array.isArray(caseObj.clients ?? item.clients) ? (caseObj.clients ?? item.clients) : [];
       const files = Array.isArray(caseObj.files ?? item.files) ? (caseObj.files ?? item.files) : [];
 
-      // כותרת
-      const elSerial = document.getElementById("case-serial");
-      const elTitle = document.getElementById("case-title");
-      if (elSerial) elSerial.textContent = safeValue(String(caseObj.serial ?? serial));
-      if (elTitle) elTitle.textContent = safeValue(caseObj.title);
+      const setText = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = safeValue(val);
+      };
 
-      // נקודת סטטוס (וודא שיש CSS לסטטוסים)
+      setText("case-title", caseObj.title);
+      setText("case-serial", caseObj.serial);
+      setText("case-created-by", user.first_name ?? user.username);
+      setText("case-field", caseObj.field);
+      setText("case-against", `${caseObj.against} - ${caseObj.against_type}`);
+
+      const createdAt = caseObj.created_at ? new Date(caseObj.created_at) : null;
+      const createdAtText = createdAt && !isNaN(createdAt)
+        ? createdAt.toLocaleDateString("he-IL")
+        : "-";
+      setText("case-created-at", createdAtText);
+
+      const factsEl = document.getElementById("case-facts-text");
+      if (factsEl) factsEl.textContent = safeValue(caseObj.facts ?? "");
+
       const statusDot = document.getElementById("case-status-dot");
       if (statusDot) statusDot.classList.add(caseObj.status || "unknown");
 
-      // פרטים כלליים
-      const createdByText = user.first_name ?? user.username ?? "-";
-      const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = safeValue(val); };
-      setText("case-created-by", createdByText);
-      setText("case-field", caseObj.field);
-      setText("case-against", caseObj.against + " - " + caseObj.against_type);
-
-      // Created date
-      const createdAt = caseObj.created_at ? new Date(caseObj.created_at) : null;
-      const createdAtText = (createdAt && !isNaN(createdAt)) ? createdAt.toLocaleDateString("he-IL") : "-";
-      setText("case-created-at", createdAtText);
-
-      // Facts block
-      const factsEl = document.getElementById("case-facts-text");
-      if (factsEl) {
-        const facts = caseObj.facts ?? "";
-        factsEl.textContent = safeValue(facts);
-      }
-
-      // לקוחות
       const clientsTbody = document.querySelector("#clientsTable tbody");
       if (clientsTbody) {
-        clientsTbody.innerHTML = (clients.length === 0)
+        clientsTbody.innerHTML = clients.length === 0
           ? `<tr><td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td></tr>`
           : clients.map(c => {
             const badge = `<span class="badge-level ${c.level}">${c.level === "main" ? "ראשי" : "משני"}</span>`;
             return `
-                <tr>
-                  <td>${safeValue(c.first_name)}</td>
-                  <td>${safeValue(c.last_name)}</td>
-                  <td>${safeValue(c.id_card_number)}</td>
-                  <td>${safeValue(c.phone)}</td>
-                  <td>${safeValue(c.email)}</td>
-                  <td>${badge}</td>
-                </tr>`;
+                            <tr>
+                                <td>${safeValue(c.first_name)}</td>
+                                <td>${safeValue(c.last_name)}</td>
+                                <td>${safeValue(c.id_card_number)}</td>
+                                <td>${safeValue(c.phone)}</td>
+                                <td>${safeValue(c.email)}</td>
+                                <td>${badge}</td>
+                            </tr>`;
           }).join("");
       }
 
-      // אירועים (אם/כשיהיו)
       const eventsTbody = document.querySelector("#eventsTable tbody");
       if (eventsTbody) {
         const evts = caseObj.events ?? item.events ?? [];
-        eventsTbody.innerHTML = (evts.length === 0)
+        eventsTbody.innerHTML = evts.length === 0
           ? `<tr><td colspan="100%" class="text-muted py-3">אין אירועים להצגה</td></tr>`
           : evts.map(e => `
-              <tr>
-                <td>${safeValue(new Date(e.date).toLocaleDateString("he-IL"))}</td>
-                <td>${safeValue(e.type)}</td>
-                <td>${safeValue(e.description)}</td>
-                <td>${safeValue(e.performed_by)}</td>
-              </tr>`).join("");
+                        <tr>
+                            <td>${safeValue(new Date(e.date).toLocaleDateString("he-IL"))}</td>
+                            <td>${safeValue(e.type)}</td>
+                            <td>${safeValue(e.description)}</td>
+                            <td>${safeValue(e.performed_by)}</td>
+                        </tr>`).join("");
       }
 
+      window.__allFiles = files;
+      buildFileTypesDropdown(files);
       loadFiles();
-    })
-    .catch(err => console.error("❌ Error loading case:", err));
+    });
 };
 
-
-
-
-
-/* ==============================
-   🧩 VIEW FILE BUTTON HANDLER
-   ============================== */
 async function viewFile(caseSerial, fileSerial, fileName) {
   try {
-    // הצגת הודעת טעינה קטנה (אופציונלי)
-    console.log(`📁 Requesting presigned URL for: ${fileName}`);
-
     const res = await fetch(
       `/get_file_url?case_serial=${encodeURIComponent(caseSerial)}&file_serial=${encodeURIComponent(fileSerial)}&file_name=${encodeURIComponent(fileName)}`
     );
 
     const payload = await res.json();
     if (!payload?.success) {
-      console.error("❌ Failed to generate presigned URL:", payload?.error || payload);
       alert("לא ניתן לצפות בקובץ כרגע");
       return;
     }
 
     const url = payload.data;
     if (!url) {
-      console.error("❌ No URL returned from server:", payload);
       alert("לא ניתן לצפות בקובץ כרגע");
       return;
     }
 
-    // ✅ פתיחה בטאב חדש
     window.open(url, "_blank");
-  } catch (err) {
-    console.error("❌ Error viewing file:", err);
-    alert("שגיאה בעת ניסיון לפתוח את הקובץ");
+  } catch {
+    alert("שגיאה בעת פתיחת הקובץ");
   }
 }
 
-
-
-// --------------------
-// DELETE FILE HANDLER
-// --------------------
 window.deleteFile = async function deleteFile(caseSerial, fileSerial, fileName) {
-  const displayName = fileName;
-  if (!confirm(`האם אתה בטוח שברצונך למחוק את הקובץ "${displayName}"?`)) {
-    return;
-  }
+  if (!confirm(`האם אתה בטוח שברצונך למחוק את הקובץ "${fileName}"?`)) return;
 
   try {
     const url = `/delete_file?case_serial=${caseSerial}&file_serial=${fileSerial}&file_name=${encodeURIComponent(fileName)}`;
-
-    const res = await fetch(url, {
-      method: "DELETE"
-    });
-
+    const res = await fetch(url, { method: "DELETE" });
     const data = await res.json();
 
     if (!data.success) {
-      alert(`⚠️ שגיאה במחיקת הקובץ: ${data.error || "Unknown error"}`);
+      alert(`שגיאה במחיקה: ${data.error || "Error"}`);
       return;
     }
 
-    // מחיקה מוצלחת → להסיר את השורה מהטבלה
     const row = document.querySelector(`tr[data-file-serial="${fileSerial}"]`);
     if (row) row.remove();
 
-    alert("🟢 הקובץ נמחק בהצלחה.");
-
-  } catch (err) {
-    console.error("Delete file error:", err);
-    alert("❌ שגיאה בתקשורת עם השרת.");
+    alert("הקובץ נמחק בהצלחה.");
+  } catch {
+    alert("שגיאה בתקשורת עם השרת.");
   }
 };
 
+function buildFileTypesDropdown(files) {
+  const select = document.getElementById("file-type");
+  if (!select) return;
 
+  const types = [...new Set(files.map(f => f.type))].sort();
+  select.innerHTML = `<option value="">סוג</option>` +
+    types.map(t => `<option value="${t}">${t}</option>`).join("");
+}
 
-
-
-// ================================
-// 📁 FILES TABLE — FILTERED DATA
-// ================================
-
-// יצירת debounce
-function debounce(fn, delay = 400) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
+function buildFilters() {
+  return {
+    search: document.getElementById("file-search")?.value.trim() || "",
+    type: document.getElementById("file-type")?.value.trim() || ""
   };
 }
 
-// בניית פרמטרים של הפילטרים
-function buildFileFilters() {
-  const params = {};
-
-  const name = document.getElementById("filter-file-name")?.value.trim();
-  const type = document.getElementById("filter-file-type")?.value.trim();
-
-  if (name) params.name = name;
-  if (type) params.type = type;
-
-  return params;
-}
-
-// ניקוי פילטרים
 window.clearFileFilters = function () {
-  document.getElementById("filter-file-name").value = "";
-  document.getElementById("filter-file-type").value = "";
+  document.getElementById("file-search").value = "";
+  document.getElementById("file-type").value = "";
   loadFiles();
 };
 
-
-// ================================
-// 📥 טעינת קבצים
-// ================================
 let filesTableInstance = null;
 
 window.loadFiles = function loadFiles() {
-  const serial = sessionStorage.getItem("selectedCaseSerial");
-  if (!serial) return;
 
   const tbody = document.querySelector("#filesTable tbody");
-  tbody.innerHTML = `<tr><td colspan="100%" class="text-muted py-3">טוען קבצים...</td></tr>`;
+  const files = window.__allFiles || [];
+  const filters = buildFilters();
 
-  fetch(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)
-    .then(r => r.json())
-    .then(payload => {
+  let filtered = files;
 
-      // ניתוק DataTables אם קיים
-      if (filesTableInstance) {
-        filesTableInstance.clear().destroy();
-        filesTableInstance = null;
+  if (filters.search) {
+    filtered = filtered.filter(f =>
+      removeExtension(f.name).toLowerCase().includes(filters.search.toLowerCase())
+    );
+  }
+
+  if (filters.type) {
+    filtered = filtered.filter(f => f.type === filters.type);
+  }
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="100%" class="text-muted py-3">לא נמצאו קבצים</td></tr>`;
+    return;
+  }
+
+  if (filesTableInstance) {
+    filesTableInstance.clear().destroy();
+    filesTableInstance = null;
+  }
+
+  tbody.innerHTML = filtered.map(f => {
+    const date = f.created_at
+      ? new Date(f.created_at).toLocaleDateString("he-IL")
+      : "-";
+    const icon = fileIconPath(f.type);
+
+    return `
+        <tr data-file-serial="${f.serial}"
+            onclick="viewFile(${f.case_serial || 0}, ${f.serial}, '${f.name}')">
+
+            <td class="file-name-cell col-wide">
+                <img src="${icon}" class="file-icon" />
+                ${removeExtension(f.name)}
+            </td>
+
+            <td>${date}</td>
+
+            <td>
+                <button class="btn btn-sm btn-outline-danger"
+                    onclick="event.stopPropagation(); deleteFile(${f.case_serial || 0}, ${f.serial}, '${f.name}')">
+                    מחק
+                </button>
+            </td>
+        </tr>`;
+  }).join("");
+
+  filesTableInstance = $("#filesTable").DataTable({
+    paging: true,
+    searching: false,
+    ordering: true,
+    info: false,
+    lengthChange: false,
+    pageLength: 14,
+    dom: "lrtip",
+    language: {
+      paginate: {
+        previous: 'הקודם',
+        next: 'הבא'
       }
-
-      const item = payload.data?.[0] ?? {};
-      const caseObj = item.cases ?? item;
-      const allFiles = Array.isArray(caseObj.files) ? caseObj.files : [];
-
-      // הפעלת פילטרים
-      const filters = buildFileFilters();
-      let filtered = allFiles;
-
-      if (filters.name) {
-        filtered = filtered.filter(f =>
-          f.name.toLowerCase().includes(filters.name.toLowerCase())
-        );
-      }
-
-      if (filters.type) {
-        filtered = filtered.filter(f =>
-          fileIconPath(f.type).toLowerCase().includes(filters.type.toLowerCase())
-        );
-      }
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="100%" class="text-muted py-3">לא נמצאו קבצים</td></tr>`;
-        return;
-      }
-
-      // פונקציה להסרת סיומת
-      const removeExtension = (filename) => {
-        if (!filename || typeof filename !== "string") return filename;
-        const i = filename.lastIndexOf(".");
-        return i > 0 ? filename.substring(0, i) : filename;
-      };
-
-      // בניית השורות
-      const rows = filtered.map(f => {
-        const date = f.created_at
-          ? new Date(f.created_at).toLocaleDateString("he-IL")
-          : "-";
-        const icon = fileIconPath(f.type);
-
-        return `
-            <tr data-file-serial="${f.serial}"
-                style="cursor:pointer;"
-                onclick="viewFile(${caseObj.serial}, ${f.serial}, '${f.name}')">
-
-                <td class="file-name-cell">
-                    <img src="${icon}" class="file-icon" />
-                    ${removeExtension(f.name)}
-                </td>
-
-                <td>${date}</td>
-
-                <td>
-                    <button class="btn btn-sm btn-outline-danger"
-                            onclick="event.stopPropagation(); deleteFile(${caseObj.serial}, ${f.serial}, '${f.name}')">
-                        מחק
-                    </button>
-                </td>
-            </tr>
-        `;
-      }).join("");
-
-      tbody.innerHTML = rows;
-
-      // הפעלת DataTables
-      filesTableInstance = $("#filesTable").DataTable({
-        paging: true,
-        searching: false,
-        ordering: true,
-        info: false,
-        pageLength: 17,
-        language: {
-          url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/he.json"
-        },
-        columnDefs: [
-          { orderable: true, targets: [0, 1] },
-          { orderable: false, targets: [2] }
-        ]
-      });
-    })
-    .catch(err => {
-      console.error("Error loading files:", err);
-      tbody.innerHTML = `<tr><td colspan="100%" class="text-danger py-3">שגיאה בטעינת הקבצים</td></tr>`;
-    });
+    },
+    columnDefs: [
+      { orderable: true, targets: [0, 1] },
+      { orderable: false, targets: [2] }
+    ]
+  });
 };
-
-
-// ================================
-// הפעלת מנגנון פילטר בזמן הקלדה
-// ================================
-const debouncedLoadFiles = debounce(loadFiles);
-
-["filter-file-name", "filter-file-type"].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener("input", debouncedLoadFiles);
-});
