@@ -90,29 +90,51 @@ const Loader = (() => {
   async function loadPage({ pageID, fetchUrl, cssPath, jsPath, container, forceState = false }) {
     if (pageID === currentPage && !forceState) return;
 
+    /* 🔹 אפקט יציאה (fade+slide) לפני טעינת תוכן חדש */
+    container.classList.add('exiting');
+    await new Promise(r => setTimeout(r, 200)); // זמן יציאה קצר
+
     /* 1. HTML */
     const html = await fetch(`${fetchUrl}?v=${Date.now()}`)
-      .then(r => { if (!r.ok) throw new Error(`loading error: ${r.status}`); return r.text(); });
+      .then(r => {
+        if (!r.ok) throw new Error(`loading error: ${r.status}`);
+        return r.text();
+      });
 
     /* 2. CSS */
     const newStyle = await loadCss(cssPath);
 
     /* 3. החלפת תוכן – אחרי CSS */
-    container.style.opacity = 0;
     container.innerHTML = html;
-    requestAnimationFrame(() => (container.style.opacity = 1));
 
-    /* 4. JS */
+    /* 4. אפקט כניסה */
+    requestAnimationFrame(() => container.classList.remove('exiting'));
+
+    /* 5. JS */
     const newScript = await loadJs(jsPath, pageID);
 
-    /* 5. ניקוי קודמים */
+    /* 6. ניקוי קודמים */
     currentStyle?.remove();
     currentScript?.remove();
     if (newStyle) currentStyle = newStyle;
     if (newScript) currentScript = newScript;
     currentPage = pageID;
 
-    /* 6. היסטוריה */
+    // 🟢 Highlight active sidebar link after successful load
+    setTimeout(() => {
+      try {
+        const subLink = document.querySelector(`.sub-sidebar a[data-page="${pageID}"]`);
+        const mainLink = document.querySelector(`.sidebar a[data-sub-sidebar]`);
+        console.log(mainLink)
+        console.log(subLink)
+        if (subLink) highlightInSidebar(subLink, 'sub-sidebar');
+        else if (mainLink) highlightInSidebar(mainLink, 'sidebar');
+      } catch (err) {
+        console.warn('Sidebar highlight failed:', err);
+      }
+    }, 150);
+
+    /* 7. היסטוריה */
     if (forceState) {
       const url = new URL(location.href);
       url.searchParams.set('page', pageID);
