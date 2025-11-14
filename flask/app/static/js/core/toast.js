@@ -1,7 +1,7 @@
 /*  core/toast.js  */
 import { setText } from './utils.js';
 
-const DEFAULT_DELAY = 2500;
+const DEFAULT_DELAY = 6000;
 
 /* --------------------------------------------------------------------------
    resolveTemplate(container)
@@ -44,8 +44,23 @@ function resolveTemplate(container) {
    -------------------------------------------------------------------------- */
 export function showToast(container, message, type = 'info', opts = {}) {
   if (!container) return null;
+
+  // ✨ Default behavior by type:
+  let finalAutohide = opts.autohide;
+  let finalDelay = opts.delay;
+
+  if (type === 'success' || type === 'info') {
+    finalAutohide = finalAutohide ?? true;
+    finalDelay = finalDelay ?? 6000;
+  } else if (type === 'danger' || type === 'warning') {
+    finalAutohide = finalAutohide ?? false; // Sticky
+    finalDelay = finalDelay ?? 0;           // Ignored when autohide=false
+  }
+
   const doc = container.ownerDocument || document;
-  const { delay = DEFAULT_DELAY, autohide = true, toastOptions = {} } = opts;
+  const delay = finalDelay ?? DEFAULT_DELAY;
+  const autohide = finalAutohide ?? true;
+  const toastOptions = opts.toastOptions || {};
 
   let toastEl;
   let fragmentToAppend = null;
@@ -72,9 +87,23 @@ export function showToast(container, message, type = 'info', opts = {}) {
   // Set the message text safely
   const bodyEl = toastEl.querySelector('.toast-body') || toastEl;
   setText(bodyEl, message ?? '');
+  // ❌ Add close button if sticky
+  if (!autohide) {
+    const flex = toastEl.querySelector(".d-flex");
+
+    // remove previous close button if exists
+    flex.querySelector(".btn-close")?.remove();
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "btn-close btn-close-white me-2 m-auto";
+    closeBtn.setAttribute("data-bs-dismiss", "toast");
+    closeBtn.setAttribute("aria-label", "Close");
+
+    flex.appendChild(closeBtn);
+  }
 
   // Apply the requested color variant
-  const typeClasses = ['primary','secondary','success','danger','warning','info','light','dark'];
+  const typeClasses = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'];
   typeClasses.forEach((cls) => toastEl.classList.remove(`bg-${cls}`));
   if (type) {
     toastEl.classList.add(`bg-${type}`);
