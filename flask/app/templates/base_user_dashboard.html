@@ -62,17 +62,33 @@
     </div>
 
     <!-- ✅ Toast notifications -->
-    <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3 mb-4" style="z-index: 9999;">
+    <div class="toast-wrapper position-fixed start-50 translate-middle-x p-3 mb-4"
+        style="z-index: 9999; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
 
-        <template data-prototype>
-            <div class="toast align-items-center text-white border-0" role="alert" aria-live="assertive"
-                aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body text-center w-100"></div>
+        <!-- טוסטים רגילים (success/info) -->
+        <div class="toast-container toast-normal">
+            <template data-prototype>
+                <div class="toast align-items-center text-white border-0" role="alert" aria-live="assertive"
+                    aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body text-center w-100"></div>
+                        <!-- כפתור X יתווסף אוטומטית ב־toast.js רק לטוסטים sticky -->
+                    </div>
                 </div>
-            </div>
-        </template>
+            </template>
+        </div>
 
+        <!-- טוסטים sticky (warning/danger) -->
+        <div class="toast-container toast-sticky">
+            <template data-prototype>
+                <div class="toast align-items-center text-white border-0" role="alert" aria-live="assertive"
+                    aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body text-center w-100"></div>
+                    </div>
+                </div>
+            </template>
+        </div>
     </div>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">

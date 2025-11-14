@@ -1,7 +1,7 @@
 /*  core/toast.js  */
 import { setText } from './utils.js';
 
-const DEFAULT_DELAY = 6000;
+const DEFAULT_DELAY = 5000;
 
 /* --------------------------------------------------------------------------
    resolveTemplate(container)
@@ -42,7 +42,14 @@ function resolveTemplate(container) {
                                    - toastOptions(object)   Extra options for bootstrap.Toast.
    @returns {bootstrap.Toast|HTMLElement|null}
    -------------------------------------------------------------------------- */
-export function showToast(container, message, type = 'info', opts = {}) {
+export function showToast(message, type = 'info', opts = {}) {
+  // ▀▀▀ בחירת קונטיינר אוטומטית ▀▀▀
+  let container = document.querySelector(".toast-container.toast-normal");
+
+  if (type === "warning" || type === "danger") {
+    container = document.querySelector(".toast-container.toast-sticky");
+  }
+
   if (!container) return null;
 
   // ✨ Default behavior by type:
@@ -51,7 +58,7 @@ export function showToast(container, message, type = 'info', opts = {}) {
 
   if (type === 'success' || type === 'info') {
     finalAutohide = finalAutohide ?? true;
-    finalDelay = finalDelay ?? 6000;
+    finalDelay = finalDelay ?? DEFAULT_DELAY;
   } else if (type === 'danger' || type === 'warning') {
     finalAutohide = finalAutohide ?? false; // Sticky
     finalDelay = finalDelay ?? 0;           // Ignored when autohide=false

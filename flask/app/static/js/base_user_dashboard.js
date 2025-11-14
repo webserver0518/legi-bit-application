@@ -34,11 +34,9 @@ utilsModulePromise
   .catch((err) => console.error('Failed to load utils module', err));
 
 function showToast(message, type = 'info', opts = {}) {
-  const container = utils.qs('.toast-container');
-  if (!container) return;
   toastModulePromise
     .then(({ showToast: coreShowToast }) => {
-      coreShowToast(container, message, type, opts);
+      coreShowToast(message, type, opts);
     })
     .catch((err) => {
       console.error('Failed to load toast module', err);
