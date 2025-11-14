@@ -104,7 +104,7 @@ function initClientsManager() {
       });
       const json = await res.json();
       if (!json.success) {
-        showToast("❌ שגיאה בהוספת לקוח לשרת", true);
+        showToast("❌ שגיאה בהוספת לקוח לשרת", "danger");
         return;
       }
 
@@ -116,7 +116,7 @@ function initClientsManager() {
       showToast(`לקוח חדש נוצר ונוסף לתיק (מס' ${client_serial})`);
     } catch (err) {
       console.error("שגיאה בשליחת לקוח:", err);
-      showToast("⚠️ בעיה בחיבור לשרת", true);
+      showToast("⚠️ בעיה בחיבור לשרת", "danger");
     }
 
   });
@@ -368,7 +368,7 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
             resolve();
           } else {
             reject(new Error(`Upload failed with status ${xhr.status}`));
-            showToast(`❌ העלאת "${file.name}" נכשלה`, true);
+            showToast(`❌ העלאת "${file.name}" נכשלה`, "danger");
           }
         };
 
@@ -465,13 +465,10 @@ window.initCaseFormPreview = function () {
       submitBtn.textContent = "יוצר תיק...";
     }
 
-    // open files section
-    document.querySelector("[data-target='#collapseFiles']")?.click();
-
     // ✅ Require at least one main client before submission
     const hasMain = (window.clientsList || []).some(c => c.role === "main");
     if (!hasMain) {
-      showToast("יש להוסיף לפחות לקוח ראשי אחד לפני פתיחת תיק", true);
+      showToast("יש להוסיף לפחות לקוח ראשי אחד לפני פתיחת תיק", "danger");
       submitBtn.disabled = false;
       submitBtn.textContent = "פתח תיק";
       return;
@@ -493,7 +490,7 @@ window.initCaseFormPreview = function () {
 
 
     if (!fd.get('title')) {
-      showToast("יש למלא כותרת לתיק", true);
+      showToast("יש למלא כותרת לתיק", "danger");
       submitBtn.disabled = false;
       submitBtn.textContent = "פתח תיק";
       return;
@@ -523,10 +520,13 @@ window.initCaseFormPreview = function () {
       const json = await res.json();
       const parsed = parseApiResponse(json);
       if (!parsed.success || !parsed.data) {
-        showToast(`❌ Failed to create case: ${parsed.error}`, true);
+        showToast(`❌ Failed to create case: ${parsed.error}`, "danger");
         return;
       }
       showToast("✅ Case created successfully");
+
+      // open files section
+      document.querySelector("[data-target='#collapseFiles']")?.click();
 
       const case_serial = parsed.data;
 
@@ -588,7 +588,7 @@ window.initCaseFormPreview = function () {
 
     } catch (error) {
       console.error(error);
-      showToast("⚠️ Error contacting server", true);
+      showToast("⚠️ Error contacting server", "danger");
 
     } finally {
       if (submitBtn) {
@@ -690,7 +690,7 @@ async function getOfficeSerial() {
     return parsed.data.office_serial;
   } catch (err) {
     console.error("❌ Failed to get office_serial:", err);
-    showToast("⚠️ שגיאה בשליפת מזהה משרד", true);
+    showToast("⚠️ שגיאה בשליפת מזהה משרד", "danger");
     throw err;
   }
 }
