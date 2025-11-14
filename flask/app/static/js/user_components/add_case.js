@@ -708,6 +708,32 @@ async function initClientAutocomplete() {
     console.error("❌ שגיאה בשליפת לקוחות מהמשרד:", err);
   }
 
+  function renderClientSuggestions(filter = "") {
+    const value = filter.trim();
+
+    const matches = value
+      ? officeClients.filter(c =>
+        (c.first_name + " " + c.last_name).includes(value)
+      )
+      : officeClients; // focus should show ALL
+
+    if (matches.length === 0) {
+      suggestions.style.display = "none";
+      suggestions.innerHTML = "";
+      return;
+    }
+
+    suggestions.innerHTML = matches
+      .map(c => `
+      <li class="list-group-item list-group-item-action" data-serial="${c.serial}">
+        ${c.first_name} ${c.last_name}
+      </li>
+    `)
+      .join("");
+
+    suggestions.style.display = "block";
+  }
+
   // 🧠 הצגת הצעות בזמן הקלדה
   input.addEventListener("input", () => {
     const value = input.value.trim();
