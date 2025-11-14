@@ -10,6 +10,7 @@
 html,
 body {
   overflow-x: hidden !important;
+  scrollbar-width: none;
   max-width: 100vw;
 }
 
@@ -203,8 +204,8 @@ body:not(.sidebar-collapsed) .marginClient {
 }
 
 /* כשהעכבר מעל → להפעיל את האנימציה */
-#office-name:hover span {
-  animation: slideLR 5s ease-in-out infinite alternate;
+#office-name span {
+  animation: slideLR 20s linear infinite alternate;
 }
 
 /* מימין → שמאלה → חזרה לימין */
