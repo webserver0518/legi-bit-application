@@ -58,10 +58,14 @@ function caseToSuperString(c) {
   // LOAD CASES FROM SERVER
   // -----------------------
   function loadCases() {
+
+    // 🔒 נועל את שורת הסינון בזמן טעינה
+    const filterBar = document.querySelector(".filter-bar");
+    filterBar?.classList.add("loading");
     document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
       .forEach(el => el.disabled = true);
 
-    const url = `/get_office_cases?expand=true`;
+    const url = `/get_office_cases?expand=true&status=active`;
 
     fetch(url)
       .then(r => r.json())
@@ -94,6 +98,7 @@ function caseToSuperString(c) {
       })
       .finally(() => {
         // 🔓 נפתח את הסינון בכל מקרה
+        filterBar?.classList.remove("loading");
         document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
           .forEach(el => el.disabled = false);
       });
@@ -109,7 +114,7 @@ function caseToSuperString(c) {
 
     // איפוס סטטוס
     const statusSelect = document.getElementById("case-status");
-    statusSelect.value = "";
+    statusSelect.value = "active";
 
     // רנדר מחדש את כל התיקים
     renderCases(CURRENT_ROWS);
@@ -223,7 +228,8 @@ function caseToSuperString(c) {
           previous: 'הקודם',
           next: 'הבא'
         }
-      }
+      },
+      order: [[1, "desc"]],
     });
   }
 
