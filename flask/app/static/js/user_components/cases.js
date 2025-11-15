@@ -72,14 +72,11 @@ function caseToSuperString(c) {
 
     // 🔒 נועל את שורת הסינון בזמן טעינה
     const filterBar = document.querySelector(".filter-bar");
-    filterBar?.classList.add("loading");
-    document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
-      .forEach(el => el.disabled = true);
+    window.Tables.setFilterBarLoading(filterBar, true);
 
     const url = `/get_office_cases?expand=true&status=active`;
 
-    fetch(url)
-      .then(r => r.json())
+    window.API.getJson(url)
       .then(payload => {
         if (dataTableInstance) {
           dataTableInstance.clear().destroy();
@@ -112,9 +109,7 @@ function caseToSuperString(c) {
         const hasCases = (CURRENT_ROWS?.length || 0) > 0;
         // 🔓 רק אם יש תיקים — נפתח את הסינון
         if (hasCases) {
-          filterBar?.classList.remove("loading");
-          document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
-            .forEach(el => el.disabled = false);
+          window.Tables.setFilterBarLoading(filterBar, false);
         }
 
       });
@@ -277,11 +272,6 @@ function storeCaseAndOpen(serial) {
   navStore.set("lastViewedCase", { serial, timestamp: Date.now() });
   loadContent("view_case", true, "user");
 }
-
-function safeValue(v) {
-  return v && v.trim && v.trim() !== "" ? v : "-";
-}
-
 
 
 // -----------------------
