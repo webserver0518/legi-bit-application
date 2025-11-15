@@ -5,11 +5,12 @@ const DEFAULT_PAGE = 'home';  // ← שם יחיד ב-storage
 
 const utilsModulePromise = import('/static/js/core/utils.js');
 const navModulePromise = import('/static/js/core/nav.js');
+const siteLoaderModulePromise = import('/static/js/core/loader.site.js');
 
-let utils = utilsFallback;
+let utils = null;
 utilsModulePromise
-  .then((mod) => { utils = { ...utilsFallback, ...mod }; })
-  .catch((err) => console.error('Failed to load utils module', err));
+  .then((mod) => { window.utils = mod; utils = mod; })
+  .catch(() => { throw new Error('utils module failed to load'); });
 
 
 /* אתחול */
@@ -34,8 +35,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const page = link.dataset.page;
       if (!page) return;
       e.preventDefault();
-      navigateTo(link, force = true);
-      window.Nav?.setLastPage(page, 'site');
+      window.SiteLoader.navigate({ linkEl: link, page, force: true });
       return;
     });
   }
