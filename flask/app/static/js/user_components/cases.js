@@ -48,6 +48,15 @@ function caseToSuperString(c) {
 // MAIN MODULE
 // -----------------------
 (() => {
+  const casesStore = window.Core.storage.create("cases");
+
+  const savedSearch = casesStore.get("search") || "";
+  const savedStatus = casesStore.get("status") || "";
+  const savedPage = casesStore.get("page");
+
+  document.getElementById("case-search").value = savedSearch;
+  document.getElementById("case-status").value = savedStatus;
+
   const table = $("#casesTable");
   const tbody = table.find("tbody");
   let dataTableInstance = null;
@@ -91,7 +100,7 @@ function caseToSuperString(c) {
           c.__super = caseToSuperString(c);
         });
 
-        renderCases(rows);
+        applyCaseFilters();
       })
       .catch(err => {
         console.error("Error loading cases:", err);
@@ -122,6 +131,11 @@ function caseToSuperString(c) {
     // איפוס סטטוס
     const statusSelect = document.getElementById("case-status");
     statusSelect.value = "";
+
+    // מחיקה מה־storage
+    casesStore.remove("search");
+    casesStore.remove("status");
+    casesStore.remove("page");
 
     // רנדר מחדש את כל התיקים
     renderCases(CURRENT_ROWS);
@@ -158,16 +172,26 @@ function caseToSuperString(c) {
 
   document
     .getElementById("case-search")
-    .addEventListener("input", applyCaseFilters);
+    .addEventListener("input", () => {
+      const v = document.getElementById("case-search").value.trim();
+      casesStore.set("search", v);
+      applyCaseFilters();
+    });
 
   document
     .getElementById("case-status")
-    .addEventListener("change", applyCaseFilters);
+    .addEventListener("change", () => {
+      const v = document.getElementById("case-status").value;
+      casesStore.set("status", v);
+      applyCaseFilters();
+    });
 
   // -----------------------
   // RENDER TABLE
   // -----------------------
   function renderCases(list) {
+    const savedPage = casesStore.get("page");
+
     if (dataTableInstance) {
       dataTableInstance.clear().destroy();
       dataTableInstance = null;
@@ -238,6 +262,16 @@ function caseToSuperString(c) {
       },
       order: [[1, "desc"]],
     });
+
+    // Restore page from storage
+    if (savedPage !== null && !isNaN(savedPage)) {
+      dataTableInstance.page(savedPage).draw("page");
+    }
+
+    // Save page changes
+    dataTableInstance.on("page.dt", () => {
+      casesStore.set("page", dataTableInstance.page());
+    });
   }
 
   // -----------------------
@@ -250,7 +284,8 @@ function caseToSuperString(c) {
 // HELPERS
 // -----------------------
 function storeCaseAndOpen(serial) {
-  sessionStorage.setItem("selectedCaseSerial", serial);
+  const navStore = window.Core.storage.create("navigation");
+  navStore.set("lastViewedCase", { serial, timestamp: Date.now() });
   loadContent("view_case", true, "user");
 }
 
