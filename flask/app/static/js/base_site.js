@@ -4,24 +4,13 @@
 const DEFAULT_PAGE = 'home';  // ← שם יחיד ב-storage
 
 const utilsModulePromise = import('/static/js/core/utils.js');
-
-const utilsFallback = {
-  qs: (selector, scope = document) => scope?.querySelector?.(selector) || null,
-  delegate: (root, eventName, selector, handler, options) => {
-    if (!root?.addEventListener) return () => {};
-    const listener = (event) => {
-      const match = event.target?.closest(selector);
-      if (match && root.contains(match)) handler(event, match);
-    };
-    root.addEventListener(eventName, listener, options);
-    return () => root.removeEventListener(eventName, listener, options);
-  },
-};
+const navModulePromise = import('/static/js/core/nav.js');
 
 let utils = utilsFallback;
 utilsModulePromise
   .then((mod) => { utils = { ...utilsFallback, ...mod }; })
   .catch((err) => console.error('Failed to load utils module', err));
+
 
 /* אתחול */
 window.addEventListener('DOMContentLoaded', () => {
@@ -45,7 +34,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const page = link.dataset.page;
       if (!page) return;
       e.preventDefault();
-      navigateTo(link, force=true);
+      navigateTo(link, force = true);
+      window.Nav?.setLastPage(page, 'site');
       return;
     });
   }
