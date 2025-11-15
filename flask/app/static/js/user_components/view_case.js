@@ -18,6 +18,9 @@ function fileIconPath(mime) {
 
 window.init_view_case = function init_view_case() {
 
+  const navStore = window.Core.storage.create("navigation");
+  const lastViewedCase = navStore.get("lastViewedCase");
+
   document.getElementById("clear-file-filters")?.addEventListener("click", () => {
     document.getElementById("file-search").value = "";
     document.getElementById("file-type").value = "";
@@ -51,9 +54,8 @@ window.init_view_case = function init_view_case() {
         const el = document.getElementById(id);
         if (el) el.textContent = safeValue(val);
       };
-
       setText("case-title", caseObj.title);
-      setText("case-serial", caseObj.serial);
+      setText("case-serial", caseObj.serial.toString());
       setText("case-created-by", user.first_name ?? user.username);
       setText("case-field", caseObj.field);
       setText("case-against", `${caseObj.against} - ${caseObj.against_type}`);
@@ -107,7 +109,7 @@ window.init_view_case = function init_view_case() {
       loadFiles();
     })
     .finally(() => {
-      if (files.length > 0) {
+      if (Array.isArray(window.__allFiles) && window.__allFiles.length > 0) {
         const filterBar = document.querySelector(".filter-bar");
         filterBar?.classList.remove("loading");
         document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
@@ -167,7 +169,7 @@ function buildFileTypesDropdown(files) {
   const select = document.getElementById("file-type");
   if (!select) return;
 
-  const types = [...new Set(files.map(f => f.type))].sort();
+  const types = [...new Set(files.map(f => f.content_type))].sort();
   select.innerHTML = `<option value="">סוג</option>` +
     types.map(t => `<option value="${t}">${t}</option>`).join("");
 }
@@ -201,8 +203,8 @@ window.loadFiles = function loadFiles() {
     );
   }
 
-  if (filters.type) {
-    filtered = filtered.filter(f => f.type === filters.type);
+  if (filters.content_type) {
+    filtered = filtered.filter(f => f.content_type === filters.content_type);
   }
 
   if (!filtered.length) {
@@ -219,7 +221,7 @@ window.loadFiles = function loadFiles() {
     const date = f.created_at
       ? new Date(f.created_at).toLocaleDateString("he-IL")
       : "-";
-    const icon = fileIconPath(f.type);
+    const icon = fileIconPath(f.technical_type);
 
     return `
         <tr data-file-serial="${f.serial}"
