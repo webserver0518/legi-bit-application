@@ -1,21 +1,20 @@
 /*************************************************
- * loader.user.js – Independent User Loader
- * Public API: window.UserLoader.load({ page, force })
- *             window.UserLoader.navigate({ linkEl, page, force })
+ * loader.site.js – Independent Site Loader
+ * Public API: window.SiteLoader.load({ page, force })
+ *             window.SiteLoader.navigate({ linkEl, page, force })
  **************************************************/
 (function () {
     if (!window.Core?.storage) {
-        throw new Error("UserLoader: window.Core.storage must be loaded first");
+        throw new Error("SiteLoader: window.Core.storage must be loaded first");
     }
 
-    const Store = window.Core.storage.create("loader.user");
-    const KEY = "current_dashboard_content";
+    const Store = window.Core.storage.create("loader.site");
+    const KEY = "current_site_content";
 
     const runtime = { currentPage: null, currentStyle: null, currentScript: null };
 
     function container() {
         return (
-            document.getElementById("dashboardContent") ||
             document.getElementById("dynamicContent") ||
             document.getElementById("content") ||
             document.body
@@ -25,8 +24,8 @@
     function pathsFor(page) {
         return {
             fetchUrl: `/load_${page}`,
-            cssPath: `/static/css/user_components/${page}.css`,
-            jsPath: `/static/js/user_components/${page}.js`,
+            cssPath: `/static/css/site_components/${page}.css`,
+            jsPath: `/static/js/site_components/${page}.js`,
         };
     }
 
@@ -53,7 +52,7 @@
                 runtime.currentScript = null;
             }
             const script = document.createElement("script");
-            script.type = "text/javascript"; // not module: keep window.init_* globals
+            script.type = "text/javascript";
             script.async = true;
             script.src = `${path}?v=${Date.now()}`;
             script.onload = () => resolve(true);
@@ -65,13 +64,13 @@
 
     async function fetchHtml(url) {
         const resp = await fetch(`${url}?v=${Date.now()}`, { credentials: "same-origin" });
-        if (!resp.ok) throw new Error(`UserLoader HTML fetch failed: ${resp.status}`);
+        if (!resp.ok) throw new Error(`SiteLoader HTML fetch failed: ${resp.status}`);
         return await resp.text();
     }
 
     async function loadInternal(page, force) {
         if (typeof force !== "boolean") {
-            throw new Error("UserLoader.load: 'force' must be boolean");
+            throw new Error("SiteLoader.load: 'force' must be boolean");
         }
         const cont = container();
         if (!force && runtime.currentPage === page) return { page, changed: false };
@@ -96,28 +95,18 @@
     }
 
     async function navigate({ linkEl = null, page = null, force }) {
-        if (typeof force !== "boolean") throw new Error("UserLoader.navigate: 'force' must be boolean");
+        if (typeof force !== "boolean") throw new Error("SiteLoader.navigate: 'force' must be boolean");
         if (!page && linkEl) page = linkEl.dataset.page;
-        if (!page) throw new Error("UserLoader.navigate: missing page");
+        if (!page) throw new Error("SiteLoader.navigate: missing page");
 
         const result = await loadInternal(page, force);
 
-        if (window.Nav?.highlightInSidebar) {
-            if (linkEl) {
-                const cls = linkEl.closest(".sub-sidebar") ? "sub-sidebar" : "sidebar";
-                window.Nav.highlightInSidebar(linkEl, cls);
-            } else {
-                const subLink = document.querySelector(`.sub-sidebar a[data-page="${page}"]`);
-                const mainLink = document.querySelector(`.sidebar a[data-page="${page}"]`);
-                if (subLink) window.Nav.highlightInSidebar(subLink, "sub-sidebar");
-                else if (mainLink) window.Nav.highlightInSidebar(mainLink, "sidebar");
-            }
-        }
-        if (window.Nav?.setLastPage) window.Nav.setLastPage(page, "user");
+        // Optional: top-nav highlight could be added here if you standardize a class
+        if (window.Nav?.setLastPage) window.Nav.setLastPage(page, "site");
         return result;
     }
 
-    window.UserLoader = {
+    window.SiteLoader = {
         load: ({ page, force }) => loadInternal(page, force),
         navigate,
     };

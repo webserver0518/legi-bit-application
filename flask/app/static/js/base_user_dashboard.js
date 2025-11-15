@@ -9,6 +9,7 @@ const utilsModulePromise = import('/static/js/core/utils.js');
 const apiModulePromise = import('/static/js/core/api.js');
 const tablesModulePromise = import('/static/js/core/tables.js');
 const navModulePromise = import('/static/js/core/nav.js');
+const userLoaderModulePromise = import('/static/js/core/loader.user.js');
 
 let API = null;
 apiModulePromise
