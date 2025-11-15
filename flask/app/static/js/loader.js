@@ -21,7 +21,7 @@ function navigateTo(linkEl, force = false) {
     force = force,
     type = linkEl.dataset.type
   );
-  highlightInSidebar(linkEl, 'sub-sidebar');
+  window.Nav?.highlightInSidebar(linkEl, 'sub-sidebar');
 }
 
 /* טעינת דף */
@@ -134,8 +134,8 @@ const Loader = (() => {
       try {
         const subLink = document.querySelector(`.sub-sidebar a[data-page="${pageID}"]`);
         const mainLink = document.querySelector(`.sidebar a[data-sub-sidebar]`);
-        if (subLink) highlightInSidebar(subLink, 'sub-sidebar');
-        else if (mainLink) highlightInSidebar(mainLink, 'sidebar');
+        if (subLink) window.Nav?.highlightInSidebar(subLink, 'sub-sidebar');
+        else if (mainLink) window.Nav?.highlightInSidebar(mainLink, 'sidebar');
       } catch (err) {
         console.warn('Sidebar highlight failed:', err);
       }
