@@ -10,7 +10,6 @@ window.init_view_case = function init_view_case() {
     loadFiles();
   });
 
-  const safeValue = (v) => (v && v.trim && v.trim() !== "" ? v : "-");
   const serial = lastViewedCase.serial
   if (!serial) return;
 
@@ -31,7 +30,7 @@ window.init_view_case = function init_view_case() {
 
       const setText = (id, val) => {
         const el = document.getElementById(id);
-        if (el) el.textContent = safeValue(val);
+        if (el) el.textContent = utils.safeValue(val);
       };
       setText("case-title", caseObj.title);
       setText("case-serial", caseObj.serial.toString());
@@ -46,7 +45,7 @@ window.init_view_case = function init_view_case() {
       setText("case-created-at", createdAtText);
 
       const factsEl = document.getElementById("case-facts-text");
-      if (factsEl) factsEl.textContent = safeValue(caseObj.facts ?? "");
+      if (factsEl) factsEl.textContent = utils.safeValue(caseObj.facts ?? "");
 
       const statusDot = document.getElementById("case-status-dot");
       if (statusDot) statusDot.classList.add(caseObj.status || "unknown");
@@ -59,11 +58,11 @@ window.init_view_case = function init_view_case() {
             const badge = `<span class="badge-level ${c.level}">${c.level === "main" ? "ראשי" : "משני"}</span>`;
             return `
                             <tr>
-                                <td>${safeValue(c.first_name)}</td>
-                                <td>${safeValue(c.last_name)}</td>
-                                <td>${safeValue(c.id_card_number)}</td>
-                                <td>${safeValue(c.phone)}</td>
-                                <td>${safeValue(c.email)}</td>
+                                <td>${utils.safeValue(c.first_name)}</td>
+                                <td>${utils.safeValue(c.last_name)}</td>
+                                <td>${utils.safeValue(c.id_card_number)}</td>
+                                <td>${utils.safeValue(c.phone)}</td>
+                                <td>${utils.safeValue(c.email)}</td>
                                 <td>${badge}</td>
                             </tr>`;
           }).join("");
@@ -76,10 +75,10 @@ window.init_view_case = function init_view_case() {
           ? `<tr><td colspan="100%" class="text-muted py-3">אין אירועים להצגה</td></tr>`
           : evts.map(e => `
                         <tr>
-                            <td>${safeValue(new Date(e.date).toLocaleDateString("he-IL"))}</td>
-                            <td>${safeValue(e.type)}</td>
-                            <td>${safeValue(e.description)}</td>
-                            <td>${safeValue(e.performed_by)}</td>
+                            <td>${utils.safeValue(new Date(e.date).toLocaleDateString("he-IL"))}</td>
+                            <td>${utils.safeValue(e.type)}</td>
+                            <td>${utils.safeValue(e.description)}</td>
+                            <td>${utils.safeValue(e.performed_by)}</td>
                         </tr>`).join("");
       }
 
