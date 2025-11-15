@@ -11,19 +11,6 @@ window.init_add_case = function () {
   initClientAutocomplete();
 };
 
-/* Parse API responses safely into a unified object */
-window.parseApiResponse = (payload) => {
-  if (!payload || typeof payload !== 'object') {
-    return { data: null, error: 'Invalid server response', success: false, message: '' };
-  }
-  return {
-    data: payload?.data ?? null,
-    error: payload.error,
-    success: payload.success,
-    message: payload.message,
-  };
-};
-
 /* ==============================
    🧩 MULTI-CLIENT MANAGEMENT
    ============================== */
