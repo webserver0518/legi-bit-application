@@ -8,6 +8,7 @@ const toastModulePromise = import('/static/js/core/toast.js');
 const utilsModulePromise = import('/static/js/core/utils.js');
 const apiModulePromise = import('/static/js/core/api.js');
 const tablesModulePromise = import('/static/js/core/tables.js');
+const navModulePromise = import('/static/js/core/nav.js');
 
 let API = null;
 apiModulePromise
@@ -18,6 +19,11 @@ let Tables = null;
 tablesModulePromise
   .then((mod) => { window.Tables = mod; Tables = mod; })
   .catch((err) => console.error('Failed to load Tables module', err));
+
+let Nav = null;
+navModulePromise
+  .then((mod) => { window.Nav = mod; Nav = mod; })
+  .catch((err) => console.error('Failed to load Nav module', err));
 
 const utilsFallback = {
   qs: (selector, scope = document) => scope?.querySelector?.(selector) || null,
