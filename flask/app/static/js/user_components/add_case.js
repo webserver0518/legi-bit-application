@@ -88,18 +88,13 @@ function initClientsManager() {
 
     try {
       // 🧠 שליחה לשרת כדי לשמור לקוח חדש
-      const res = await fetch("/create_new_client", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(client)
-      });
-      const json = await res.json();
-      if (!json.success) {
+      const apiRes = await window.API.postJson("/create_new_client", client);
+      if (!apiRes.success) {
         showToast("❌ שגיאה בהוספת לקוח לשרת", "danger");
         return;
       }
 
-      const client_serial = json.data;
+      const client_serial = apiRes.data;
       client.serial = client_serial;
       clientsList.push(client);
       renderClientsTable();
@@ -230,8 +225,10 @@ function initClientsManager() {
 
       // טעינת סוגי המסמכים
       try {
-        const res = await fetch("/get_document_types");
-        const types = await res.json();
+        const typesRes = await window.API.getJson("/get_document_types");
+        if (!typesRes.success) throw new Error("Failed to load document types");
+        const types = Array.isArray(typesRes.data) ? typesRes.data : [];
+
         const select = tr.querySelector(".file-content-type");
         select.innerHTML = "";
         types.forEach(t => {
@@ -336,22 +333,16 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
       progressBar.classList.add("bg-info");
 
       // 1️⃣ צור רשומת קובץ במונגו
-      const createFileRes = await fetch("/create_new_file", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          created_at: timestamp,
-          case_serial: case_serial,
-          client_serial: client_serial,
-          name: file.name,
-          technical_type: technical_type,
-          content_type: content_type,
-          description: description,
-        }),
+      const parsedCreate = await window.API.postJson("/create_new_file", {
+        created_at: timestamp,
+        case_serial,
+        client_serial,
+        name: file.name,
+        technical_type,
+        content_type,
+        description,
       });
 
-      const createJson = await createFileRes.json();
-      const parsedCreate = parseApiResponse(createJson);
       if (!parsedCreate.success || !parsedCreate.data) {
         throw new Error(parsedCreate.error || "Failed to create file record");
       }
@@ -365,24 +356,17 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
 
 
       // 3️⃣ בקשת presigned URL ל-S3
-      const presignRes = await fetch("/presign/post", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          file_name: file.name,
-          file_type: technical_type || file.type || "application/octet-stream",
-          file_size: file.size,
-          key: uploadKey
-        })
+      const parsedPresign = await window.API.postJson("/presign/post", {
+        file_name: file.name,
+        file_type: technical_type || file.type || "application/octet-stream",
+        file_size: file.size,
+        key: uploadKey
       });
-
-      const presignJson = await presignRes.json();
-      const parsed = parseApiResponse(presignJson);
-      if (!parsed.success || !parsed.data?.presigned?.url) {
-        throw new Error(parsed.error || "Failed to get presigned URL");
+      if (!parsedPresign.success || !parsedPresign.data?.presigned?.url) {
+        throw new Error(parsedPresign.error || "Failed to get presigned URL");
       }
+      const { url, fields } = parsedPresign.data.presigned;
 
-      const { url, fields } = parsed.data.presigned;
 
       // 4️⃣ העלאה אמיתית ל-S3
       fileEntry.status = "uploading";
@@ -422,12 +406,9 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
 
       console.log(`✅ Uploaded ${file.name} to S3 (${uploadKey})`);
 
-      await fetch(`/update_file?serial=${Number(fileEntry.serial)}`, {
+      await window.API.apiRequest(`/update_file?serial=${Number(fileEntry.serial)}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "available"
-        })
+        body: { status: "available" }
       });
     } catch (err) {
       console.error("❌ Upload failed for:", file.name, err);
@@ -548,14 +529,8 @@ window.initCaseFormPreview = function () {
 
     // 🟢 שליחת הנתונים לשרת
     try {
-      const res = await fetch("/create_new_case", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form_data)
-      });
+      const parsed = await window.API.postJson("/create_new_case", form_data);
 
-      const json = await res.json();
-      const parsed = parseApiResponse(json);
       if (!parsed.success || !parsed.data) {
         showToast(`❌ Failed to create case: ${parsed.error}`, "danger");
         return;
@@ -597,16 +572,10 @@ window.initCaseFormPreview = function () {
       submitBtn.textContent = "שומר קבצים...";
       const fileSerials = uploaded.map(f => f.serial);
 
-      const updateRes = await fetch(`/update_case?serial=${case_serial}`, {
+      const parsedUpdate = await window.API.apiRequest(`/update_case?serial=${case_serial}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          files_serials: fileSerials
-        }),
+        body: { files_serials: fileSerials }
       });
-
-      const updateJson = await updateRes.json();
-      const parsedUpdate = parseApiResponse(updateJson);
 
       if (!parsedUpdate.success) {
         throw new Error(parsedUpdate.error || "שגיאה בשמירת הקבצים");
@@ -640,8 +609,9 @@ window.initFieldAutocomplete = async function () {
   if (!input) return;
 
   try {
-    const res = await fetch("/get_case_categories");
-    const categories = await res.json();
+    const catRes = await window.API.getJson("/get_case_categories");
+    const categories = Array.isArray(catRes.data) ? catRes.data : [];
+
     function showSuggestions(filter = "") {
       const value = filter.trim();
       suggestions.innerHTML = "";
@@ -716,9 +686,8 @@ function initHebrewBirthDatePicker() {
 
 async function getOfficeSerial() {
   try {
-    const res = await fetch("/get_office_serial");
-    const json = await res.json();
-    const parsed = parseApiResponse(json);
+    const parsed = await window.API.getJson("/get_office_serial");
+
     if (!parsed.success || !parsed.data?.office_serial) {
       throw new Error("Office serial not found");
     }
@@ -741,10 +710,9 @@ async function initClientAutocomplete() {
 
   let officeClients = [];
   try {
-    const res = await fetch("/get_office_clients");
-    const json = await res.json();
-    if (json.success && Array.isArray(json.data)) {
-      officeClients = json.data;
+    const res = await window.API.getJson("/get_office_clients");
+    if (res.success && Array.isArray(res.data)) {
+      officeClients = res.data;
     }
   } catch (err) {
     console.error("❌ שגיאה בשליפת לקוחות מהמשרד:", err);
