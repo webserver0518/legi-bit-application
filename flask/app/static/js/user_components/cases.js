@@ -54,6 +54,8 @@ function caseToSuperString(c) {
 
   let CURRENT_ROWS = [];
 
+
+
   // -----------------------
   // LOAD CASES FROM SERVER
   // -----------------------
@@ -81,6 +83,7 @@ function caseToSuperString(c) {
 
         const rows = Array.isArray(payload?.data) ? payload.data : [];
         CURRENT_ROWS = rows;
+        buildStatusDropdown(CURRENT_ROWS);
 
         // Superstring for each case
         rows.forEach(obj => {
@@ -118,7 +121,7 @@ function caseToSuperString(c) {
 
     // איפוס סטטוס
     const statusSelect = document.getElementById("case-status");
-    statusSelect.value = "active";
+    statusSelect.value = "";
 
     // רנדר מחדש את כל התיקים
     renderCases(CURRENT_ROWS);
@@ -253,4 +256,32 @@ function storeCaseAndOpen(serial) {
 
 function safeValue(v) {
   return v && v.trim && v.trim() !== "" ? v : "-";
+}
+
+
+
+// -----------------------
+// BUILD STATUS DROPDOWN (Dynamic like files)
+// -----------------------
+function buildStatusDropdown(rows) {
+  const select = document.getElementById("case-status");
+  if (!select) return;
+
+  // איתור כל סוגי הסטטוסים הקיימים
+  const statuses = [...new Set(
+    rows.map(r => r?.cases?.status).filter(Boolean)
+  )].sort();
+
+  // מיפוי תצוגה בעברית
+  const statusLabels = {
+    active: "פתוח",
+    archived: "ארכיון"
+  };
+
+  // בניית התוכן הדינמי
+  select.innerHTML = `<option value="">כל הסטטוסים</option>` +
+    statuses.map(s => {
+      const label = statusLabels[s] || s;
+      return `<option value="${s}">${label}</option>`;
+    }).join("");
 }
