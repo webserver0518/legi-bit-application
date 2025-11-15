@@ -556,7 +556,7 @@ window.initCaseFormPreview = function () {
         showToast("לא נבחרו קבצים, התיק ייווצר ללא מסמכים", "warning");
         const nav = window.Core.storage.create("navigation");
         nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
-        loadContent("view_case", true, "user");
+        window.UserLoader.navigate({ page: "view_case", force: true });
         return;
       }
 
