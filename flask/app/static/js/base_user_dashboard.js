@@ -157,7 +157,7 @@ window.addEventListener('DOMContentLoaded', () => {
       window.Nav.highlightInSidebar(link, 'sub-sidebar');
       // Ensure compatibility with loader.js
       link.dataset.type = 'user';
-      navigateTo(link, true);
+      window.UserLoader.navigate({ linkEl: link, page: link.dataset.page, force: true });
     });
   }
 
