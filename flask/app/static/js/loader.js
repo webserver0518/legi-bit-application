@@ -3,14 +3,11 @@
 *   שימוש:  Loader.loadPage(opts)               *
 **************************************************/
 
+if (!window.Core?.storage) {
+  throw new Error("StorageManager (window.Core.storage) must be loaded BEFORE loader.js");
+}
 
-/* =====  Storage Abstraction  ===== */
-const store = sessionStorage;           // החלף ל-localStorage אם תרצה שוב קבע
-const S = {                         // קיצור נוח
-  set: (k, v) => store.setItem(k, v),
-  get: k => store.getItem(k),
-  del: k => store.removeItem(k),
-};
+const S = window.Core.storage.create("loader");
 
 const current_site_content = 'current_site_content';
 const current_dashboard_content = 'current_dashboard_content';
@@ -29,15 +26,27 @@ function navigateTo(linkEl, force = false) {
 
 /* טעינת דף */
 function loadContent(page, force, type) {
-  let cureentContent;
+  let currentContent;
   if (type == 'site') {
-    cureentContent = current_site_content;
+    currentContent = current_site_content;
   } else if (type == 'admin' || type == 'user') {
-    cureentContent = current_dashboard_content;
+    currentContent = current_dashboard_content;
   }
 
-  if (!page || page === S.get(cureentContent) && !force) return;
-  S.set(cureentContent, page);
+  if (!page || (page === S.get(currentContent) && !force)) return;
+
+  try {
+    const nav = window.Core?.storage?.create("navigation");
+    if (nav) {
+      nav.set("lastPage", {
+        page,
+        type
+      });
+    }
+  } catch (e) {
+    console.warn("Navigation storage failed:", e);
+  }
+
   let folderName = type + "_components";
 
   Loader.loadPage({
@@ -125,8 +134,6 @@ const Loader = (() => {
       try {
         const subLink = document.querySelector(`.sub-sidebar a[data-page="${pageID}"]`);
         const mainLink = document.querySelector(`.sidebar a[data-sub-sidebar]`);
-        console.log(mainLink)
-        console.log(subLink)
         if (subLink) highlightInSidebar(subLink, 'sub-sidebar');
         else if (mainLink) highlightInSidebar(mainLink, 'sidebar');
       } catch (err) {
@@ -150,7 +157,8 @@ const Loader = (() => {
 /* ───────── ניקוי SessionStorage ביציאה ───────── */
 function clearStorageAndLogout(e) {
   e.preventDefault();
-  [current_site_content, current_dashboard_content, current_sub_sidebar].forEach(S.del);
+  [current_site_content, current_dashboard_content, current_sub_sidebar]
+    .forEach(key => S.remove(key));
   location.href = e.target.href;
 }
 window.clearStorageAndLogout = clearStorageAndLogout;
