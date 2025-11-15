@@ -246,22 +246,11 @@ function caseToSuperString(c) {
 
     tbody.html(htmlRows);
 
-    dataTableInstance = table.DataTable({
-      paging: true,
-      searching: false,
-      ordering: true,
-      info: false,
-      lengthChange: false,
-      pageLength: 14,
+    const tableApi = window.Tables.createHebrewTable(table, {
       dom: "lrtip",
-      language: {
-        paginate: {
-          previous: 'הקודם',
-          next: 'הבא'
-        }
-      },
       order: [[1, "desc"]],
     });
+    dataTableInstance = tableApi.dt;
 
     // Restore page from storage
     if (savedPage !== null && !isNaN(savedPage)) {
