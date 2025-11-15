@@ -313,18 +313,7 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
   const toUpload = files.filter(f => f.status === "pending" || f.status === "failed");
   if (toUpload.length === 0) return true;
 
-  const now = new Date();
-  const tzOffset = -now.getTimezoneOffset();
-  const sign = tzOffset >= 0 ? "+" : "-";
-  const pad = n => String(Math.floor(Math.abs(n))).padStart(2, "0");
-  const offsetHours = pad(tzOffset / 60);
-  const offsetMinutes = pad(tzOffset % 60);
-  const timestamp = now.getFullYear() + "-" +
-    pad(now.getMonth() + 1) + "-" +
-    pad(now.getDate()) + "T" +
-    pad(now.getHours()) + ":" +
-    pad(now.getMinutes()) +
-    sign + offsetHours + ":" + offsetMinutes;
+  const timestamp = utils.buildLocalTimestamp();
 
   for (const fileEntry of toUpload) {
     const {
@@ -534,18 +523,7 @@ window.initCaseFormPreview = function () {
     }
 
     const fd = new FormData(form);
-    const now = new Date();
-    const tzOffset = -now.getTimezoneOffset();
-    const sign = tzOffset >= 0 ? "+" : "-";
-    const pad = n => String(Math.floor(Math.abs(n))).padStart(2, "0");
-    const offsetHours = pad(tzOffset / 60);
-    const offsetMinutes = pad(tzOffset % 60);
-    const timestamp = now.getFullYear() + "-" +
-      pad(now.getMonth() + 1) + "-" +
-      pad(now.getDate()) + "T" +
-      pad(now.getHours()) + ":" +
-      pad(now.getMinutes()) +
-      sign + offsetHours + ":" + offsetMinutes;
+    const timestamp = utils.buildLocalTimestamp();
 
 
     if (!fd.get('title')) {
