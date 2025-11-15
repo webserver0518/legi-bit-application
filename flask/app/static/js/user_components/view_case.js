@@ -1,20 +1,3 @@
-function removeExtension(filename) {
-  if (!filename || typeof filename !== "string") return filename;
-  const lastDot = filename.lastIndexOf(".");
-  return lastDot > 0 ? filename.substring(0, lastDot) : filename;
-}
-
-function fileIconPath(mime) {
-  mime = mime.toLowerCase();
-  if (mime === "application/pdf") return "/static/images/icons/PDF.svg";
-  if (mime.includes("word")) return "/static/images/icons/WORD.svg";
-  if (mime.includes("excel") || mime.includes("spreadsheet")) return "/static/images/icons/EXCEL.svg";
-  if (mime.startsWith("image/")) return "/static/images/icons/IMAGE.svg";
-  if (mime.startsWith("video/")) return "/static/images/icons/VIDEO.svg";
-  if (mime.startsWith("audio/")) return "/static/images/icons/AUDIO.svg";
-  if (mime.includes("zip") || mime.includes("rar") || mime.includes("7z")) return "/static/images/icons/ARCHIVE.svg";
-  return "/static/images/icons/GENERIC.svg";
-}
 
 window.init_view_case = function init_view_case() {
 
@@ -28,17 +11,13 @@ window.init_view_case = function init_view_case() {
   });
 
   const safeValue = (v) => (v && v.trim && v.trim() !== "" ? v : "-");
-  const serial = sessionStorage.getItem("selectedCaseSerial");
+  const serial = lastViewedCase.serial
   if (!serial) return;
 
-  fetch(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)
-    .then(r => {
-      const filterBar = document.querySelector(".filter-bar");
-      filterBar?.classList.add("loading");
-      document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
-        .forEach(el => el.disabled = true);
-      return r.json();
-    })
+  const filterBar = document.querySelector(".filter-bar");
+  window.Tables.setFilterBarLoading(filterBar, true);
+
+  window.API.getJson(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)
     .then(payload => {
 
       if (!payload?.success || !payload?.data?.length) return;
@@ -112,8 +91,7 @@ window.init_view_case = function init_view_case() {
       if (Array.isArray(window.__allFiles) && window.__allFiles.length > 0) {
         const filterBar = document.querySelector(".filter-bar");
         filterBar?.classList.remove("loading");
-        document.querySelectorAll(".filter-bar input, .filter-bar select, .filter-bar button")
-          .forEach(el => el.disabled = false);
+        window.Tables.setFilterBarLoading(filterBar, false);
       }
 
     });
@@ -121,23 +99,14 @@ window.init_view_case = function init_view_case() {
 
 async function viewFile(caseSerial, fileSerial, fileName) {
   try {
-    const res = await fetch(
-      `/get_file_url?case_serial=${encodeURIComponent(caseSerial)}&file_serial=${encodeURIComponent(fileSerial)}&file_name=${encodeURIComponent(fileName)}`
-    );
-
-    const payload = await res.json();
-    if (!payload?.success) {
+    const payload = await window.API.getJson(`/get_file_url?case_serial=${encodeURIComponent(caseSerial)}&file_serial=${encodeURIComponent(fileSerial)}&file_name=${encodeURIComponent(fileName)}`);
+    if (!payload?.success || !payload.data) {
       alert("לא ניתן לצפות בקובץ כרגע");
       return;
     }
-
     const url = payload.data;
-    if (!url) {
-      alert("לא ניתן לצפות בקובץ כרגע");
-      return;
-    }
-
     window.open(url, "_blank");
+
   } catch {
     alert("שגיאה בעת פתיחת הקובץ");
   }
@@ -148,7 +117,7 @@ window.deleteFile = async function deleteFile(caseSerial, fileSerial, fileName) 
 
   try {
     const url = `/delete_file?case_serial=${caseSerial}&file_serial=${fileSerial}&file_name=${encodeURIComponent(fileName)}`;
-    const res = await fetch(url, { method: "DELETE" });
+    const res = await window.API.apiRequest(url, { method: "DELETE" });
     const data = await res.json();
 
     if (!data.success) {
@@ -199,7 +168,7 @@ window.loadFiles = function loadFiles() {
 
   if (filters.search) {
     filtered = filtered.filter(f =>
-      removeExtension(f.name).toLowerCase().includes(filters.search.toLowerCase())
+      utils.removeExtension(f.name).toLowerCase().includes(filters.search.toLowerCase())
     );
   }
 
@@ -221,7 +190,7 @@ window.loadFiles = function loadFiles() {
     const date = f.created_at
       ? new Date(f.created_at).toLocaleDateString("he-IL")
       : "-";
-    const icon = fileIconPath(f.technical_type);
+    const icon = utils.fileIconPath(f.technical_type);
 
     return `
         <tr data-file-serial="${f.serial}"
@@ -229,7 +198,7 @@ window.loadFiles = function loadFiles() {
 
             <td class="file-name-cell col-wide">
                 <img src="${icon}" class="file-icon" />
-                ${removeExtension(f.name)}
+                ${utils.removeExtension(f.name)}
             </td>
 
             <td>${date}</td>
@@ -243,23 +212,13 @@ window.loadFiles = function loadFiles() {
         </tr>`;
   }).join("");
 
-  filesTableInstance = $("#filesTable").DataTable({
-    paging: true,
-    searching: false,
-    ordering: true,
-    info: false,
-    lengthChange: false,
-    pageLength: 14,
+  const tableApi = window.Tables.createHebrewTable("#filesTable", {
     dom: "lrtip",
-    language: {
-      paginate: {
-        previous: 'הקודם',
-        next: 'הבא'
-      }
-    },
     columnDefs: [
       { orderable: true, targets: [0, 1] },
       { orderable: false, targets: [2] }
     ]
   });
+  filesTableInstance = tableApi.dt;
+
 };
