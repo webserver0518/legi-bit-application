@@ -583,10 +583,7 @@ window.initCaseFormPreview = function () {
 
       showToast("✅ Case Files Uploaded", "success");
 
-
-      localStorage.setItem("selectedSubMenu", "all_cases");
-      showSubMenu("all_cases");
-      loadContent("cases", true, "user");
+      window.UserLoader.navigate({ page: "cases", force: true });
 
     } catch (error) {
       console.error(error);
