@@ -1,119 +1,67 @@
-/*************************************************
- * core/tables.js – DataTables standard wrappers
- *
- * דרישות:
- *  - jQuery + DataTables טעונים מראש
- * מטרות:
- *  - הגדרות ברירת־מחדל בעברית
- *  - pageLength=14 קבוע
- *  - "filler rows" כדי למנוע קפיצת כפתורי הבא/הקודם
- **************************************************/
+/* tables.js (IIFE, browser globals) */
+(function () {
+    'use strict';
 
-export const hebrewLanguage = {
-    paginate: { previous: "הקודם", next: "הבא" },
-    emptyTable: "אין נתונים להצגה",
-    zeroRecords: "לא נמצאו התאמות",
-    info: "",
-    infoEmpty: "",
-    lengthMenu: "",
-    search: "",
-};
+    const Tables = {};
 
-export function setFilterBarLoading(filterBarEl, loading = true) {
-    if (!filterBarEl) return;
-    filterBarEl.classList.toggle("loading", !!loading);
-    const ctrls = filterBarEl.querySelectorAll("input, select, button, textarea");
-    ctrls.forEach((el) => (el.disabled = !!loading));
-}
-
-function addFillerRows(tableEl, pageLength = 14) {
-    const tbody = tableEl.querySelector("tbody");
-    if (!tbody) return;
-
-    Array.from(tbody.querySelectorAll("tr.dt-filler")).forEach((tr) => tr.remove());
-
-    const displayedRows = Array.from(tbody.querySelectorAll("tr")).filter(
-        (tr) => !tr.classList.contains("dt-filler")
-    ).length;
-
-    const toAdd = Math.max(0, pageLength - displayedRows);
-    for (let i = 0; i < toAdd; i++) {
-        const tr = document.createElement("tr");
-        tr.className = "dt-filler";
-        const td = document.createElement("td");
-        td.innerHTML = "&nbsp;";
-        td.colSpan = tableEl.querySelectorAll("thead th").length || 1;
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-    }
-}
-
-/**
- * יצירת טבלה סטנדרטית
- * @param {HTMLTableElement|jQuery|string} tableRef
- * @param {object} extraOptions – הגדרות נוספות של DataTables
- * @returns {{ dt: any, destroy: Function, setData: (rows:any[])=>void, redraw: ()=>void }}
- */
-export function createHebrewTable(tableRef, extraOptions = {}) {
-    const $ = window.jQuery;
-    if (!$ || !$.fn || !$.fn.DataTable) {
-        console.error("DataTables not found (jQuery/DataTables must be loaded)");
-        return { dt: null, destroy() { }, setData() { }, redraw() { } };
-    }
-
-    const $table = typeof tableRef === "string" ? $(tableRef) : $(tableRef);
-    const tableEl = $table.get(0);
-
-    const options = {
+    const defaultOptions = {
+        paging: true,
         searching: false,
-        lengthChange: false,
-        info: false,
-        pageLength: 14,
-        language: hebrewLanguage,
         ordering: true,
-        ...extraOptions,
+        info: false,
+        lengthChange: false,
+        pageLength: 14,
+        dom: 'lrtip',
+        language: {
+            paginate: { previous: 'הקודם', next: 'הבא' },
+            emptyTable: 'אין נתונים להצגה'
+        }
     };
 
-    if ($.fn.DataTable.isDataTable($table)) {
-        const inst = $table.DataTable();
-        inst.destroy();
-        $table.find("tbody").empty();
-    }
+    Tables.createHebrewTable = function (elOrSelector, options = {}) {
+        const el = typeof elOrSelector === 'string' ? document.querySelector(elOrSelector) : elOrSelector;
+        if (!el) throw new Error('Tables.createHebrewTable: table element not found');
 
-    const dt = $table.DataTable(options);
+        // If DataTables is available (jQuery style)
+        let dt = null;
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable) {
+            dt = window.jQuery(el).DataTable(Object.assign({}, defaultOptions, options));
+            return {
+                dt,
+                setData(rows) {
+                    dt.clear();
+                    if (Array.isArray(rows) && rows.length) dt.rows.add(rows);
+                    dt.draw();
+                }
+            };
+        }
 
-    $table.on("draw.dt", () => addFillerRows(tableEl, options.pageLength));
-    addFillerRows(tableEl, options.pageLength);
-
-    return {
-        dt,
-        destroy() {
-            $table.off("draw.dt");
-            if ($.fn.DataTable.isDataTable($table)) dt.destroy();
-        },
-        setData(rows = []) {
-            dt.clear();
-            if (Array.isArray(rows) && rows.length) dt.rows.add(rows);
-            dt.draw();
-        },
-        redraw() {
-            dt.draw(false);
-        },
+        // Fallback: simple tbody renderer
+        const tbody = el.querySelector('tbody') || el.appendChild(document.createElement('tbody'));
+        function toRow(cells) {
+            const tr = document.createElement('tr');
+            (cells || []).forEach((html) => {
+                const td = document.createElement('td');
+                td.innerHTML = html;
+                tr.appendChild(td);
+            });
+            return tr;
+        }
+        return {
+            dt: null,
+            setData(rows) {
+                tbody.innerHTML = '';
+                (rows || []).forEach((cells) => tbody.appendChild(toRow(cells)));
+            }
+        };
     };
-}
 
-export function replaceTableDataPreservePage(dt, rows = []) {
-    if (!dt || !dt.page) return;
-    const curr = dt.page();
-    dt.clear();
-    if (rows.length) dt.rows.add(rows);
-    dt.draw(false);
-    try { dt.page(curr).draw(false); } catch (_) { }
-}
+    Tables.setFilterBarLoading = function (filterBar, on) {
+        if (!filterBar) return;
+        filterBar.classList.toggle('loading', !!on);
+        const els = filterBar.querySelectorAll('input, select, button');
+        els.forEach((el) => (el.disabled = !!on));
+    };
 
-export default {
-    hebrewLanguage,
-    setFilterBarLoading,
-    createHebrewTable,
-    replaceTableDataPreservePage,
-};
+    window.Tables = Tables;
+})();
