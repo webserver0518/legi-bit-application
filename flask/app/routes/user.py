@@ -108,8 +108,11 @@ def create_new_file():
         "created_at": data.get("created_at"),
         "user_serial": user_serial,
         "case_serial": data.get("case_serial"),
-        "name": data.get("file_name"),
-        "type": data.get("file_type"),
+        "client_serial": data.get("client_serial"),
+        "name": data.get("name"),
+        "technical_type": data.get("technical_type"),
+        "content_type": data.get("content_type"),
+        "description": data.get("description"),
         "status": "pending",
     }
 
