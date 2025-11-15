@@ -1,45 +1,38 @@
-/*************************************************
- * core/nav.js – Navigation / Sidebar helpers
- **************************************************/
+/* nav.js (IIFE, browser globals) */
+(function () {
+    'use strict';
 
-/**
- * הבלטת לינק נבחר בסיידבר/תת־סיידבר
- * @param {Element} linkEl – <a>
- * @param {string} [sidebarClass='sidebar'] – container class: 'sidebar' / 'sub-sidebar'
- */
-export function highlightInSidebar(linkEl, sidebarClass = 'sidebar') {
-    if (!linkEl) return;
-    const root = document.querySelector(`.${sidebarClass}`);
-    if (!root) return;
-
-    // נקה סימון קודם
-    root.querySelectorAll('a.active').forEach(a => a.classList.remove('active'));
-
-    // סמן את הנוכחי
-    linkEl.classList.add('active');
-
-    // אם צריך: לגלול את הפריט לתוך התצוגה
-    if (typeof linkEl.scrollIntoView === 'function') {
-        linkEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (!window.Core?.storage) {
+        console.warn('Nav: Core.storage not found; last-page persistence disabled');
     }
-}
-
-/**
- * שמירת ניווט אחרון
- */
-export function setLastPage(page, type = 'user') {
     const store = window.Core?.storage?.create('navigation');
-    if (!store) return;
-    store.set('lastPage', { page, type, at: Date.now() });
-}
 
-/**
- * קריאה לניווט אחרון (אם צריך)
- */
-export function getLastPage() {
-    const store = window.Core?.storage?.create('navigation');
-    if (!store) return null;
-    return store.get('lastPage');
-}
+    const Nav = {};
 
-export default { highlightInSidebar, setLastPage, getLastPage };
+    Nav.setLastPage = function (page, scope) {
+        if (!store) return;
+        store.set('lastPage', { page, scope, at: Date.now() });
+    };
+
+    Nav.getLastPage = function () {
+        if (!store) return null;
+        return store.get('lastPage', null);
+    };
+
+    Nav.highlightInSidebar = function (linkEl, which = 'sidebar') {
+        try {
+            const root =
+                which === 'sub-sidebar'
+                    ? document.querySelector('.sub-sidebar')
+                    : document.querySelector('.sidebar');
+
+            if (!root || !linkEl) return;
+
+            root.querySelectorAll('a.active').forEach((a) => a.classList.remove('active'));
+            const a = linkEl.tagName === 'A' ? linkEl : linkEl.closest('a');
+            if (a) a.classList.add('active');
+        } catch (_) { }
+    };
+
+    window.Nav = Nav;
+})();
