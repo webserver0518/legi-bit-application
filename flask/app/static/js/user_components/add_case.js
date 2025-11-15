@@ -59,6 +59,10 @@ window.renderClientsTable = function () {
     `).join("");
 
   document.getElementById("clients-json-input").value = JSON.stringify(clientsList);
+
+  if (typeof window.refreshClientSelectOptions === "function") {
+    window.refreshClientSelectOptions();
+  }
 };
 
 function initClientsManager() {
@@ -200,7 +204,20 @@ function initClientsManager() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${disp}</td>
-        <td><select class="form-select form-select-sm" name="file_type_${disp}"><option>טוען...</option></select></td>
+        <td>
+          <select class="form-select form-select-sm file-content-type" name="content_type_${disp}">
+            <option>טוען...</option>
+          </select>
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm file-description" 
+                name="description_${disp}" placeholder="תיאור הקובץ">
+        </td>
+        <td>
+          <select class="form-select form-select-sm file-client_serial" name="client_serial_${disp}">
+            <option value="">לא משויך</option>
+          </select>
+        </td>
         <td>
           <div class="progress" style="height: 6px;">
             <div class="progress-bar" role="progressbar" style="width: 0%;"></div>
@@ -215,7 +232,10 @@ function initClientsManager() {
       // ✅ הוספה לרשימה הגלובלית
       window.filesList.push({
         file,
-        type: null,   // יתעדכן לפי הבחירה של המשתמש
+        technical_type: file.type || null,
+        content_type: null,
+        description: "",
+        client_serial: "",
         status: "pending",
         key: null,
         row: tr       // נשתמש בזה כדי לעדכן את ה־progress bar
@@ -225,7 +245,7 @@ function initClientsManager() {
       try {
         const res = await fetch("/get_document_types");
         const types = await res.json();
-        const select = tr.querySelector("select");
+        const select = tr.querySelector(".file-content-type");
         select.innerHTML = "";
         types.forEach(t => {
           const opt = document.createElement("option");
@@ -236,11 +256,32 @@ function initClientsManager() {
         // עדכון הסוג ברשימה
         select.addEventListener("change", () => {
           const entry = window.filesList.find(f => f.file === file);
-          if (entry) entry.type = select.value;
+          if (entry) entry.content_type = select.value;
         });
       } catch (err) {
         console.error("❌ שגיאה בטעינת סוגי המסמכים:", err);
       }
+
+      // --- טען שיוך ללקוח ---
+      const clientSelect = tr.querySelector(".file-client_serial");
+      clientSelect.innerHTML = `<option value="">לא משויך</option>`;
+      (window.clientsList || []).forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.serial;
+        opt.textContent = `${c.first_name} ${c.last_name}`;
+        clientSelect.appendChild(opt);
+      });
+      clientSelect.addEventListener("change", () => {
+        const entry = window.filesList.find(f => f.file === file);
+        if (entry) entry.client_serial = clientSelect.value;
+      });
+
+      // --- שמירת תיאור ---
+      const descInput = tr.querySelector(".file-description");
+      descInput.addEventListener("input", () => {
+        const entry = window.filesList.find(f => f.file === file);
+        if (entry) entry.description = descInput.value.trim();
+      });
 
       tr.querySelector('button').onclick = () => {
         tr.remove();
@@ -252,6 +293,23 @@ function initClientsManager() {
 
 
 
+window.refreshClientSelectOptions = function () {
+  document.querySelectorAll(".file-client_serial").forEach(select => {
+    const prevValue = select.value;
+    select.innerHTML = `<option value="">לא משויך</option>`;
+    (window.clientsList || []).forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.serial;
+      opt.textContent = `${c.first_name} ${c.last_name}`;
+      select.appendChild(opt);
+    });
+    // אם הערך הקודם עדיין קיים – נחזיר אותו
+    if ([...select.options].some(o => o.value === prevValue)) {
+      select.value = prevValue;
+    }
+  });
+};
+
 
 
 
@@ -260,9 +318,7 @@ function initClientsManager() {
  * Uses presigned URLs and updates progress bars in real time
  */
 async function uploadAllFilesToS3(files, office_serial, case_serial) {
-  console.log(files.length)
   if (!files || files.length === 0) {
-    console.log("No files to upload", "warning");
     return true;
   }
 
@@ -284,7 +340,17 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
     sign + offsetHours + ":" + offsetMinutes;
 
   for (const fileEntry of toUpload) {
-    const { file, row } = fileEntry;
+    const {
+      file,
+      row,
+      technical_type,
+      content_type,
+      description,
+      client_serial,
+      serial,
+      status
+    } = fileEntry;
+
     const progressBar = row.querySelector(".progress-bar");
 
     try {
@@ -292,17 +358,19 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
       progressBar.style.width = "10%";
       progressBar.classList.remove("bg-success", "bg-danger");
       progressBar.classList.add("bg-info");
-      fileEntry.status = "creating_record";
-      //showToast(`📄 יוצר רשומת קובץ עבור "${file.name}"...`, "success");
 
+      // 1️⃣ צור רשומת קובץ במונגו
       const createFileRes = await fetch("/create_new_file", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           created_at: timestamp,
           case_serial: case_serial,
-          file_name: file.name,
-          file_type: file.type
+          client_serial: client_serial,
+          name: file.name,
+          technical_type: technical_type,
+          content_type: content_type,
+          description: description,
         }),
       });
 
@@ -316,8 +384,8 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
       fileEntry.serial = file_serial;
 
       // 2️⃣ צור key ייחודי הכולל office, case, file
-      const key = `uploads/${office_serial}/${case_serial}/${file_serial}-${file.name}`;
-      fileEntry.key = key;
+      const uploadKey = `uploads/${office_serial}/${case_serial}/${file_serial}-${file.name}`;
+      fileEntry.key = uploadKey;
 
 
       // 3️⃣ בקשת presigned URL ל-S3
@@ -326,9 +394,9 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           file_name: file.name,
-          file_type: file.type,
+          file_type: technical_type || file.type || "application/octet-stream",
           file_size: file.size,
-          key: key
+          key: uploadKey
         })
       });
 
@@ -376,7 +444,7 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
         xhr.send(formData);
       });
 
-      console.log(`✅ Uploaded ${file.name} to S3 (${key})`);
+      console.log(`✅ Uploaded ${file.name} to S3 (${uploadKey})`);
 
       await fetch(`/update_file?serial=${Number(fileEntry.serial)}`, {
         method: "PATCH",
@@ -454,6 +522,10 @@ window.initAccordionSections = function () {
 window.initCaseFormPreview = function () {
   const form = document.getElementById("addCaseForm");
   if (!form) return;
+
+  const storage = window.Core?.storage?.create
+    ? window.Core.storage.create("cases")
+    : null;
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -542,13 +614,9 @@ window.initCaseFormPreview = function () {
 
       if (!window.filesList || window.filesList.length === 0) {
         showToast("לא נבחרו קבצים, התיק ייווצר ללא מסמכים", "warning");
-        localStorage.setItem("selectedSubMenu", "all_cases");
-        showSubMenu("all_cases");
-        loadContent("cases", true, "user");
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "פתח תיק";
-        }
+        const nav = window.Core.storage.create("navigation");
+        nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
+        loadContent("view_case", true, "user");
         return;
       }
 
@@ -673,7 +741,9 @@ function initHebrewBirthDatePicker() {
       clearBtn.className = "btn btn-outline-secondary btn-sm ms-2";
       clearBtn.textContent = "נקה";
       clearBtn.onclick = () => instance.clear();
-      instance.calendarContainer.appendChild(clearBtn);
+      if (instance.calendarContainer) {
+        instance.calendarContainer.appendChild(clearBtn);
+      }
     }
   });
 }
