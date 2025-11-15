@@ -7,11 +7,17 @@ const roles = rolesData.split(',').map(r => r.trim()).filter(Boolean);
 const toastModulePromise = import('/static/js/core/toast.js');
 const utilsModulePromise = import('/static/js/core/utils.js');
 const apiModulePromise = import('/static/js/core/api.js');
+const tablesModulePromise = import('/static/js/core/tables.js');
 
 let API = null;
 apiModulePromise
   .then((mod) => { window.API = mod; API = mod; })
   .catch((err) => console.error('Failed to load API module', err));
+
+let Tables = null;
+tablesModulePromise
+  .then((mod) => { window.Tables = mod; Tables = mod; })
+  .catch((err) => console.error('Failed to load Tables module', err));
 
 const utilsFallback = {
   qs: (selector, scope = document) => scope?.querySelector?.(selector) || null,
