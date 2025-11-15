@@ -25,31 +25,10 @@ navModulePromise
   .then((mod) => { window.Nav = mod; Nav = mod; })
   .catch((err) => console.error('Failed to load Nav module', err));
 
-const utilsFallback = {
-  qs: (selector, scope = document) => scope?.querySelector?.(selector) || null,
-  qsa: (selector, scope = document) => scope?.querySelectorAll ? Array.from(scope.querySelectorAll(selector)) : [],
-  delegate: (root, eventName, selector, handler, options) => {
-    if (!root?.addEventListener) return () => { };
-    const listener = (event) => {
-      const match = event.target?.closest(selector);
-      if (match && root.contains(match)) handler(event, match);
-    };
-    root.addEventListener(eventName, listener, options);
-    return () => root.removeEventListener(eventName, listener, options);
-  },
-  setText: (el, text = '') => { if (el) el.textContent = text ?? ''; },
-  htmlToFragment: (html) => {
-    if (!html) return document.createDocumentFragment();
-    const template = document.createElement('template');
-    template.innerHTML = html;
-    return template.content;
-  },
-};
-
-let utils = utilsFallback;
+let utils = null;
 utilsModulePromise
-  .then((mod) => { utils = { ...utilsFallback, ...mod }; })
-  .catch((err) => console.error('Failed to load utils module', err));
+  .then((mod) => { window.utils = mod; utils = mod; initDateTimeTicker(); })
+  .catch((err) => { throw new Error('utils module failed to load'); });
 
 function showToast(message, type = 'info', opts = {}) {
   toastModulePromise
@@ -61,18 +40,15 @@ function showToast(message, type = 'info', opts = {}) {
     });
 }
 
-function highlightInSidebar(link, sidebarClass) {
-  if (!link) return;
-  utils.qsa(`.${sidebarClass} a`).forEach((a) => a.classList.remove('active'));
-  link.classList.add('active');
+function initDateTimeTicker() {
+  function updateDateTime() {
+    const n = new Date();
+    utils.setText(utils.qs('#current-date-text'), n.toLocaleDateString('he-IL'));
+    utils.setText(utils.qs('#current-time-text'), n.toLocaleTimeString('he-IL'));
+  }
+  setInterval(updateDateTime, 1000);
+  updateDateTime();
 }
-
-function updateDateTime() {
-  const n = new Date();
-  utils.setText(utils.qs('#current-date-text'), n.toLocaleDateString('he-IL'));
-  utils.setText(utils.qs('#current-time-text'), n.toLocaleTimeString('he-IL'));
-}
-setInterval(updateDateTime, 1000); updateDateTime();
 
 /* ensure sub menu is visible (even if HTML had "collapsed") */
 function ensureSubmenuVisible() {
@@ -119,7 +95,7 @@ function showSubMenu(type, force = false) {
   const pageNow = S.get(current_dashboard_content);
   if (pageNow) {
     const link = cont.querySelector(`[data-page="${pageNow}"]`);
-    if (link) highlightInSidebar(link, 'sub-sidebar');
+    if (link) window.Nav.highlightInSidebar(link, 'sub-sidebar');
   }
 }
 
@@ -164,7 +140,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (sidebar) {
     utils.delegate(sidebar, 'click', '.sidebar-link', (e, link) => {
       e.preventDefault();
-      highlightInSidebar(link, 'sidebar');
+      window.Nav.highlightInSidebar(link, 'sidebar');
       if (link.dataset.subSidebar) {
         showSubMenu(link.dataset.subSidebar);
         ensureSubmenuVisible(); // <- ensure visible after switching sections
@@ -177,7 +153,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (subSidebar) {
     utils.delegate(subSidebar, 'click', '.sub-sidebar-link', (e, link) => {
       e.preventDefault();
-      highlightInSidebar(link, 'sub-sidebar');
+      window.Nav.highlightInSidebar(link, 'sub-sidebar');
       // Ensure compatibility with loader.js
       link.dataset.type = 'user';
       navigateTo(link, true);
