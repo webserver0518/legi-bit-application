@@ -1,129 +1,139 @@
-/*  core/storage.js  */
-
-/* --------------------------------------------------------------------------
-   Key Definitions
-   -------------------------------------------------------------------------- */
-
-/**
- * Centralized storage keys used across the application.
- * Keeps names consistent between modules and prevents typos.
- */
-export const STORAGE_KEYS = {
-  currentSiteContent: 'site.currentContent',
-  currentDashboardContent: 'dashboard.currentContent',
-  currentSubSidebar: 'dashboard.subSidebar',
-};
+/* ==========================================================================
+   StorageManager v2 — Full SPA-grade localStorage wrapper
+   Author: Matan Suliman (LegiBit)
+   ========================================================================== */
 
 /**
- * Mapping of old (legacy) key names to new ones.
- * Used during migration to preserve existing user data.
+ * Returns localStorage safely.
  */
-const LEGACY_KEYS = {
-  current_site_content: STORAGE_KEYS.currentSiteContent,
-};
-
-/* --------------------------------------------------------------------------
-   Internal Helpers
-   -------------------------------------------------------------------------- */
-
-/**
- * Returns the window.localStorage object if available, otherwise null.
- * Wrapped in try/catch to handle environments where localStorage access
- * is blocked (e.g., privacy mode or SSR).
- */
-function getLocalStorage() {
+function getLS() {
   try {
-    return typeof window !== 'undefined' ? window.localStorage : null;
-  } catch (err) {
-    console.warn('localStorage unavailable:', err);
+    return typeof window !== "undefined" ? window.localStorage : null;
+  } catch {
     return null;
   }
 }
 
 /**
- * Migrates legacy key names to the new standardized ones.
- * Copies values from old keys to new ones (if missing) and deletes old keys.
- * Runs immediately upon module import.
+ * StorageManager
+ * - Supports namespaces (per-office / per-user)
+ * - Supports TTL keys
+ * - Supports event listeners
  */
-function migrateLegacyKeys() {
-  const storage = getLocalStorage();
-  if (!storage) return;
+class StorageManager {
+  constructor(namespace = "default") {
+    this.ns = namespace;
+    this.ls = getLS();
+    this.listeners = new Map();
+  }
 
-  Object.entries(LEGACY_KEYS).forEach(([oldKey, newKey]) => {
-    const existing = storage.getItem(oldKey);
-    if (existing !== null) {
-      // Only migrate if the new key doesn’t already exist
-      if (!storage.getItem(newKey)) {
-        storage.setItem(newKey, existing);
-      }
-      storage.removeItem(oldKey);
+  /* ---------------------------------------------
+     Internal Helpers
+  --------------------------------------------- */
+
+  _key(key) {
+    return `${this.ns}:${key}`;
+  }
+
+  _now() {
+    return Date.now();
+  }
+
+  _wrap(value, ttlMs) {
+    return JSON.stringify({
+      value,
+      expiresAt: ttlMs ? this._now() + ttlMs : null,
+    });
+  }
+
+  _unwrap(raw) {
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed.expiresAt && parsed.expiresAt < this._now()) return null;
+      return parsed.value;
+    } catch {
+      return null;
     }
-  });
-}
+  }
 
-// Perform migration once at import time
-migrateLegacyKeys();
+  _emit(key, value) {
+    if (!this.listeners.has(key)) return;
+    for (const cb of this.listeners.get(key)) cb(value);
+  }
 
+  /* ---------------------------------------------
+     Public API
+  --------------------------------------------- */
 
-/* --------------------------------------------------------------------------
-   Public API
-   -------------------------------------------------------------------------- */
+  /**
+   * Get JSON value, with TTL validation.
+   */
+  get(key) {
+    if (!this.ls) return null;
+    const raw = this.ls.getItem(this._key(key));
+    const val = this._unwrap(raw);
+    return val;
+  }
 
-/**
- * Retrieves and parses a JSON value from localStorage.
- * Returns null if key is missing, storage unavailable, or parsing fails.
- *
- * @param {string} key - Storage key to read.
- * @returns {any|null} Parsed JSON value or null on error.
- */
-export function getJSON(key) {
-  const storage = getLocalStorage();
-  if (!storage) return null;
-  const raw = storage.getItem(key);
-  if (raw == null) return null;
-  try {
-    return JSON.parse(raw);
-  } catch (err) {
-    console.warn('Failed to parse JSON from storage key', key, err);
-    return null;
+  /**
+   * Set value with optional TTL (in seconds).
+   */
+  set(key, value, ttlSeconds = null) {
+    if (!this.ls) return;
+    const ttlMs = ttlSeconds ? ttlSeconds * 1000 : null;
+    this.ls.setItem(this._key(key), this._wrap(value, ttlMs));
+    this._emit(key, value);
+  }
+
+  /**
+   * Remove key.
+   */
+  remove(key) {
+    if (!this.ls) return;
+    this.ls.removeItem(this._key(key));
+    this._emit(key, null);
+  }
+
+  /**
+   * Listen for changes in a specific key.
+   * (Useful for cross-tabs or shared state)
+   */
+  onChange(key, callback) {
+    if (!this.listeners.has(key)) {
+      this.listeners.set(key, new Set());
+    }
+    this.listeners.get(key).add(callback);
+  }
+
+  offChange(key, callback) {
+    if (this.listeners.has(key)) {
+      this.listeners.get(key).delete(callback);
+    }
+  }
+
+  /**
+   * Clears only the namespace.
+   */
+  clearNamespace() {
+    if (!this.ls) return;
+    const prefix = `${this.ns}:`;
+    for (let i = this.ls.length - 1; i >= 0; i--) {
+      const k = this.ls.key(i);
+      if (k.startsWith(prefix)) {
+        this.ls.removeItem(k);
+      }
+    }
   }
 }
 
-/**
- * Stores a JSON-serializable value in localStorage.
- * Removes the key entirely if value is undefined.
- *
- * @param {string} key   - Storage key to write.
- * @param {any}    value - JSON-serializable value or undefined to remove.
- */
-export function setJSON(key, value) {
-  const storage = getLocalStorage();
-  if (!storage) return;
-  if (value === undefined) {
-    storage.removeItem(key);
-    return;
-  }
-  storage.setItem(key, JSON.stringify(value));
-}
-
-/**
- * Removes an item from localStorage safely.
- *
- * @param {string} key - Storage key to delete.
- */
-export function remove(key) {
-  const storage = getLocalStorage();
-  if (!storage) return;
-  storage.removeItem(key);
-}
-
 /* --------------------------------------------------------------------------
-   Global Exposure (Legacy Compatibility)
-   --------------------------------------------------------------------------
-   Exposes the module under window.Core.storage for scripts that still rely
-   on global access until the full ES-module migration is complete.
-   -------------------------------------------------------------------------- */
-if (typeof window !== 'undefined') {
+   Global Compatibility Layer
+-------------------------------------------------------------------------- */
+if (typeof window !== "undefined") {
   window.Core = window.Core || {};
-  window.Core.storage = { STORAGE_KEYS, getJSON, setJSON, remove };
+  window.Core.storage = {
+    create: (ns) => new StorageManager(ns)
+  };
+  window.S = window.Core.storage;
 }
