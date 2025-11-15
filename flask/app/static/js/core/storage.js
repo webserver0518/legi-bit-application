@@ -1,139 +1,101 @@
-/* ==========================================================================
-   StorageManager v2 — Full SPA-grade localStorage wrapper
-   Author: Matan Suliman (LegiBit)
-   ========================================================================== */
+/* storage.js (IIFE, browser globals) */
+(function () {
+  'use strict';
 
-/**
- * Returns localStorage safely.
- */
-function getLS() {
-  try {
-    return typeof window !== "undefined" ? window.localStorage : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * StorageManager
- * - Supports namespaces (per-office / per-user)
- * - Supports TTL keys
- * - Supports event listeners
- */
-class StorageManager {
-  constructor(namespace = "default") {
-    this.ns = namespace;
-    this.ls = getLS();
-    this.listeners = new Map();
-  }
-
-  /* ---------------------------------------------
-     Internal Helpers
-  --------------------------------------------- */
-
-  _key(key) {
-    return `${this.ns}:${key}`;
-  }
-
-  _now() {
-    return Date.now();
-  }
-
-  _wrap(value, ttlMs) {
-    return JSON.stringify({
-      value,
-      expiresAt: ttlMs ? this._now() + ttlMs : null,
-    });
-  }
-
-  _unwrap(raw) {
-    if (!raw) return null;
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed.expiresAt && parsed.expiresAt < this._now()) return null;
-      return parsed.value;
-    } catch {
-      return null;
-    }
-  }
-
-  _emit(key, value) {
-    if (!this.listeners.has(key)) return;
-    for (const cb of this.listeners.get(key)) cb(value);
-  }
-
-  /* ---------------------------------------------
-     Public API
-  --------------------------------------------- */
-
-  /**
-   * Get JSON value, with TTL validation.
-   */
-  get(key) {
-    if (!this.ls) return null;
-    const raw = this.ls.getItem(this._key(key));
-    const val = this._unwrap(raw);
-    return val;
-  }
-
-  /**
-   * Set value with optional TTL (in seconds).
-   */
-  set(key, value, ttlSeconds = null) {
-    if (!this.ls) return;
-    const ttlMs = ttlSeconds ? ttlSeconds * 1000 : null;
-    this.ls.setItem(this._key(key), this._wrap(value, ttlMs));
-    this._emit(key, value);
-  }
-
-  /**
-   * Remove key.
-   */
-  remove(key) {
-    if (!this.ls) return;
-    this.ls.removeItem(this._key(key));
-    this._emit(key, null);
-  }
-
-  /**
-   * Listen for changes in a specific key.
-   * (Useful for cross-tabs or shared state)
-   */
-  onChange(key, callback) {
-    if (!this.listeners.has(key)) {
-      this.listeners.set(key, new Set());
-    }
-    this.listeners.get(key).add(callback);
-  }
-
-  offChange(key, callback) {
-    if (this.listeners.has(key)) {
-      this.listeners.get(key).delete(callback);
-    }
-  }
-
-  /**
-   * Clears only the namespace.
-   */
-  clearNamespace() {
-    if (!this.ls) return;
-    const prefix = `${this.ns}:`;
-    for (let i = this.ls.length - 1; i >= 0; i--) {
-      const k = this.ls.key(i);
-      if (k.startsWith(prefix)) {
-        this.ls.removeItem(k);
-      }
-    }
-  }
-}
-
-/* --------------------------------------------------------------------------
-   Global Compatibility Layer
--------------------------------------------------------------------------- */
-if (typeof window !== "undefined") {
+  // Ensure Core namespace
   window.Core = window.Core || {};
-  window.Core.storage = {
-    create: (ns) => new StorageManager(ns)
-  };
-  window.S = window.Core.storage;
-}
+
+  // Fallback memory store if localStorage is unavailable
+  const memory = new Map();
+
+  function canUseLocalStorage() {
+    try {
+      const k = '__ls_test__';
+      localStorage.setItem(k, '1');
+      localStorage.removeItem(k);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  const LS_OK = canUseLocalStorage();
+
+  function nsKey(ns, k) {
+    return `app:${ns}:${k}`;
+  }
+
+  function readRaw(key) {
+    if (LS_OK) return localStorage.getItem(key);
+    return memory.get(key) ?? null;
+  }
+
+  function writeRaw(key, val) {
+    if (LS_OK) localStorage.setItem(key, val);
+    else memory.set(key, val);
+  }
+
+  function removeRaw(key) {
+    if (LS_OK) localStorage.removeItem(key);
+    else memory.delete(key);
+  }
+
+  function create(namespace) {
+    if (!namespace || typeof namespace !== 'string') {
+      throw new Error('Core.storage.create(namespace) requires a string namespace');
+    }
+    return {
+      get(key, fallback = null) {
+        const raw = readRaw(nsKey(namespace, key));
+        if (raw == null) return fallback;
+        try {
+          return JSON.parse(raw);
+        } catch (_) {
+          return raw;
+        }
+      },
+      set(key, value) {
+        const val = typeof value === 'string' ? value : JSON.stringify(value);
+        writeRaw(nsKey(namespace, key), val);
+        return true;
+      },
+      remove(key) {
+        removeRaw(nsKey(namespace, key));
+        return true;
+      },
+      clear() {
+        if (LS_OK) {
+          const prefix = `app:${namespace}:`;
+          const toDelete = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith(prefix)) toDelete.push(k);
+          }
+          toDelete.forEach((k) => localStorage.removeItem(k));
+        } else {
+          const prefix = `app:${namespace}:`;
+          for (const k of memory.keys()) {
+            if (k.startsWith(prefix)) memory.delete(k);
+          }
+        }
+      },
+      keys() {
+        const arr = [];
+        const prefix = `app:${namespace}:`;
+        if (LS_OK) {
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith(prefix)) arr.push(k.substring(prefix.length));
+          }
+        } else {
+          for (const k of memory.keys()) {
+            if (k.startsWith(prefix)) arr.push(k.substring(prefix.length));
+          }
+        }
+        return arr;
+      }
+    };
+  }
+
+  window.Core.storage = { create };
+})();

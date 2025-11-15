@@ -4,60 +4,71 @@
 <html lang="he" dir="rtl">
 
 <head>
-  <meta charset="UTF-8">
-  <title>LegiBit</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/webp" href="{{ url_for('static', filename='images/circle_legibit.webp') }}">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <title>LegiBit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/webp" href="{{ url_for('static', filename='images/circle_legibit.webp') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/base_site.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base_site.css') }}">
 </head>
 
 <body>
 
-  <div id="user-info" data-roles="{{ ','.join(session.get('roles', [])) }}"></div>
+    <div id="user-info" data-roles="{{ ','.join(session.get('roles', [])) }}"></div>
 
-  <nav class="navbar navbar-expand-lg fixed-top">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">
-        <img src="{{ url_for('static', filename='images/circle_legibit.webp') }}" alt="Logo" style="max-height: 40px;">
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <img src="{{ url_for('static', filename='images/circle_legibit.webp') }}" alt="Logo"
+                    style="max-height: 40px;">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-      <div class="collapse navbar-collapse justify-content-end" id="navbarContent">
-        <ul class="navbar-nav flex-row-reverse gap-2">
-          <a class="nav-link" data-type="site" data-page="home" href="#">🏠 דף הבית</a>
-          <a class="nav-link" data-type="site" data-page="about" href="#">ℹ️ אודות</a>
-          <a class="nav-link" data-type="site" data-page="login" href="#">🔐 התחברות</a>
-        </ul>
-      </div>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarContent">
+                <ul class="navbar-nav flex-row-reverse gap-2">
+                    <a class="nav-link" data-type="site" data-page="home" href="#">🏠 דף הבית</a>
+                    <a class="nav-link" data-type="site" data-page="about" href="#">ℹ️ אודות</a>
+                    <a class="nav-link" data-type="site" data-page="login" href="#">🔐 התחברות</a>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div id="dynamicContent" class="w-100 text-center pt-5 px-0 pb-0 m-0">
+        <p></p>
+        <h2>טוען...</h2>
     </div>
-  </nav>
 
-  <div id="dynamicContent" class="w-100 text-center pt-5 px-0 pb-0 m-0">
-    <p></p>
-    <h2>טוען...</h2>
-  </div>
-
-  <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3 mb-4" style="z-index: 9999;">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for field, message in messages %}
-    <div class="toast align-items-center text-white bg-{{ 'success' if field=='info' else field }} border-0 show"
-      role="alert">
-      <div class="d-flex">
-        <div class="toast-body text-center w-100">{{ message }}</div>
-      </div>
+    <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3 mb-4" style="z-index: 9999;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for field, message in messages %}
+        <div class="toast align-items-center text-white bg-{{ 'success' if field=='info' else field }} border-0 show"
+            role="alert">
+            <div class="d-flex">
+                <div class="toast-body text-center w-100">{{ message }}</div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endwith %}
     </div>
-    {% endfor %}
-    {% endwith %}
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="{{ url_for('static', filename='js/loader.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/base_site.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- core modules -->
+    <script src="/static/js/core/storage.js" defer></script>
+    <script src="/static/js/core/utils.js" defer></script>
+    <script src="/static/js/core/api.js" defer></script>
+    <script src="/static/js/core/tables.js" defer></script>
+    <script src="/static/js/core/nav.js" defer></script>
+    <script src="/static/js/core/toast.js" defer></script>
+    <script src="/static/js/core/loader.site.js" defer></script>
+
+    <!-- site dashboard -->
+    <script src="/static/js/user_components/base_site.js" defer></script>
 
 </body>
 
