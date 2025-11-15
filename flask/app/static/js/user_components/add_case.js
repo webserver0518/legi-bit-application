@@ -583,7 +583,9 @@ window.initCaseFormPreview = function () {
 
       showToast("✅ Case Files Uploaded", "success");
 
-      window.UserLoader.navigate({ page: "cases", force: true });
+      const nav = window.Core.storage.create("navigation");
+      nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
+      window.UserLoader.navigate({ page: "view_case", force: true });
 
     } catch (error) {
       console.error(error);
