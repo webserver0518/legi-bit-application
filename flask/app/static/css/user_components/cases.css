@@ -61,7 +61,7 @@
 
 /* === TABLE BASE === */
 .customTable {
-    width: 100%;
+    width: 100% !important;
     border-collapse: collapse;
     direction: rtl;
     font-size: 12px;
