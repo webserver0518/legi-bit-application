@@ -209,7 +209,7 @@ function initCaseFormPreview() {
     // ✅ Require at least one main client before submission
     const hasMain = (window.clientsList || []).some(c => c.role === "main");
     if (!hasMain) {
-      window.toast.danger("יש להוסיף לפחות לקוח ראשי אחד לפני פתיחת תיק");
+      window.Toast.danger("יש להוסיף לפחות לקוח ראשי אחד לפני פתיחת תיק");
       submitBtn.disabled = false;
       submitBtn.textContent = "פתח תיק";
       return;
@@ -220,7 +220,7 @@ function initCaseFormPreview() {
 
 
     if (!fd.get('title')) {
-      window.toast.danger("יש למלא כותרת לתיק");
+      window.Toast.danger("יש למלא כותרת לתיק");
       submitBtn.disabled = false;
       submitBtn.textContent = "פתח תיק";
       return;
@@ -244,10 +244,10 @@ function initCaseFormPreview() {
       const parsed = await window.API.postJson("/create_new_case", form_data);
 
       if (!parsed.success || !parsed.data) {
-        window.toast.danger(`❌ Failed to create case: ${parsed.error}`);
+        window.Toast.danger(`Failed to create case: ${parsed.error}`);
         return;
       }
-      window.toast.success("Case created successfully");
+      window.Toast.success("Case created successfully");
 
       // open files section
       document.querySelector("[data-target='#collapseFiles']")?.click();
@@ -270,7 +270,7 @@ function initCaseFormPreview() {
       }
 
       if (!window.filesList || window.filesList.length === 0) {
-        window.toast.warning("לא נבחרו קבצים, התיק ייווצר ללא מסמכים");
+        window.Toast.warning("לא נבחרו קבצים, התיק ייווצר ללא מסמכים");
         const nav = window.Core.storage.create("navigation");
         nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
         window.UserLoader.navigate({ page: "view_case", force: true });
@@ -278,35 +278,42 @@ function initCaseFormPreview() {
       }
 
       /* 2️⃣ העלאת קבצים עם key לפי office+case */
-      submitBtn.textContent = "מעלה קבצים...";
-      const { success, uploaded } = await uploadAllFilesToS3(window.filesList, office_serial, case_serial);
+      window.Toast.info("מעלה קבצים...")
+      const { success, uploaded, failed } = await uploadAllFilesToS3(window.filesList, office_serial, case_serial);
 
-      if (!success) {
-        throw new Error("חלק מהקבצים לא הועלו בהצלחה");
+      // נשמור בתיק רק את הקבצים שעלו בהצלחה
+      if (uploaded.length > 0) {
+        window.Toast.info("שומר קבצים...")
+        const fileSerials = uploaded.map(f => f.serial);
+
+        const parsedUpdate = await window.API.apiRequest(`/update_case?serial=${case_serial}`, {
+          method: "PATCH",
+          body: { files_serials: fileSerials }
+        });
+
+        if (!parsedUpdate.success) {
+          window.Toast.danger(parsedUpdate.error || "שגיאה בשמירת הקבצים לתיק");
+        } else {
+          window.Toast.success("הקבצים שעלו בהצלחה נשמרו בתיק");
+        }
       }
 
-      /* 3️⃣ שמירת רשומות FILES במונגו */
-      submitBtn.textContent = "שומר קבצים...";
-      const fileSerials = uploaded.map(f => f.serial);
-
-      const parsedUpdate = await window.API.apiRequest(`/update_case?serial=${case_serial}`, {
-        method: "PATCH",
-        body: { files_serials: fileSerials }
-      });
-
-      if (!parsedUpdate.success) {
-        throw new Error(parsedUpdate.error || "שגיאה בשמירת הקבצים");
+      // אם יש קבצים שנכשלו – טוסט מסכם
+      if (failed.length > 0) {
+        window.Toast.danger(` חלק מהקבצים לא הועלו (${failed.length}). ניתן לנסות שוב מתוך התיק.`);
+      } else if (uploaded.length === 0) {
+        // מקרה קיצון: היו קבצים ב-UI אבל אף אחד לא הצליח
+        window.Toast.warning("לא היה ניתן להעלות אף קובץ. התיק נוצר ללא קבצים.");
       }
 
-      window.toast.success("✅ Case Files Uploaded");
-
+      // בכל מקרה – עוברים לדף צפייה בתיק
       const nav = window.Core.storage.create("navigation");
       nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
       window.UserLoader.navigate({ page: "view_case", force: true });
 
     } catch (error) {
       console.error(error);
-      window.toast.warning("Error contacting server");
+      window.Toast.warning("Error contacting server");
 
     } finally {
       if (submitBtn) {
@@ -390,19 +397,19 @@ function initClientsManager() {
       // 🧠 שליחה לשרת כדי לשמור לקוח חדש
       const apiRes = await window.API.postJson("/create_new_client", client);
       if (!apiRes.success) {
-        window.toast.danger("❌ שגיאה בהוספת לקוח לשרת");
+        window.Toast.danger("שגיאה בהוספת לקוח לשרת");
         return;
       }
 
       const client_serial = apiRes.data;
       client.serial = client_serial;
-      clientsList.push(client);
+      window.clientsList.push(client);
       renderClientsTable();
       clearClientFields();
-      window.oast(`לקוח חדש נוצר ונוסף לתיק (מס' ${client_serial})`, "success");
+      window.Toast.success(`לקוח חדש נוצר ונוסף לתיק (מס' ${client_serial})`);
     } catch (err) {
       console.error("שגיאה בשליחת לקוח:", err);
-      window.toast.warning("בעיה בחיבור לשרת");
+      window.Toast.warning("בעיה בחיבור לשרת");
     }
 
   });
@@ -418,14 +425,6 @@ function initClientsManager() {
       if (el) el.value = "";
     });
   }
-
-
-
-  // ❌ Remove client by index
-  function removeClient(i) {
-    clientsList.splice(i, 1);
-    renderClientsTable();
-  };
 
   renderClientsTable();
 }
@@ -539,7 +538,7 @@ async function initClientAutocomplete() {
     // בדוק אם כבר בטבלה
     const alreadyExists = (window.clientsList || []).some(c => c.serial == selected.serial);
     if (alreadyExists) {
-      window.toast.warning("הלקוח כבר נוסף לרשימה");
+      window.Toast.warning("הלקוח כבר נוסף לרשימה");
       suggestions.style.display = "none";
       input.value = "";
       return;
@@ -549,9 +548,10 @@ async function initClientAutocomplete() {
     if (!window.clientsList) window.clientsList = [];
 
     // הוסף לקוח לרשימה
+    const roleSelect = document.getElementById("client_role");
     window.clientsList.push({
       ...selected,
-      role: selected.role || "secondary"
+      role: roleSelect?.value || "secondary",
     });
 
     // רענן את הטבלה
@@ -559,7 +559,7 @@ async function initClientAutocomplete() {
       renderClientsTable();
     }
 
-    window.toast.success(`לקוח קיים נוסף לתיק: ${selected.first_name} ${selected.last_name}`);
+    window.Toast.success(`לקוח קיים נוסף לתיק: ${selected.first_name} ${selected.last_name}`);
     input.value = "";
     suggestions.style.display = "none";
   });
@@ -592,12 +592,32 @@ function refreshClientSelectOptions() {
 
 async function uploadAllFilesToS3(files, office_serial, case_serial) {
   if (!files || files.length === 0) {
-    return true;
+    return {
+      success: true,
+      uploaded: [],
+      failed: []
+    };
   }
 
   // סינון רק קבצים שטרם הועלו או שנכשלו
   const toUpload = files.filter(f => f.status === "pending" || f.status === "failed");
-  if (toUpload.length === 0) return true;
+  if (toUpload.length === 0) {
+    const uploadedEntries = files.filter(f => f.status === "done");
+    const failedEntries = files.filter(f => f.status === "failed");
+    return {
+      success: failedEntries.length === 0,
+      uploaded: uploadedEntries.map(f => ({
+        name: f.file.name,
+        key: f.key,
+        serial: f.serial
+      })),
+      failed: failedEntries.map(f => ({
+        name: f.file.name,
+        serial: f.serial,
+        key: f.key
+      }))
+    };
+  }
 
   const timestamp = window.utils.buildLocalTimestamp();
 
@@ -683,7 +703,7 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
             resolve();
           } else {
             reject(new Error(`Upload failed with status ${xhr.status}`));
-            window.toast.danger(`❌ העלאת "${file.name}" נכשלה`);
+            window.Toast.danger(`העלאת "${file.name}" נכשלה`);
           }
         };
 
@@ -691,38 +711,67 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
         xhr.send(formData);
       });
 
-      console.log(`✅ Uploaded ${file.name} to S3 (${uploadKey})`);
+      console.log(`Uploaded ${file.name} to S3 (${uploadKey})`);
 
       await window.API.apiRequest(`/update_file?serial=${Number(fileEntry.serial)}`, {
         method: "PATCH",
         body: { status: "available" }
       });
     } catch (err) {
-      console.error("❌ Upload failed for:", file.name, err);
+
       progressBar.classList.remove("bg-info");
       progressBar.classList.add("bg-danger");
       progressBar.style.width = "100%";
       fileEntry.status = "failed";
+
+      // 💣 חדש! מוחק את הרשומה שלא מועילה
+      // 🗑️ ניקוי רשומה שבורה במונגו (אם נוצר serial)
+      if (fileEntry.serial) {
+        try {
+          await window.API.apiRequest(`/delete_file?serial=${Number(fileEntry.serial)}`, {
+            method: "DELETE"
+          });
+          console.info(`Deleted failed file record: ${fileEntry.serial}`);
+          fileEntry.serial = null; // אופציונלי, שלא נעשה עליו שימוש בהמשך
+        } catch (cleanupErr) {
+          console.error("Failed to delete failed file record", cleanupErr);
+        }
+      }
+
+      console.error("Upload failed for:", file.name, err);
+      window.Toast.danger(`העלאת ${file.name} נכשלה`);
     }
   }
 
+  const uploadedEntries = files.filter(f => f.status === "done");
+  const failedEntries = files.filter(f => f.status === "failed");
+
   return {
-    success: files.every(f => f.status === "done"),
-    uploaded: files
-      .filter(f => f.status === "done")
-      .map(f => ({
-        name: f.file.name,
-        key: f.key,
-        serial: f.serial
-      }))
+    success: failedEntries.length === 0,
+    uploaded: uploadedEntries.map(f => ({
+      name: f.file.name,
+      key: f.key,
+      serial: f.serial
+    })),
+    failed: failedEntries.map(f => ({
+      name: f.file.name,
+      serial: f.serial,
+      key: f.key
+    }))
   };
 }
+
+window.removeClient = function (i) {
+  // ❌ Remove client by index
+  window.clientsList.splice(i, 1);
+  renderClientsTable();
+};
 
 function renderClientsTable() {
   const table = document.getElementById("clients-table");
   const tableBody = table.querySelector("tbody");
 
-  if (clientsList.length === 0) {
+  if (window.clientsList.length === 0) {
     table.style.display = "none"; // או table.classList.add('d-none');
     tableBody.innerHTML = "";
     return;
@@ -730,7 +779,7 @@ function renderClientsTable() {
 
   // אם יש לקוחות — נציג את הטבלה
   table.style.display = "table"; // או table.classList.remove('d-none');
-  tableBody.innerHTML = clientsList.map((c, i) => `
+  tableBody.innerHTML = window.clientsList.map((c, i) => `
       <tr>
         <td>${c.first_name}</td>
         <td>${c.last_name}</td>
@@ -747,7 +796,7 @@ function renderClientsTable() {
       </tr>
     `).join("");
 
-  document.getElementById("clients-json-input").value = JSON.stringify(clientsList);
+  document.getElementById("clients-json-input").value = JSON.stringify(window.clientsList);
 
   if (typeof window.refreshClientSelectOptions === "function") {
     window.refreshClientSelectOptions();
