@@ -4,62 +4,28 @@ const USER_DEFAULT = 'cases_birds_view';
 const rolesData = document.getElementById('user-info')?.dataset.roles || '';
 const roles = rolesData.split(',').map(r => r.trim()).filter(Boolean);
 
-const toastModulePromise = import('/static/js/core/toast.js');
-const utilsModulePromise = import('/static/js/core/utils.js');
-const apiModulePromise = import('/static/js/core/api.js');
-const tablesModulePromise = import('/static/js/core/tables.js');
-const navModulePromise = import('/static/js/core/nav.js');
-const userLoaderModulePromise = import('/static/js/core/loader.user.js');
-
-let API = null;
-apiModulePromise
-  .then((mod) => { window.API = mod; API = mod; })
-  .catch((err) => console.error('Failed to load API module', err));
-
-let Tables = null;
-tablesModulePromise
-  .then((mod) => { window.Tables = mod; Tables = mod; })
-  .catch((err) => console.error('Failed to load Tables module', err));
-
-let Nav = null;
-navModulePromise
-  .then((mod) => { window.Nav = mod; Nav = mod; })
-  .catch((err) => console.error('Failed to load Nav module', err));
-
-let utils = null;
-utilsModulePromise
-  .then((mod) => { window.utils = mod; utils = mod; initDateTimeTicker(); })
-  .catch((err) => { throw new Error('utils module failed to load'); });
-
-function showToast(message, type = 'info', opts = {}) {
-  toastModulePromise
-    .then(({ showToast: coreShowToast }) => {
-      coreShowToast(message, type, opts);
-    })
-    .catch((err) => {
-      console.error('Failed to load toast module', err);
-    });
-}
+const Store = window.Core.storage.create('dashboard');
 
 function initDateTimeTicker() {
   function updateDateTime() {
     const n = new Date();
-    utils.setText(utils.qs('#current-date-text'), n.toLocaleDateString('he-IL'));
-    utils.setText(utils.qs('#current-time-text'), n.toLocaleTimeString('he-IL'));
+    window.window.utils.setText(window.window.utils.qs('#current-date-text'), n.toLocaleDateString('he-IL'));
+    window.window.utils.setText(window.window.utils.qs('#current-time-text'), n.toLocaleTimeString('he-IL'));
   }
   setInterval(updateDateTime, 1000);
   updateDateTime();
 }
+initDateTimeTicker()
 
 /* ensure sub menu is visible (even if HTML had "collapsed") */
 function ensureSubmenuVisible() {
-  utils.qs('#subMenu')?.classList.remove('collapsed');
+  window.window.utils.qs('#subMenu')?.classList.remove('collapsed');
 }
 
 function showSubMenu(type, force = false) {
-  S.set(current_sub_sidebar, type);
+  Store.set('current_sub_sidebar', type);
 
-  const cont = utils.qs('#subMenu');
+  const cont = window.window.utils.qs('#subMenu');
   if (!cont) return;
   if (!force && cont.dataset.type === type) return;
   cont.dataset.type = type;
@@ -82,18 +48,13 @@ function showSubMenu(type, force = false) {
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="attendance_birds_view">מבט על נוכחות</a>`;
   }
 
-  const fragment = utils.htmlToFragment(html);
-  if (fragment) {
-    cont.replaceChildren(fragment);
-  } else {
-    cont.innerHTML = html;
-  }
+  cont.innerHTML = html;
 
   // make sure it’s visible after (re)build
   ensureSubmenuVisible();
 
   // highlight retained page if exists
-  const pageNow = S.get(current_dashboard_content);
+  const pageNow = Store.get('current_dashboard_content');
   if (pageNow) {
     const link = cont.querySelector(`[data-page="${pageNow}"]`);
     if (link) window.Nav.highlightInSidebar(link, 'sub-sidebar');
@@ -106,7 +67,7 @@ window.addEventListener('DOMContentLoaded', () => {
   fetch('/get_office_name')
     .then(r => r.text())
     .then(name => {
-      const officeEl = utils.qs('#office-name');
+      const officeEl = window.utils.qs('#office-name');
       if (officeEl) officeEl.innerHTML = `<span><img src="/static/images/icons/OFFICE.svg" class="sidebar-icon"> ${name}</span>`;
     })
     .catch(() => { });
@@ -115,31 +76,31 @@ window.addEventListener('DOMContentLoaded', () => {
   fetch('/get_username')
     .then(r => r.text())
     .then(name => {
-      const el = utils.qs('#username');
+      const el = window.utils.qs('#username');
       if (el) el.innerHTML = `<img src="/static/images/icons/USER.svg" class="sidebar-icon"> ${name}`;
     })
     .catch(() => { });
 
-  if (!S.get(current_sub_sidebar)) S.set(current_sub_sidebar, 'all_cases');
-  showSubMenu(S.get(current_sub_sidebar), true);
+  if (!Store.get('current_sub_sidebar')) Store.set('current_sub_sidebar', 'all_cases');
+  showSubMenu(Store.get('current_sub_sidebar'), true);
   ensureSubmenuVisible(); // <- important
 
-  const targetPage = S.get(current_dashboard_content) || USER_DEFAULT;
-  loadContent(targetPage, true, 'user');
+  const targetPage = Store.get('current_dashboard_content') || USER_DEFAULT;
+  window.UserLoader.navigate({ page: targetPage, force: true })
 
   // Highlight in main sidebar
-  utils.qsa('.sidebar a').forEach(a => {
-    (a.dataset.subSidebar === S.get(current_sub_sidebar)) ? a.classList.add('active') : a.classList.remove('active');
+  window.utils.qsa('.sidebar a').forEach(a => {
+    (a.dataset.subSidebar === Store.get('current_sub_sidebar')) ? a.classList.add('active') : a.classList.remove('active');
   });
   // Highlight in sub sidebar
-  utils.qsa('.sub-sidebar a').forEach(a => {
+  window.utils.qsa('.sub-sidebar a').forEach(a => {
     (a.dataset.page === targetPage) ? a.classList.add('active') : a.classList.remove('active');
   });
 
   // Sidebar clicks
-  const sidebar = utils.qs('.sidebar');
+  const sidebar = window.utils.qs('.sidebar');
   if (sidebar) {
-    utils.delegate(sidebar, 'click', '.sidebar-link', (e, link) => {
+    window.utils.delegate(sidebar, 'click', '.sidebar-link', (e, link) => {
       e.preventDefault();
       window.Nav.highlightInSidebar(link, 'sidebar');
       if (link.dataset.subSidebar) {
@@ -150,9 +111,9 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // Sub-sidebar clicks
-  const subSidebar = utils.qs('.sub-sidebar');
+  const subSidebar = window.utils.qs('.sub-sidebar');
   if (subSidebar) {
-    utils.delegate(subSidebar, 'click', '.sub-sidebar-link', (e, link) => {
+    window.utils.delegate(subSidebar, 'click', '.sub-sidebar-link', (e, link) => {
       e.preventDefault();
       window.Nav.highlightInSidebar(link, 'sub-sidebar');
       // Ensure compatibility with loader.js

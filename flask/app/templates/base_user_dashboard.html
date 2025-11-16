@@ -111,10 +111,17 @@
     <!-- ✅ Choices.js -->
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
-    <!-- ✅ Your app logic -->
-    <script src="{{ url_for('static', filename='js/core/storage.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/loader.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/base_user_dashboard.js') }}"></script>
+    <!-- core modules -->
+    <script src="/static/js/core/storage.js" defer></script>
+    <script src="/static/js/core/utils.js" defer></script>
+    <script src="/static/js/core/api.js" defer></script>
+    <script src="/static/js/core/tables.js" defer></script>
+    <script src="/static/js/core/nav.js" defer></script>
+    <script src="/static/js/core/toast.js" defer></script>
+    <script src="/static/js/core/loader.user.js" defer></script>
+
+    <!-- user dashboard -->
+    <script src="/static/js/base_user_dashboard.js" defer></script>
 
 </body>
 

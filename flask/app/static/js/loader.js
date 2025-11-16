@@ -36,7 +36,7 @@ function loadContent(page, force, type) {
   if (!page || (page === S.get(currentContent) && !force)) return;
 
   try {
-    const nav = window.Core?.storage?.create("navigation");
+    const nav = window.Core.storage.create("navigation");
     if (nav) {
       nav.set("lastPage", {
         page,

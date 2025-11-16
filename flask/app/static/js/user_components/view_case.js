@@ -1,13 +1,18 @@
 
-window.init_view_case = function init_view_case() {
+// static/js/user_components/view_case.js
+
+window.init_view_case = async function () {
+  await window.utils.waitForDom();
 
   const navStore = window.Core.storage.create("navigation");
   const lastViewedCase = navStore.get("lastViewedCase");
 
+  window.filesTableInstance ??= null;
+
   document.getElementById("clear-file-filters")?.addEventListener("click", () => {
     document.getElementById("file-search").value = "";
     document.getElementById("file-type").value = "";
-    loadFiles();
+    window.loadFiles();
   });
 
   const serial = lastViewedCase.serial
@@ -30,7 +35,7 @@ window.init_view_case = function init_view_case() {
 
       const setText = (id, val) => {
         const el = document.getElementById(id);
-        if (el) el.textContent = utils.safeValue(val);
+        if (el) el.textContent = window.utils.safeValue(val);
       };
       setText("case-title", caseObj.title);
       setText("case-serial", caseObj.serial.toString());
@@ -45,7 +50,7 @@ window.init_view_case = function init_view_case() {
       setText("case-created-at", createdAtText);
 
       const factsEl = document.getElementById("case-facts-text");
-      if (factsEl) factsEl.textContent = utils.safeValue(caseObj.facts ?? "");
+      if (factsEl) factsEl.textContent = window.utils.safeValue(caseObj.facts ?? "");
 
       const statusDot = document.getElementById("case-status-dot");
       if (statusDot) statusDot.classList.add(caseObj.status || "unknown");
@@ -83,8 +88,8 @@ window.init_view_case = function init_view_case() {
       }
 
       window.__allFiles = files;
-      buildFileTypesDropdown(files);
-      loadFiles();
+      window.buildFileTypesDropdown(files);
+      window.loadFiles();
     })
     .finally(() => {
       if (Array.isArray(window.__allFiles) && window.__allFiles.length > 0) {
@@ -111,7 +116,7 @@ async function viewFile(caseSerial, fileSerial, fileName) {
   }
 }
 
-window.deleteFile = async function deleteFile(caseSerial, fileSerial, fileName) {
+async function deleteFiledeleteFile(caseSerial, fileSerial, fileName) {
   if (!confirm(`האם אתה בטוח שברצונך למחוק את הקובץ "${fileName}"?`)) return;
 
   try {
@@ -149,25 +154,23 @@ function buildFilters() {
   };
 }
 
-window.clearFileFilters = function () {
+function clearFileFilters() {
   document.getElementById("file-search").value = "";
   document.getElementById("file-type").value = "";
-  loadFiles();
+  window.loadFiles();
 };
 
-let filesTableInstance = null;
-
-window.loadFiles = function loadFiles() {
+function loadFiles() {
 
   const tbody = document.querySelector("#filesTable tbody");
   const files = window.__allFiles || [];
-  const filters = buildFilters();
+  const filters = window.buildFilters();
 
   let filtered = files;
 
   if (filters.search) {
     filtered = filtered.filter(f =>
-      utils.removeExtension(f.name).toLowerCase().includes(filters.search.toLowerCase())
+      window.utils.removeExtension(f.name).toLowerCase().includes(filters.search.toLowerCase())
     );
   }
 
@@ -189,11 +192,11 @@ window.loadFiles = function loadFiles() {
     const date = f.created_at
       ? new Date(f.created_at).toLocaleDateString("he-IL")
       : "-";
-    const icon = utils.fileIconPath(f.technical_type);
+    const icon = window.utils.fileIconPath(f.technical_type);
 
     return `
         <tr data-file-serial="${f.serial}"
-            onclick="viewFile(${f.case_serial || 0}, ${f.serial}, '${f.name}')">
+            onclick="window.viewFile(${f.case_serial || 0}, ${f.serial}, '${f.name}')">
 
             <td class="file-name-cell col-wide">
                 <img src="${icon}" class="file-icon" />
@@ -204,7 +207,7 @@ window.loadFiles = function loadFiles() {
 
             <td>
                 <button class="btn btn-sm btn-outline-danger"
-                    onclick="event.stopPropagation(); deleteFile(${f.case_serial || 0}, ${f.serial}, '${f.name}')">
+                    onclick="event.stopPropagation(); window.deleteFile(${f.case_serial || 0}, ${f.serial}, '${f.name}')">
                     מחק
                 </button>
             </td>

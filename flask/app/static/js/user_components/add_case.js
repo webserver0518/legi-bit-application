@@ -1,4 +1,4 @@
-/* static/js/user_components/add_case.js */
+// static/js/user_components/add_case.js
 
 window.init_add_case = function () {
   initFileUploader();          // Initialize drag & drop + file handling
@@ -11,44 +11,344 @@ window.init_add_case = function () {
   initClientAutocomplete();
 };
 
-/* ==============================
-   🧩 MULTI-CLIENT MANAGEMENT
-   ============================== */
+function initFileUploader() {
+  const dropArea = document.getElementById('drop-area');
+  if (!dropArea || dropArea.dataset.ready) return;
+  dropArea.dataset.ready = "1";
 
-// 🧾 Render client list in the table
-window.renderClientsTable = function () {
-  const table = document.getElementById("clients-table");
-  const tableBody = table.querySelector("tbody");
+  const pickInput = document.getElementById('fileElem');
+  const tbody = document.querySelector('#fileTable tbody');
 
-  if (clientsList.length === 0) {
-    table.style.display = "none"; // או table.classList.add('d-none');
-    tableBody.innerHTML = "";
-    return;
+  // ✅ נשתמש במערך גלובלי במקום input מוסתר
+  window.filesList = [];
+  const nameCount = {};
+
+  // למנוע התנהגות דיפולטית של גרירה
+  const stop = e => { e.preventDefault(); e.stopPropagation(); };
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
+    dropArea.addEventListener(ev, stop, false)
+  );
+
+  // אירועים על drop area
+  dropArea.addEventListener('click', () => pickInput.click());
+  dropArea.addEventListener('dragover', () => dropArea.classList.add('highlight'));
+  dropArea.addEventListener('dragleave', () => dropArea.classList.remove('highlight'));
+  dropArea.addEventListener('drop', e => {
+    dropArea.classList.remove('highlight');
+    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+  });
+  pickInput.addEventListener('change', () => addFiles(pickInput.files));
+
+  // הוספת קבצים לרשימה ולטבלה
+  function addFiles(list) {
+    [...list].forEach(f => { addRow(f); });
+    pickInput.value = '';  // לאפשר בחירה חוזרת
   }
 
-  // אם יש לקוחות — נציג את הטבלה
-  table.style.display = "table"; // או table.classList.remove('d-none');
-  tableBody.innerHTML = clientsList.map((c, i) => `
-      <tr>
-        <td>${c.first_name}</td>
-        <td>${c.last_name}</td>
-        <td>${c.id_card_number || "-"}</td>
-        <td>${c.phone || "-"}</td>
-        <td>${c.city || "-"}</td>
-        <td>${c.street || "-"}</td>
-        <td>${c.home_number || "-"}</td>
-        <td>${c.postal_code || "-"}</td>
-        <td>${c.email || "-"}</td>
-        <td>${c.birth_date || "-"}</td>
-        <td>${c.role === "main" ? "ראשי" : "משני"}</td>
-        <td><button class="btn btn-sm btn-outline-danger" onclick="removeClient(${i})">✖</button></td>
-      </tr>
-    `).join("");
+  // מתן שם ייחודי לתצוגה בלבד
+  function unique(name) {
+    if (nameCount[name] === undefined) {
+      nameCount[name] = 0;
+      return name;
+    }
+    nameCount[name] += 1;
+    const dot = name.lastIndexOf('.');
+    return dot > -1
+      ? `${name.slice(0, dot)}_${nameCount[name]}${name.slice(dot)}`
+      : `${name}_${nameCount[name]}`;
+  }
 
-  document.getElementById("clients-json-input").value = JSON.stringify(clientsList);
+  async function addRow(file) {
+    const disp = unique(file.name);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>${disp}</td>
+        <td>
+          <select class="form-select form-select-sm file-content-type" name="content_type_${disp}">
+            <option>טוען...</option>
+          </select>
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm file-description" 
+                name="description_${disp}" placeholder="תיאור הקובץ">
+        </td>
+        <td>
+          <select class="form-select form-select-sm file-client_serial" name="client_serial_${disp}">
+            <option value="">לא משויך</option>
+          </select>
+        </td>
+        <td>
+          <div class="progress" style="height: 6px;">
+            <div class="progress-bar" role="progressbar" style="width: 0%;"></div>
+          </div>
+        </td>
+        <td class="text-center">
+          <button type="button" class="btn btn-sm btn-outline-danger">✖</button>
+        </td>
+      `;
+    tbody.appendChild(tr);
 
-  if (typeof window.refreshClientSelectOptions === "function") {
-    window.refreshClientSelectOptions();
+    // ✅ הוספה לרשימה הגלובלית
+    window.filesList.push({
+      file,
+      technical_type: file.type || null,
+      content_type: null,
+      description: "",
+      client_serial: "",
+      status: "pending",
+      key: null,
+      row: tr       // נשתמש בזה כדי לעדכן את ה־progress bar
+    });
+
+    // טעינת סוגי המסמכים
+    try {
+      const typesRes = await window.API.getJson("/get_document_types");
+      if (!typesRes.success) throw new Error("Failed to load document types");
+      const types = Array.isArray(typesRes.data) ? typesRes.data : [];
+
+      const select = tr.querySelector(".file-content-type");
+      select.innerHTML = "";
+      types.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.value;
+        opt.textContent = t.label;
+        select.appendChild(opt);
+      });
+      // עדכון הסוג ברשימה
+      select.addEventListener("change", () => {
+        const entry = window.filesList.find(f => f.file === file);
+        if (entry) entry.content_type = select.value;
+      });
+    } catch (err) {
+      console.error("❌ שגיאה בטעינת סוגי המסמכים:", err);
+    }
+
+    // --- טען שיוך ללקוח ---
+    const clientSelect = tr.querySelector(".file-client_serial");
+    clientSelect.innerHTML = `<option value="">לא משויך</option>`;
+    (window.clientsList || []).forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.serial;
+      opt.textContent = `${c.first_name} ${c.last_name}`;
+      clientSelect.appendChild(opt);
+    });
+    clientSelect.addEventListener("change", () => {
+      const entry = window.filesList.find(f => f.file === file);
+      if (entry) entry.client_serial = clientSelect.value;
+    });
+
+    // --- שמירת תיאור ---
+    const descInput = tr.querySelector(".file-description");
+    descInput.addEventListener("input", () => {
+      const entry = window.filesList.find(f => f.file === file);
+      if (entry) entry.description = descInput.value.trim();
+    });
+
+    tr.querySelector('button').onclick = () => {
+      tr.remove();
+      window.filesList = window.filesList.filter(f => f.file !== file);
+    };
+  }
+}
+
+function initAccordionSections() {
+  const headers = document.querySelectorAll(".section-header");
+  headers.forEach(header => {
+    const targetId = header.getAttribute("data-target");
+    const content = document.querySelector(targetId);
+    if (!content) return;
+
+    content.style.height = "0";
+    content.style.overflow = "hidden";
+    content.style.transition = "height 0.5s ease";
+    content.classList.remove("show");
+
+    header.addEventListener("click", () => {
+      const isOpen = content.classList.contains("show");
+      document.querySelectorAll(".accordion-collapse.show").forEach(openItem => {
+        if (openItem !== content) {
+          openItem.style.height = `${openItem.scrollHeight}px`;
+          requestAnimationFrame(() => openItem.style.height = "0");
+          openItem.classList.remove("show");
+        }
+      });
+      if (isOpen) {
+        content.style.height = `${content.scrollHeight}px`;
+        requestAnimationFrame(() => content.style.height = "0");
+        content.classList.remove("show");
+      } else {
+        content.classList.add("show");
+        content.style.height = "0";
+        requestAnimationFrame(() => content.style.height = `${content.scrollHeight}px`);
+        content.addEventListener("transitionend", () => {
+          if (content.classList.contains("show")) content.style.height = "auto";
+        }, { once: true });
+      }
+    });
+  });
+};
+
+function initCaseFormPreview() {
+  const form = document.getElementById("addCaseForm");
+  if (!form) return;
+
+  const storage = window.Core.storage.create
+    ? window.Core.storage.create("cases")
+    : null;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // prevent multiple submissions
+    const submitBtn = form.querySelector("button[type='submit']");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "יוצר תיק...";
+    }
+
+    // ✅ Require at least one main client before submission
+    const hasMain = (window.clientsList || []).some(c => c.role === "main");
+    if (!hasMain) {
+      window.Toast("יש להוסיף לפחות לקוח ראשי אחד לפני פתיחת תיק", "danger");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "פתח תיק";
+      return;
+    }
+
+    const fd = new FormData(form);
+    const timestamp = window.utils.buildLocalTimestamp();
+
+
+    if (!fd.get('title')) {
+      window.Toast("יש למלא כותרת לתיק", "danger");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "פתח תיק";
+      return;
+    }
+
+    const form_data = {
+      created_at: timestamp,
+      title: fd.get('title'),
+      field: fd.get('field'),
+      facts: fd.get('facts'),
+      against: fd.get('against'),
+      against_type: document.getElementById('against-type')?.value || '',
+      clients: (window.clientsList || []).map(c => ({
+        client_serial: c.serial,
+        role: c.role
+      }))
+    };
+
+    // 🟢 שליחת הנתונים לשרת
+    try {
+      const parsed = await window.API.postJson("/create_new_case", form_data);
+
+      if (!parsed.success || !parsed.data) {
+        window.Toast(`❌ Failed to create case: ${parsed.error}`, "danger");
+        return;
+      }
+      window.Toast("✅ Case created successfully", "success");
+
+      // open files section
+      document.querySelector("[data-target='#collapseFiles']")?.click();
+
+      const case_serial = parsed.data;
+
+      // כעת נשלוף את מזהה המשרד
+      let office_serial;
+      try {
+        const parsed = await window.API.getJson("/get_office_serial");
+
+        if (!parsed.success || !parsed.data?.office_serial) {
+          throw new Error("Office serial not found");
+        }
+        office_serial = parsed.data.office_serial;
+      } catch {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "פתח תיק";
+        return; // עצור אם לא הצלחנו לקבל מזהה משרד
+      }
+
+      if (!window.filesList || window.filesList.length === 0) {
+        window.Toast("לא נבחרו קבצים, התיק ייווצר ללא מסמכים", "warning");
+        const nav = window.Core.storage.create("navigation");
+        nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
+        window.UserLoader.navigate({ page: "view_case", force: true });
+        return;
+      }
+
+      /* 2️⃣ העלאת קבצים עם key לפי office+case */
+      submitBtn.textContent = "מעלה קבצים...";
+      const { success, uploaded } = await uploadAllFilesToS3(window.filesList, office_serial, case_serial);
+
+      if (!success) {
+        throw new Error("חלק מהקבצים לא הועלו בהצלחה");
+      }
+
+      /* 3️⃣ שמירת רשומות FILES במונגו */
+      submitBtn.textContent = "שומר קבצים...";
+      const fileSerials = uploaded.map(f => f.serial);
+
+      const parsedUpdate = await window.API.apiRequest(`/update_case?serial=${case_serial}`, {
+        method: "PATCH",
+        body: { files_serials: fileSerials }
+      });
+
+      if (!parsedUpdate.success) {
+        throw new Error(parsedUpdate.error || "שגיאה בשמירת הקבצים");
+      }
+
+      window.Toast("✅ Case Files Uploaded", "success");
+
+      const nav = window.Core.storage.create("navigation");
+      nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
+      window.UserLoader.navigate({ page: "view_case", force: true });
+
+    } catch (error) {
+      console.error(error);
+      window.Toast("Error contacting server", "warning");
+
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "פתח תיק";
+      }
+    }
+
+  });
+};
+
+async function initFieldAutocomplete() {
+  const input = document.getElementById("field-input");
+  const suggestions = document.getElementById("field-suggestions");
+  if (!input) return;
+
+  try {
+    const catRes = await window.API.getJson("/get_case_categories");
+    const categories = Array.isArray(catRes.data) ? catRes.data : [];
+
+    function showSuggestions(filter = "") {
+      const value = filter.trim();
+      suggestions.innerHTML = "";
+      const matches = categories.filter(cat => cat.label.includes(value));
+      matches.forEach(cat => {
+        const li = document.createElement("li");
+        li.className = "list-group-item list-group-item-action";
+        li.textContent = cat.label;
+        li.addEventListener("click", () => {
+          input.value = cat.label;
+          suggestions.innerHTML = "";
+        });
+        suggestions.appendChild(li);
+      });
+    }
+    input.addEventListener("input", () => showSuggestions(input.value));
+    input.addEventListener("focus", () => showSuggestions(""));
+    document.addEventListener("click", (e) => {
+      if (!suggestions.contains(e.target) && e.target !== input) suggestions.innerHTML = "";
+    });
+  } catch (err) {
+    console.error("Failed to load categories:", err);
   }
 };
 
@@ -90,7 +390,7 @@ function initClientsManager() {
       // 🧠 שליחה לשרת כדי לשמור לקוח חדש
       const apiRes = await window.API.postJson("/create_new_client", client);
       if (!apiRes.success) {
-        showToast("❌ שגיאה בהוספת לקוח לשרת", "danger");
+        window.Toast("❌ שגיאה בהוספת לקוח לשרת", "danger");
         return;
       }
 
@@ -99,10 +399,10 @@ function initClientsManager() {
       clientsList.push(client);
       renderClientsTable();
       clearClientFields();
-      showToast(`לקוח חדש נוצר ונוסף לתיק (מס' ${client_serial})`, "success");
+      window.Toast(`לקוח חדש נוצר ונוסף לתיק (מס' ${client_serial})`, "success");
     } catch (err) {
       console.error("שגיאה בשליחת לקוח:", err);
-      showToast("בעיה בחיבור לשרת", "warning");
+      window.Toast("בעיה בחיבור לשרת", "warning");
     }
 
   });
@@ -122,522 +422,13 @@ function initClientsManager() {
 
 
   // ❌ Remove client by index
-  window.removeClient = function (i) {
+  function removeClient(i) {
     clientsList.splice(i, 1);
     renderClientsTable();
   };
 
   renderClientsTable();
 }
-
-/* ==============================
-   📂 File uploader (drag & drop)
-   ============================== */
-(() => {
-  window.initFileUploader = function () {
-    const dropArea = document.getElementById('drop-area');
-    if (!dropArea || dropArea.dataset.ready) return;
-    dropArea.dataset.ready = "1";
-
-    const pickInput = document.getElementById('fileElem');
-    const tbody = document.querySelector('#fileTable tbody');
-
-    // ✅ נשתמש במערך גלובלי במקום input מוסתר
-    window.filesList = [];
-    const nameCount = {};
-
-    // למנוע התנהגות דיפולטית של גרירה
-    const stop = e => { e.preventDefault(); e.stopPropagation(); };
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
-      dropArea.addEventListener(ev, stop, false)
-    );
-
-    // אירועים על drop area
-    dropArea.addEventListener('click', () => pickInput.click());
-    dropArea.addEventListener('dragover', () => dropArea.classList.add('highlight'));
-    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('highlight'));
-    dropArea.addEventListener('drop', e => {
-      dropArea.classList.remove('highlight');
-      if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
-    });
-    pickInput.addEventListener('change', () => addFiles(pickInput.files));
-
-    // הוספת קבצים לרשימה ולטבלה
-    function addFiles(list) {
-      [...list].forEach(f => { addRow(f); });
-      pickInput.value = '';  // לאפשר בחירה חוזרת
-    }
-
-    // מתן שם ייחודי לתצוגה בלבד
-    function unique(name) {
-      if (nameCount[name] === undefined) {
-        nameCount[name] = 0;
-        return name;
-      }
-      nameCount[name] += 1;
-      const dot = name.lastIndexOf('.');
-      return dot > -1
-        ? `${name.slice(0, dot)}_${nameCount[name]}${name.slice(dot)}`
-        : `${name}_${nameCount[name]}`;
-    }
-
-    async function addRow(file) {
-      const disp = unique(file.name);
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${disp}</td>
-        <td>
-          <select class="form-select form-select-sm file-content-type" name="content_type_${disp}">
-            <option>טוען...</option>
-          </select>
-        </td>
-        <td>
-          <input type="text" class="form-control form-control-sm file-description" 
-                name="description_${disp}" placeholder="תיאור הקובץ">
-        </td>
-        <td>
-          <select class="form-select form-select-sm file-client_serial" name="client_serial_${disp}">
-            <option value="">לא משויך</option>
-          </select>
-        </td>
-        <td>
-          <div class="progress" style="height: 6px;">
-            <div class="progress-bar" role="progressbar" style="width: 0%;"></div>
-          </div>
-        </td>
-        <td class="text-center">
-          <button type="button" class="btn btn-sm btn-outline-danger">✖</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-
-      // ✅ הוספה לרשימה הגלובלית
-      window.filesList.push({
-        file,
-        technical_type: file.type || null,
-        content_type: null,
-        description: "",
-        client_serial: "",
-        status: "pending",
-        key: null,
-        row: tr       // נשתמש בזה כדי לעדכן את ה־progress bar
-      });
-
-      // טעינת סוגי המסמכים
-      try {
-        const typesRes = await window.API.getJson("/get_document_types");
-        if (!typesRes.success) throw new Error("Failed to load document types");
-        const types = Array.isArray(typesRes.data) ? typesRes.data : [];
-
-        const select = tr.querySelector(".file-content-type");
-        select.innerHTML = "";
-        types.forEach(t => {
-          const opt = document.createElement("option");
-          opt.value = t.value;
-          opt.textContent = t.label;
-          select.appendChild(opt);
-        });
-        // עדכון הסוג ברשימה
-        select.addEventListener("change", () => {
-          const entry = window.filesList.find(f => f.file === file);
-          if (entry) entry.content_type = select.value;
-        });
-      } catch (err) {
-        console.error("❌ שגיאה בטעינת סוגי המסמכים:", err);
-      }
-
-      // --- טען שיוך ללקוח ---
-      const clientSelect = tr.querySelector(".file-client_serial");
-      clientSelect.innerHTML = `<option value="">לא משויך</option>`;
-      (window.clientsList || []).forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.serial;
-        opt.textContent = `${c.first_name} ${c.last_name}`;
-        clientSelect.appendChild(opt);
-      });
-      clientSelect.addEventListener("change", () => {
-        const entry = window.filesList.find(f => f.file === file);
-        if (entry) entry.client_serial = clientSelect.value;
-      });
-
-      // --- שמירת תיאור ---
-      const descInput = tr.querySelector(".file-description");
-      descInput.addEventListener("input", () => {
-        const entry = window.filesList.find(f => f.file === file);
-        if (entry) entry.description = descInput.value.trim();
-      });
-
-      tr.querySelector('button').onclick = () => {
-        tr.remove();
-        window.filesList = window.filesList.filter(f => f.file !== file);
-      };
-    }
-  };
-})();
-
-
-
-window.refreshClientSelectOptions = function () {
-  document.querySelectorAll(".file-client_serial").forEach(select => {
-    const prevValue = select.value;
-    select.innerHTML = `<option value="">לא משויך</option>`;
-    (window.clientsList || []).forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c.serial;
-      opt.textContent = `${c.first_name} ${c.last_name}`;
-      select.appendChild(opt);
-    });
-    // אם הערך הקודם עדיין קיים – נחזיר אותו
-    if ([...select.options].some(o => o.value === prevValue)) {
-      select.value = prevValue;
-    }
-  });
-};
-
-
-
-
-/**
- * 🧠 Upload all files in files to S3 via the Flask /presign/post service
- * Uses presigned URLs and updates progress bars in real time
- */
-async function uploadAllFilesToS3(files, office_serial, case_serial) {
-  if (!files || files.length === 0) {
-    return true;
-  }
-
-  // סינון רק קבצים שטרם הועלו או שנכשלו
-  const toUpload = files.filter(f => f.status === "pending" || f.status === "failed");
-  if (toUpload.length === 0) return true;
-
-  const timestamp = utils.buildLocalTimestamp();
-
-  for (const fileEntry of toUpload) {
-    const {
-      file,
-      row,
-      technical_type,
-      content_type,
-      description,
-      client_serial,
-      serial,
-      status
-    } = fileEntry;
-
-    const progressBar = row.querySelector(".progress-bar");
-
-    try {
-      // --- 1️⃣ קבלת כתובת חתומה מהשרת ---
-      progressBar.style.width = "10%";
-      progressBar.classList.remove("bg-success", "bg-danger");
-      progressBar.classList.add("bg-info");
-
-      // 1️⃣ צור רשומת קובץ במונגו
-      const parsedCreate = await window.API.postJson("/create_new_file", {
-        created_at: timestamp,
-        case_serial,
-        client_serial,
-        name: file.name,
-        technical_type,
-        content_type,
-        description,
-      });
-
-      if (!parsedCreate.success || !parsedCreate.data) {
-        throw new Error(parsedCreate.error || "Failed to create file record");
-      }
-
-      const file_serial = parsedCreate.data; // ✅ לפי איך שאתה מחזיר מהשרת
-      fileEntry.serial = file_serial;
-
-      // 2️⃣ צור key ייחודי הכולל office, case, file
-      const uploadKey = `uploads/${office_serial}/${case_serial}/${file_serial}-${file.name}`;
-      fileEntry.key = uploadKey;
-
-
-      // 3️⃣ בקשת presigned URL ל-S3
-      const parsedPresign = await window.API.postJson("/presign/post", {
-        file_name: file.name,
-        file_type: technical_type || file.type || "application/octet-stream",
-        file_size: file.size,
-        key: uploadKey
-      });
-      if (!parsedPresign.success || !parsedPresign.data?.presigned?.url) {
-        throw new Error(parsedPresign.error || "Failed to get presigned URL");
-      }
-      const { url, fields } = parsedPresign.data.presigned;
-
-
-      // 4️⃣ העלאה אמיתית ל-S3
-      fileEntry.status = "uploading";
-      const formData = new FormData();
-      Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
-      formData.append("file", file);
-      //showToast(`⬆️ מעלה את "${file.name}" לשרת...`, "success");
-
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", url, true);
-
-        xhr.upload.onprogress = (evt) => {
-          if (evt.lengthComputable) {
-            const percent = Math.round((evt.loaded / evt.total) * 100);
-            progressBar.style.width = `${percent}%`;
-          }
-        };
-
-        xhr.onload = () => {
-          if (xhr.status === 204) {
-            progressBar.style.width = "100%";
-            progressBar.classList.remove("bg-info");
-            progressBar.classList.add("bg-success");
-            fileEntry.status = "done";
-            //showToast(`✅ הקובץ "${file.name}" הועלה בהצלחה!`, "success");
-            resolve();
-          } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`));
-            showToast(`❌ העלאת "${file.name}" נכשלה`, "danger");
-          }
-        };
-
-        xhr.onerror = () => reject(new Error("Network error during upload"));
-        xhr.send(formData);
-      });
-
-      console.log(`✅ Uploaded ${file.name} to S3 (${uploadKey})`);
-
-      await window.API.apiRequest(`/update_file?serial=${Number(fileEntry.serial)}`, {
-        method: "PATCH",
-        body: { status: "available" }
-      });
-    } catch (err) {
-      console.error("❌ Upload failed for:", file.name, err);
-      progressBar.classList.remove("bg-info");
-      progressBar.classList.add("bg-danger");
-      progressBar.style.width = "100%";
-      fileEntry.status = "failed";
-    }
-  }
-
-  return {
-    success: files.every(f => f.status === "done"),
-    uploaded: files
-      .filter(f => f.status === "done")
-      .map(f => ({
-        name: f.file.name,
-        key: f.key,
-        serial: f.serial
-      }))
-  };
-}
-
-
-
-
-
-
-
-/* Accordion open/close animation handler */
-window.initAccordionSections = function () {
-  const headers = document.querySelectorAll(".section-header");
-  headers.forEach(header => {
-    const targetId = header.getAttribute("data-target");
-    const content = document.querySelector(targetId);
-    if (!content) return;
-
-    content.style.height = "0";
-    content.style.overflow = "hidden";
-    content.style.transition = "height 0.5s ease";
-    content.classList.remove("show");
-
-    header.addEventListener("click", () => {
-      const isOpen = content.classList.contains("show");
-      document.querySelectorAll(".accordion-collapse.show").forEach(openItem => {
-        if (openItem !== content) {
-          openItem.style.height = `${openItem.scrollHeight}px`;
-          requestAnimationFrame(() => openItem.style.height = "0");
-          openItem.classList.remove("show");
-        }
-      });
-      if (isOpen) {
-        content.style.height = `${content.scrollHeight}px`;
-        requestAnimationFrame(() => content.style.height = "0");
-        content.classList.remove("show");
-      } else {
-        content.classList.add("show");
-        content.style.height = "0";
-        requestAnimationFrame(() => content.style.height = `${content.scrollHeight}px`);
-        content.addEventListener("transitionend", () => {
-          if (content.classList.contains("show")) content.style.height = "auto";
-        }, { once: true });
-      }
-    });
-  });
-};
-
-/* Form submission */
-window.initCaseFormPreview = function () {
-  const form = document.getElementById("addCaseForm");
-  if (!form) return;
-
-  const storage = window.Core?.storage?.create
-    ? window.Core.storage.create("cases")
-    : null;
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    // prevent multiple submissions
-    const submitBtn = form.querySelector("button[type='submit']");
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = "יוצר תיק...";
-    }
-
-    // ✅ Require at least one main client before submission
-    const hasMain = (window.clientsList || []).some(c => c.role === "main");
-    if (!hasMain) {
-      showToast("יש להוסיף לפחות לקוח ראשי אחד לפני פתיחת תיק", "danger");
-      submitBtn.disabled = false;
-      submitBtn.textContent = "פתח תיק";
-      return;
-    }
-
-    const fd = new FormData(form);
-    const timestamp = utils.buildLocalTimestamp();
-
-
-    if (!fd.get('title')) {
-      showToast("יש למלא כותרת לתיק", "danger");
-      submitBtn.disabled = false;
-      submitBtn.textContent = "פתח תיק";
-      return;
-    }
-
-    const form_data = {
-      created_at: timestamp,
-      title: fd.get('title'),
-      field: fd.get('field'),
-      facts: fd.get('facts'),
-      against: fd.get('against'),
-      against_type: document.getElementById('against-type')?.value || '',
-      clients: (window.clientsList || []).map(c => ({
-        client_serial: c.serial,
-        role: c.role
-      }))
-    };
-
-    // 🟢 שליחת הנתונים לשרת
-    try {
-      const parsed = await window.API.postJson("/create_new_case", form_data);
-
-      if (!parsed.success || !parsed.data) {
-        showToast(`❌ Failed to create case: ${parsed.error}`, "danger");
-        return;
-      }
-      showToast("✅ Case created successfully", "success");
-
-      // open files section
-      document.querySelector("[data-target='#collapseFiles']")?.click();
-
-      const case_serial = parsed.data;
-
-      // כעת נשלוף את מזהה המשרד
-      let office_serial;
-      try {
-        office_serial = await getOfficeSerial();
-      } catch {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "פתח תיק";
-        return; // עצור אם לא הצלחנו לקבל מזהה משרד
-      }
-
-      if (!window.filesList || window.filesList.length === 0) {
-        showToast("לא נבחרו קבצים, התיק ייווצר ללא מסמכים", "warning");
-        const nav = window.Core.storage.create("navigation");
-        nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
-        window.UserLoader.navigate({ page: "view_case", force: true });
-        return;
-      }
-
-      /* 2️⃣ העלאת קבצים עם key לפי office+case */
-      submitBtn.textContent = "מעלה קבצים...";
-      const { success, uploaded } = await uploadAllFilesToS3(window.filesList, office_serial, case_serial);
-
-      if (!success) {
-        throw new Error("חלק מהקבצים לא הועלו בהצלחה");
-      }
-
-      /* 3️⃣ שמירת רשומות FILES במונגו */
-      submitBtn.textContent = "שומר קבצים...";
-      const fileSerials = uploaded.map(f => f.serial);
-
-      const parsedUpdate = await window.API.apiRequest(`/update_case?serial=${case_serial}`, {
-        method: "PATCH",
-        body: { files_serials: fileSerials }
-      });
-
-      if (!parsedUpdate.success) {
-        throw new Error(parsedUpdate.error || "שגיאה בשמירת הקבצים");
-      }
-
-      showToast("✅ Case Files Uploaded", "success");
-
-      const nav = window.Core.storage.create("navigation");
-      nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
-      window.UserLoader.navigate({ page: "view_case", force: true });
-
-    } catch (error) {
-      console.error(error);
-      showToast("Error contacting server", "warning");
-
-    } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "פתח תיק";
-      }
-    }
-
-  });
-};
-
-/* Autocomplete for case field selection */
-window.initFieldAutocomplete = async function () {
-  const input = document.getElementById("field-input");
-  const suggestions = document.getElementById("field-suggestions");
-  if (!input) return;
-
-  try {
-    const catRes = await window.API.getJson("/get_case_categories");
-    const categories = Array.isArray(catRes.data) ? catRes.data : [];
-
-    function showSuggestions(filter = "") {
-      const value = filter.trim();
-      suggestions.innerHTML = "";
-      const matches = categories.filter(cat => cat.label.includes(value));
-      matches.forEach(cat => {
-        const li = document.createElement("li");
-        li.className = "list-group-item list-group-item-action";
-        li.textContent = cat.label;
-        li.addEventListener("click", () => {
-          input.value = cat.label;
-          suggestions.innerHTML = "";
-        });
-        suggestions.appendChild(li);
-      });
-    }
-    input.addEventListener("input", () => showSuggestions(input.value));
-    input.addEventListener("focus", () => showSuggestions(""));
-    document.addEventListener("click", (e) => {
-      if (!suggestions.contains(e.target) && e.target !== input) suggestions.innerHTML = "";
-    });
-  } catch (err) {
-    console.error("Failed to load categories:", err);
-  }
-};
-
-
-
 
 function initRequiredIndicators() {
   const requiredInputs = document.querySelectorAll('.required-field');
@@ -655,7 +446,6 @@ function initRequiredIndicators() {
     update(); // להריץ פעם אחת בהתחלה
   });
 }
-
 
 function initHebrewBirthDatePicker() {
   const input = document.getElementById("client-birthdate-input");
@@ -681,26 +471,6 @@ function initHebrewBirthDatePicker() {
     }
   });
 }
-
-
-async function getOfficeSerial() {
-  try {
-    const parsed = await window.API.getJson("/get_office_serial");
-
-    if (!parsed.success || !parsed.data?.office_serial) {
-      throw new Error("Office serial not found");
-    }
-    return parsed.data.office_serial;
-  } catch (err) {
-    console.error("❌ Failed to get office_serial:", err);
-    showToast("שגיאה בשליפת מזהה משרד", "warning");
-    throw err;
-  }
-}
-
-
-
-
 
 async function initClientAutocomplete() {
   const input = document.getElementById("client-first-name-input");
@@ -769,7 +539,7 @@ async function initClientAutocomplete() {
     // בדוק אם כבר בטבלה
     const alreadyExists = (window.clientsList || []).some(c => c.serial == selected.serial);
     if (alreadyExists) {
-      showToast("הלקוח כבר נוסף לרשימה", "warning");
+      window.Toast("הלקוח כבר נוסף לרשימה", "warning");
       suggestions.style.display = "none";
       input.value = "";
       return;
@@ -789,7 +559,7 @@ async function initClientAutocomplete() {
       renderClientsTable();
     }
 
-    showToast(`לקוח קיים נוסף לתיק: ${selected.first_name} ${selected.last_name}`, "success");
+    window.Toast(`לקוח קיים נוסף לתיק: ${selected.first_name} ${selected.last_name}`, "success");
     input.value = "";
     suggestions.style.display = "none";
   });
@@ -800,3 +570,188 @@ async function initClientAutocomplete() {
       suggestions.style.display = "none";
   });
 }
+
+
+
+function refreshClientSelectOptions() {
+  document.querySelectorAll(".file-client_serial").forEach(select => {
+    const prevValue = select.value;
+    select.innerHTML = `<option value="">לא משויך</option>`;
+    (window.clientsList || []).forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.serial;
+      opt.textContent = `${c.first_name} ${c.last_name}`;
+      select.appendChild(opt);
+    });
+    // אם הערך הקודם עדיין קיים – נחזיר אותו
+    if ([...select.options].some(o => o.value === prevValue)) {
+      select.value = prevValue;
+    }
+  });
+};
+
+async function uploadAllFilesToS3(files, office_serial, case_serial) {
+  if (!files || files.length === 0) {
+    return true;
+  }
+
+  // סינון רק קבצים שטרם הועלו או שנכשלו
+  const toUpload = files.filter(f => f.status === "pending" || f.status === "failed");
+  if (toUpload.length === 0) return true;
+
+  const timestamp = window.utils.buildLocalTimestamp();
+
+  for (const fileEntry of toUpload) {
+    const {
+      file,
+      row,
+      technical_type,
+      content_type,
+      description,
+      client_serial,
+      serial,
+      status
+    } = fileEntry;
+
+    const progressBar = row.querySelector(".progress-bar");
+
+    try {
+      // --- 1️⃣ קבלת כתובת חתומה מהשרת ---
+      progressBar.style.width = "10%";
+      progressBar.classList.remove("bg-success", "bg-danger");
+      progressBar.classList.add("bg-info");
+
+      // 1️⃣ צור רשומת קובץ במונגו
+      const parsedCreate = await window.API.postJson("/create_new_file", {
+        created_at: timestamp,
+        case_serial,
+        client_serial,
+        name: file.name,
+        technical_type,
+        content_type,
+        description,
+      });
+
+      if (!parsedCreate.success || !parsedCreate.data) {
+        throw new Error(parsedCreate.error || "Failed to create file record");
+      }
+
+      const file_serial = parsedCreate.data; // ✅ לפי איך שאתה מחזיר מהשרת
+      fileEntry.serial = file_serial;
+
+      // 2️⃣ צור key ייחודי הכולל office, case, file
+      const uploadKey = `uploads/${office_serial}/${case_serial}/${file_serial}-${file.name}`;
+      fileEntry.key = uploadKey;
+
+
+      // 3️⃣ בקשת presigned URL ל-S3
+      const parsedPresign = await window.API.postJson("/presign/post", {
+        file_name: file.name,
+        file_type: technical_type || file.type || "application/octet-stream",
+        file_size: file.size,
+        key: uploadKey
+      });
+      if (!parsedPresign.success || !parsedPresign.data?.presigned?.url) {
+        throw new Error(parsedPresign.error || "Failed to get presigned URL");
+      }
+      const { url, fields } = parsedPresign.data.presigned;
+
+
+      // 4️⃣ העלאה אמיתית ל-S3
+      fileEntry.status = "uploading";
+      const formData = new FormData();
+      Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
+      formData.append("file", file);
+      //window.Toast(`⬆️ מעלה את "${file.name}" לשרת...`, "success");
+
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+
+        xhr.upload.onprogress = (evt) => {
+          if (evt.lengthComputable) {
+            const percent = Math.round((evt.loaded / evt.total) * 100);
+            progressBar.style.width = `${percent}%`;
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status === 204) {
+            progressBar.style.width = "100%";
+            progressBar.classList.remove("bg-info");
+            progressBar.classList.add("bg-success");
+            fileEntry.status = "done";
+            //window.Toast(`✅ הקובץ "${file.name}" הועלה בהצלחה!`, "success");
+            resolve();
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+            window.Toast(`❌ העלאת "${file.name}" נכשלה`, "danger");
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.send(formData);
+      });
+
+      console.log(`✅ Uploaded ${file.name} to S3 (${uploadKey})`);
+
+      await window.API.apiRequest(`/update_file?serial=${Number(fileEntry.serial)}`, {
+        method: "PATCH",
+        body: { status: "available" }
+      });
+    } catch (err) {
+      console.error("❌ Upload failed for:", file.name, err);
+      progressBar.classList.remove("bg-info");
+      progressBar.classList.add("bg-danger");
+      progressBar.style.width = "100%";
+      fileEntry.status = "failed";
+    }
+  }
+
+  return {
+    success: files.every(f => f.status === "done"),
+    uploaded: files
+      .filter(f => f.status === "done")
+      .map(f => ({
+        name: f.file.name,
+        key: f.key,
+        serial: f.serial
+      }))
+  };
+}
+
+function renderClientsTable() {
+  const table = document.getElementById("clients-table");
+  const tableBody = table.querySelector("tbody");
+
+  if (clientsList.length === 0) {
+    table.style.display = "none"; // או table.classList.add('d-none');
+    tableBody.innerHTML = "";
+    return;
+  }
+
+  // אם יש לקוחות — נציג את הטבלה
+  table.style.display = "table"; // או table.classList.remove('d-none');
+  tableBody.innerHTML = clientsList.map((c, i) => `
+      <tr>
+        <td>${c.first_name}</td>
+        <td>${c.last_name}</td>
+        <td>${c.id_card_number || "-"}</td>
+        <td>${c.phone || "-"}</td>
+        <td>${c.city || "-"}</td>
+        <td>${c.street || "-"}</td>
+        <td>${c.home_number || "-"}</td>
+        <td>${c.postal_code || "-"}</td>
+        <td>${c.email || "-"}</td>
+        <td>${c.birth_date || "-"}</td>
+        <td>${c.role === "main" ? "ראשי" : "משני"}</td>
+        <td><button class="btn btn-sm btn-outline-danger" onclick="removeClient(${i})">✖</button></td>
+      </tr>
+    `).join("");
+
+  document.getElementById("clients-json-input").value = JSON.stringify(clientsList);
+
+  if (typeof window.refreshClientSelectOptions === "function") {
+    window.refreshClientSelectOptions();
+  }
+};

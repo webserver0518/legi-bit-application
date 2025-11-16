@@ -1,55 +1,9 @@
-// -----------------------
-// SUPER STRING BUILDER
-// -----------------------
-function caseToSuperString(c) {
-  let parts = [];
+// static/js/user_components/cases.js
 
-  // שדות אסורים
-  const BLOCKED_KEYS = new Set([
-    "password",
-    "password_hash",
-    "password_hashes",
-    "passwordHash",
-    "passwordHashes",
-    "secret",
-    "token"
-  ]);
+window.init_cases = async function () {
+  await window.utils.waitForDom();
 
-  function walk(key, value) {
-    if (value == null) return;
-    if (key && BLOCKED_KEYS.has(key)) return;
-
-    if (
-      typeof value === "string" ||
-      typeof value === "number" ||
-      typeof value === "boolean"
-    ) {
-      parts.push(String(value));
-      return;
-    }
-
-    if (Array.isArray(value)) {
-      value.forEach(v => walk(null, v));
-      return;
-    }
-
-    if (typeof value === "object") {
-      Object.entries(value).forEach(([k, v]) => {
-        if (!BLOCKED_KEYS.has(k)) walk(k, v);
-      });
-    }
-  }
-
-  walk(null, c);
-  return parts.join("\n").toLowerCase();
-}
-
-// -----------------------
-// MAIN MODULE
-// -----------------------
-(() => {
-  const casesStore = window.Core.storage.create("cases");
-
+  const casesStore = window.Core.storage.create('cases');
   const savedSearch = casesStore.get("search") || "";
   const savedStatus = casesStore.get("status") || "";
   const savedPage = casesStore.get("page");
@@ -63,11 +17,6 @@ function caseToSuperString(c) {
 
   let CURRENT_ROWS = [];
 
-
-
-  // -----------------------
-  // LOAD CASES FROM SERVER
-  // -----------------------
   function loadCases() {
 
     // 🔒 נועל את שורת הסינון בזמן טעינה
@@ -115,29 +64,6 @@ function caseToSuperString(c) {
       });
   }
 
-  // -----------------------
-  // CLEAR FILTERS
-  // -----------------------
-  document.getElementById("clear-filters").addEventListener("click", () => {
-    // איפוס שדה חיפוש
-    const searchInput = document.getElementById("case-search");
-    searchInput.value = "";
-
-    // איפוס סטטוס
-    const statusSelect = document.getElementById("case-status");
-    statusSelect.value = "";
-
-    // מחיקה מה־storage
-    casesStore.remove("search");
-    casesStore.remove("status");
-    casesStore.remove("page");
-
-    // רנדר מחדש את כל התיקים
-    renderCases(CURRENT_ROWS);
-  });
-  // -----------------------
-  // CLIENT-SIDE FILTERS (search + status)
-  // -----------------------
   function applyCaseFilters() {
     const search = document
       .getElementById("case-search")
@@ -165,25 +91,36 @@ function caseToSuperString(c) {
     renderCases(filtered);
   }
 
-  document
-    .getElementById("case-search")
-    .addEventListener("input", () => {
-      const v = document.getElementById("case-search").value.trim();
-      casesStore.set("search", v);
-      applyCaseFilters();
-    });
+  document.getElementById("case-search").addEventListener("input", () => {
+    const v = document.getElementById("case-search").value.trim();
+    casesStore.set("search", v);
+    applyCaseFilters();
+  });
 
-  document
-    .getElementById("case-status")
-    .addEventListener("change", () => {
-      const v = document.getElementById("case-status").value;
-      casesStore.set("status", v);
-      applyCaseFilters();
-    });
+  document.getElementById("case-status").addEventListener("change", () => {
+    const v = document.getElementById("case-status").value;
+    casesStore.set("status", v);
+    applyCaseFilters();
+  });
 
-  // -----------------------
-  // RENDER TABLE
-  // -----------------------
+  document.getElementById("clear-filters").addEventListener("click", () => {
+    // איפוס שדה חיפוש
+    const searchInput = document.getElementById("case-search");
+    searchInput.value = "";
+
+    // איפוס סטטוס
+    const statusSelect = document.getElementById("case-status");
+    statusSelect.value = "";
+
+    // מחיקה מה־storage
+    casesStore.remove("search");
+    casesStore.remove("status");
+    casesStore.remove("page");
+
+    // רנדר מחדש את כל התיקים
+    renderCases(CURRENT_ROWS);
+  });
+
   function renderCases(list) {
     const savedPage = casesStore.get("page");
 
@@ -223,16 +160,16 @@ function caseToSuperString(c) {
 
         return `
           <tr onclick="storeCaseAndOpen('${c.serial}')">
-            <td class="col-wide">${safeValue(c.title)}</td>
+            <td class="col-wide">${window.utils.safeValue(c.title)}</td>
             <td>${c.serial}</td>
-            <td>${safeValue(c.field ?? c.category)}</td>
+            <td>${window.utils.safeValue(c.field ?? c.category)}</td>
             <td>${statusDot}</td>
-            <td>${safeValue(client.first_name)}</td>
-            <td>${safeValue(client.last_name)}</td>
-            <td>${safeValue(client.id_card_number)}</td>
-            <td>${safeValue(client.phone)}</td>
-            <td>${safeValue(user.first_name ?? user.username)}</td>
-            <td>${safeValue(createdDate)}</td>
+            <td>${window.utils.safeValue(client.first_name)}</td>
+            <td>${window.utils.safeValue(client.last_name)}</td>
+            <td>${window.utils.safeValue(client.id_card_number)}</td>
+            <td>${window.utils.safeValue(client.phone)}</td>
+            <td>${window.utils.safeValue(user.first_name ?? user.username)}</td>
+            <td>${window.utils.safeValue(createdDate)}</td>
             <td>${Array.isArray(c.files) ? c.files.length : "0"}</td>
           </tr>
         `;
@@ -258,25 +195,58 @@ function caseToSuperString(c) {
     });
   }
 
-  // -----------------------
-  // INITIAL LOAD
-  // -----------------------
   loadCases();
-})();
+};
 
-// -----------------------
-// HELPERS
-// -----------------------
 function storeCaseAndOpen(serial) {
   const navStore = window.Core.storage.create("navigation");
   navStore.set("lastViewedCase", { serial, timestamp: Date.now() });
-  loadContent("view_case", true, "user");
+  window.UserLoader.navigate({ page: "view_case", force: true });
 }
 
+function caseToSuperString(c) {
+  let parts = [];
 
-// -----------------------
-// BUILD STATUS DROPDOWN (Dynamic like files)
-// -----------------------
+  // שדות אסורים
+  const BLOCKED_KEYS = new Set([
+    "password",
+    "password_hash",
+    "password_hashes",
+    "passwordHash",
+    "passwordHashes",
+    "secret",
+    "token"
+  ]);
+
+  function walk(key, value) {
+    if (value == null) return;
+    if (key && BLOCKED_KEYS.has(key)) return;
+
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      parts.push(String(value));
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach(v => walk(null, v));
+      return;
+    }
+
+    if (typeof value === "object") {
+      Object.entries(value).forEach(([k, v]) => {
+        if (!BLOCKED_KEYS.has(k)) walk(k, v);
+      });
+    }
+  }
+
+  walk(null, c);
+  return parts.join("\n").toLowerCase();
+}
+
 function buildStatusDropdown(rows) {
   const select = document.getElementById("case-status");
   if (!select) return;

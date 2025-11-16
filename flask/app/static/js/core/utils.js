@@ -1,4 +1,4 @@
-/* utils.js (IIFE, browser globals) */
+/* window.utils.js (IIFE, browser globals) */
 (function () {
   'use strict';
 
@@ -11,6 +11,12 @@
   utils.setText = (elOrSelector, text) => {
     const el = typeof elOrSelector === 'string' ? utils.qs(elOrSelector) : elOrSelector;
     if (el) el.textContent = text != null ? String(text) : '';
+  };
+
+  // DOM Ready helper
+  utils.waitForDom = async () => {
+    if (document.readyState === 'complete' || document.readyState === 'interactive') return;
+    await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }));
   };
 
   // Event delegation

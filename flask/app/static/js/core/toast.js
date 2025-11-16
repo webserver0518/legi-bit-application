@@ -18,7 +18,7 @@
     return wrap;
   }
 
-  function showToast(message, type = 'info', opts = {}) {
+  function Toast(message, type = 'info', opts = {}) {
     const sticky = !!opts.sticky;
     const timeout = typeof opts.timeout === 'number' ? opts.timeout : 3500;
 
@@ -68,7 +68,5 @@
     }
   }
 
-  window.Toast = { showToast };
-  // Convenience alias used across codebase
-  window.showToast = showToast;
+  window.Toast = Toast;
 })();
