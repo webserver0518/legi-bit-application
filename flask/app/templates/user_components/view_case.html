@@ -59,8 +59,16 @@
             <div class="filter-bar">
                 <input id="file-search" class="filter-input" type="text" placeholder="חיפוש...">
 
-                <select id="file-type" class="filter-select">
-                    <option value="">סוג</option>
+                <select id="file-tech-type" class="filter-select">
+                    <option value="">כל סוגי הקובץ (טכני)</option>
+                </select>
+
+                <select id="file-content-type" class="filter-select">
+                    <option value="">כל סוגי התוכן</option>
+                </select>
+
+                <select id="file-client" class="filter-select">
+                    <option value="">כל הלקוחות</option>
                 </select>
 
                 <button id="clear-file-filters" class="filter-btn" type="button">נקה</button>
@@ -71,6 +79,10 @@
                 <thead class="table-primary">
                     <tr>
                         <th class="col-wide">שם</th>
+                        <th>תיאור</th>
+                        <th>סוג טכני</th>
+                        <th>סוג תוכן</th>
+                        <th>שיוך ללקוח</th>
                         <th>תאריך העלאה</th>
                         <th>פעולות</th>
                     </tr>
