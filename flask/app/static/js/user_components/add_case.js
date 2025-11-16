@@ -209,7 +209,7 @@ function initCaseFormPreview() {
     // ✅ Require at least one main client before submission
     const hasMain = (window.clientsList || []).some(c => c.role === "main");
     if (!hasMain) {
-      window.Toast("יש להוסיף לפחות לקוח ראשי אחד לפני פתיחת תיק", "danger");
+      window.toast.danger("יש להוסיף לפחות לקוח ראשי אחד לפני פתיחת תיק");
       submitBtn.disabled = false;
       submitBtn.textContent = "פתח תיק";
       return;
@@ -220,7 +220,7 @@ function initCaseFormPreview() {
 
 
     if (!fd.get('title')) {
-      window.Toast("יש למלא כותרת לתיק", "danger");
+      window.toast.danger("יש למלא כותרת לתיק");
       submitBtn.disabled = false;
       submitBtn.textContent = "פתח תיק";
       return;
@@ -244,10 +244,10 @@ function initCaseFormPreview() {
       const parsed = await window.API.postJson("/create_new_case", form_data);
 
       if (!parsed.success || !parsed.data) {
-        window.Toast(`❌ Failed to create case: ${parsed.error}`, "danger");
+        window.toast.danger(`❌ Failed to create case: ${parsed.error}`);
         return;
       }
-      window.Toast("✅ Case created successfully", "success");
+      window.toast.success("Case created successfully");
 
       // open files section
       document.querySelector("[data-target='#collapseFiles']")?.click();
@@ -270,7 +270,7 @@ function initCaseFormPreview() {
       }
 
       if (!window.filesList || window.filesList.length === 0) {
-        window.Toast("לא נבחרו קבצים, התיק ייווצר ללא מסמכים", "warning");
+        window.toast.warning("לא נבחרו קבצים, התיק ייווצר ללא מסמכים");
         const nav = window.Core.storage.create("navigation");
         nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
         window.UserLoader.navigate({ page: "view_case", force: true });
@@ -298,7 +298,7 @@ function initCaseFormPreview() {
         throw new Error(parsedUpdate.error || "שגיאה בשמירת הקבצים");
       }
 
-      window.Toast("✅ Case Files Uploaded", "success");
+      window.toast.success("✅ Case Files Uploaded");
 
       const nav = window.Core.storage.create("navigation");
       nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
@@ -306,7 +306,7 @@ function initCaseFormPreview() {
 
     } catch (error) {
       console.error(error);
-      window.Toast("Error contacting server", "warning");
+      window.toast.warning("Error contacting server");
 
     } finally {
       if (submitBtn) {
@@ -390,7 +390,7 @@ function initClientsManager() {
       // 🧠 שליחה לשרת כדי לשמור לקוח חדש
       const apiRes = await window.API.postJson("/create_new_client", client);
       if (!apiRes.success) {
-        window.Toast("❌ שגיאה בהוספת לקוח לשרת", "danger");
+        window.toast.danger("❌ שגיאה בהוספת לקוח לשרת");
         return;
       }
 
@@ -399,10 +399,10 @@ function initClientsManager() {
       clientsList.push(client);
       renderClientsTable();
       clearClientFields();
-      window.Toast(`לקוח חדש נוצר ונוסף לתיק (מס' ${client_serial})`, "success");
+      window.oast(`לקוח חדש נוצר ונוסף לתיק (מס' ${client_serial})`, "success");
     } catch (err) {
       console.error("שגיאה בשליחת לקוח:", err);
-      window.Toast("בעיה בחיבור לשרת", "warning");
+      window.toast.warning("בעיה בחיבור לשרת");
     }
 
   });
@@ -539,7 +539,7 @@ async function initClientAutocomplete() {
     // בדוק אם כבר בטבלה
     const alreadyExists = (window.clientsList || []).some(c => c.serial == selected.serial);
     if (alreadyExists) {
-      window.Toast("הלקוח כבר נוסף לרשימה", "warning");
+      window.toast.warning("הלקוח כבר נוסף לרשימה");
       suggestions.style.display = "none";
       input.value = "";
       return;
@@ -559,7 +559,7 @@ async function initClientAutocomplete() {
       renderClientsTable();
     }
 
-    window.Toast(`לקוח קיים נוסף לתיק: ${selected.first_name} ${selected.last_name}`, "success");
+    window.toast.success(`לקוח קיים נוסף לתיק: ${selected.first_name} ${selected.last_name}`);
     input.value = "";
     suggestions.style.display = "none";
   });
@@ -662,7 +662,6 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
       const formData = new FormData();
       Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
       formData.append("file", file);
-      //window.Toast(`⬆️ מעלה את "${file.name}" לשרת...`, "success");
 
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -681,11 +680,10 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
             progressBar.classList.remove("bg-info");
             progressBar.classList.add("bg-success");
             fileEntry.status = "done";
-            //window.Toast(`✅ הקובץ "${file.name}" הועלה בהצלחה!`, "success");
             resolve();
           } else {
             reject(new Error(`Upload failed with status ${xhr.status}`));
-            window.Toast(`❌ העלאת "${file.name}" נכשלה`, "danger");
+            window.toast.danger(`❌ העלאת "${file.name}" נכשלה`);
           }
         };
 
