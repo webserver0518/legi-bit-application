@@ -2,6 +2,8 @@
 (function () {
   'use strict';
 
+  const toast = {};
+
   function ensureContainer() {
     let wrap = document.querySelector('.toast-wrapper');
     if (!wrap) {
@@ -68,5 +70,11 @@
     }
   }
 
-  window.Toast = Toast;
+  ['info', 'success', 'warning', 'danger', 'primary', 'secondary', 'light', 'dark'].forEach(type => {
+    toast[type] = function (message, opts = {}) {
+      Toast(message, type, opts);
+    };
+  });
+
+  window.Toast = toast;
 })();
