@@ -3,7 +3,7 @@ import json, sys
 
 pw = sys.argv[1] if len(sys.argv) > 1 else input("Password: ")
 doc = {
-    "password_hash": generate_password_hash(pw),
+    "password_hash": generate_password_hash(pw, method="scrypt"),
     "created_at": __import__("datetime").datetime.utcnow().isoformat() + "Z"
 }
 print(json.dumps(doc, indent=2))
