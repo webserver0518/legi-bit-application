@@ -1,6 +1,7 @@
 # app/config.py
 import os
 from redis import Redis
+from datetime import timedelta
 
 class Config:
     # Core
@@ -8,7 +9,8 @@ class Config:
 
     # Redis
     SESSION_TYPE = os.getenv("SESSION_TYPE", "redis")
-    SESSION_PERMANENT = False
+    SESSION_PERMANENT = True
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=1)
     REDIS_HOST = os.getenv("REDIS_HOST", "redis")
     REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
     REDIS_DB = int(os.getenv("REDIS_DB", "0"))
