@@ -96,6 +96,12 @@
 
     </div>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    <script>
+        window.__flash_messages = {{ messages | tojson }};
+    </script>
+    {% endwith %}
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/he.js"></script>
@@ -119,6 +125,7 @@
     <script src="/static/js/core/nav.js" defer></script>
     <script src="/static/js/core/toast.js" defer></script>
     <script src="/static/js/core/loader.user.js" defer></script>
+    <script src="/static/js/core/session_monitor.js" defer></script>
 
     <!-- user dashboard -->
     <script src="/static/js/base_user_dashboard.js" defer></script>
