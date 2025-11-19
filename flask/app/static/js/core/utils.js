@@ -33,10 +33,34 @@
 
   // Safe string helpers
   utils.safeValue = (v) => {
+    console.log('utils.safeValue input:', v);
     if (v == null) return '-';
+
+    const enToHe = {
+      "invoice": "חשבונית",
+      "case": "תיק",
+      "client": "לקוח",
+      "file": "קובץ",
+      "document": "מסמך",
+      "active": "פעיל",
+      "inactive": "לא פעיל",
+      "open": "פתוח",
+      "closed": "סגור",
+      "prosecutor": "תובע",
+      "defendant": "נתבע",
+      "main": "ראשי",
+      "secondary": "משני",
+    };
+
+
     if (typeof v === 'string') {
       const t = v.trim();
-      return t === '' ? '-' : t;
+      if (t === '') return '-';
+
+      const key = t.toLowerCase();
+      console.log(enToHe[key]);
+      if (enToHe[key]) return enToHe[key];
+      else return t;
     }
     return String(v);
   };
