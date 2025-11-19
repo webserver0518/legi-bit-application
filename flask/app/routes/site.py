@@ -1,4 +1,5 @@
 # app/routes/site.py
+from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, session, flash, request, Response, current_app
 from werkzeug.security import check_password_hash
 import uuid
@@ -21,6 +22,8 @@ def healthz():
     current_app.logger.error("Database connection failed")
     current_app.logger.critical("CRITICAL ERROR! SYSTEM DOWN!")
     """
+    if AuthorizationManager.is_logged_out():
+        return "expired", 401
     return "ok", 200
 
 # ---------------- HELPERS ---------------- #
@@ -94,7 +97,18 @@ def login():
 
             AuthorizationManager.set_login_context(ctx=login_context)
 
-            return redirect(url_for('site.dashboard'))
+            expires_at = datetime.utcnow() + current_app.permanent_session_lifetime
+            response = redirect(url_for('site.dashboard'))
+            response.set_cookie(
+                'session_expires',
+                str(int(expires_at.timestamp())),
+                max_age=int(current_app.permanent_session_lifetime.total_seconds()),
+                httponly=False,   # חייב להיות False שה־JS יוכל לקרוא
+                samesite='Lax',
+                path='/'
+            )
+
+            return response
 
 
         # GET fallback → redirect home
@@ -108,8 +122,8 @@ def login():
 @site_bp.route('/logout')
 @AuthorizationManager.login_required
 def logout():
-    AuthorizationManager.delete_login_context()
-    flash("Logged Out", "info")
+    AuthorizationManager.logout()
+    flash("Logged Out", "success")
     return redirect(url_for('site.home'))
 
 @site_bp.route('/dashboard')
