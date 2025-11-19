@@ -70,6 +70,7 @@ window.init_view_case = async function () {
                             <tr>
                                 <td>${window.utils.safeValue(c.first_name)}</td>
                                 <td>${window.utils.safeValue(c.last_name)}</td>
+                                <td>${window.utils.safeValue(c.legal_role)}</td>
                                 <td>${window.utils.safeValue(c.id_card_number)}</td>
                                 <td>${window.utils.safeValue(c.phone)}</td>
                                 <td>${window.utils.safeValue(c.email)}</td>
