@@ -115,6 +115,10 @@ class AuthorizationManager:
     @classmethod
     def get(cls):
         return dict(session)
+    
+    @classmethod
+    def logout(cls):
+        session.clear()
 
     @classmethod
     def login_required(cls, func):
