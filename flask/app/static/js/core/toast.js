@@ -4,20 +4,19 @@
 
   const toast = {};
 
-  function ensureContainer() {
-    let wrap = document.querySelector('.toast-wrapper');
-    if (!wrap) {
-      wrap = document.createElement('div');
-      wrap.className = 'toast-wrapper position-fixed start-50 translate-middle-x p-3 mb-4';
-      wrap.style.zIndex = '9999';
-      wrap.style.bottom = '0';
-      wrap.style.display = 'flex';
-      wrap.style.flexDirection = 'column';
-      wrap.style.alignItems = 'center';
-      wrap.style.gap = '10px';
-      document.body.appendChild(wrap);
+  function appendToast(el, type) {
+    const isSticky = type === 'warning' || type === 'danger';
+
+    const target = isSticky
+      ? document.querySelector('#toasts .toast-sticky')
+      : document.querySelector('#toasts .toast-normal');
+
+    if (!target) {
+      console.error("❌ Toast container missing! Check #toasts setup.");
+      return;
     }
-    return wrap;
+
+    target.appendChild(el);
   }
 
   function Toast(message, type = 'info', opts = {}) {
@@ -49,7 +48,7 @@
     }
 
     el.appendChild(inner);
-    ensureContainer().appendChild(el);
+    appendToast(el, type);
 
     // Bootstrap Toast support if available
     if (window.bootstrap?.Toast) {
@@ -78,3 +77,17 @@
 
   window.Toast = toast;
 })();
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.__flash_messages) {
+    window.__flash_messages.forEach(([type, message]) => {
+      if (window.Toast?.[type]) {
+        window.Toast[type](message);
+      } else {
+        window.Toast.info(message);  // fallback
+      }
+    });
+  }
+});
