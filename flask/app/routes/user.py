@@ -679,6 +679,7 @@ def create_new_client():
         "postal_code": data.get("postal_code"),
         "birth_date": data.get("birth_date"),
         "role": data.get("role", "secondary"),
+        "legal_role": data.get("legal_role", "prosecutor"),
         "status": "active",
     }
 
