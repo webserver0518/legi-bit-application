@@ -235,7 +235,8 @@ function initCaseFormPreview() {
       against_type: document.getElementById('against-type')?.value || '',
       clients: (window.clientsList || []).map(c => ({
         client_serial: c.serial,
-        role: c.role
+        role: c.role,
+        legal_role: c.legal_role
       }))
     };
 
@@ -362,6 +363,7 @@ async function initFieldAutocomplete() {
 function initClientsManager() {
   const addBtn = document.getElementById("add-client-btn");
   const roleSelect = document.getElementById("client_role");
+  const legalRoleSelect = document.getElementById("client_legal_role");
   const tableBody = document.querySelector("#clients-table tbody");
   const form = document.getElementById("addCaseForm");
 
@@ -384,7 +386,8 @@ function initClientsManager() {
       postal_code: fd.get("client_postal_code"),
       email: fd.get("client_email"),
       birth_date: fd.get("client_birth_date"),
-      role: roleSelect?.value || "secondary",
+      role: roleSelect.value,
+      legal_role: legalRoleSelect.value
     };
 
     // ✅ Require minimal client details before adding
@@ -549,9 +552,11 @@ async function initClientAutocomplete() {
 
     // הוסף לקוח לרשימה
     const roleSelect = document.getElementById("client_role");
+    const legalRoleSelect = document.getElementById("client_legal_role");
     window.clientsList.push({
       ...selected,
-      role: roleSelect?.value || "secondary",
+      role: roleSelect.value,
+      legal_role: legalRoleSelect.value,
     });
 
     // רענן את הטבלה
@@ -778,23 +783,24 @@ function renderClientsTable() {
   }
 
   // אם יש לקוחות — נציג את הטבלה
-  table.style.display = "table"; // או table.classList.remove('d-none');
+  table.style.display = "table";
   tableBody.innerHTML = window.clientsList.map((c, i) => `
       <tr>
-        <td>${c.first_name}</td>
-        <td>${c.last_name}</td>
-        <td>${c.id_card_number || "-"}</td>
-        <td>${c.phone || "-"}</td>
-        <td>${c.city || "-"}</td>
-        <td>${c.street || "-"}</td>
-        <td>${c.home_number || "-"}</td>
-        <td>${c.postal_code || "-"}</td>
-        <td>${c.email || "-"}</td>
-        <td>${c.birth_date || "-"}</td>
-        <td>${c.role === "main" ? "ראשי" : "משני"}</td>
+        <td>${window.utils.safeValue(c.first_name)}</td>
+        <td>${window.utils.safeValue(c.last_name)}</td>
+        <td>${window.utils.safeValue(c.id_card_number)}</td>
+        <td>${window.utils.safeValue(c.phone)}</td>
+        <td>${window.utils.safeValue(c.city)}</td>
+        <td>${window.utils.safeValue(c.street)}</td >
+        <td>${window.utils.safeValue(c.home_number)}</td>
+        <td>${window.utils.safeValue(c.postal_code)}</td>
+        <td>${window.utils.safeValue(c.email)}</td>
+        <td>${window.utils.safeValue(c.birth_date)}</td>
+        <td>${window.utils.safeValue(c.role)}</td>
+        <td>${window.utils.safeValue(c.legal_role)}</td>
         <td><button class="btn btn-sm btn-outline-danger" onclick="removeClient(${i})">✖</button></td>
-      </tr>
-    `).join("");
+      </tr >
+  `).join("");
 
   document.getElementById("clients-json-input").value = JSON.stringify(window.clientsList);
 
