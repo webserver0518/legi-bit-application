@@ -2,7 +2,7 @@
 
 .login-wrapper {
   background: linear-gradient(to left, var(--c2), var(--c1));
-  min-height: 100vh;
+  min-height: calc(100vh - 3rem);
   display: flex;
   align-items: center;
   justify-content: center;
