@@ -96,6 +96,8 @@ window.init_view_case = async function () {
       window.__allFiles = files;
       window.buildFileTypesDropdown(files);
       window.loadFiles();
+
+      window.initViewCaseUploader(caseObj.serial);
     })
     .finally(() => {
       if (Array.isArray(window.__allFiles) && window.__allFiles.length > 0) {
@@ -400,3 +402,341 @@ function loadFiles() {
   window.filesTableInstance = tableApi.dt;
 
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+window.vcFilesList = [];
+
+window.initViewCaseUploader = function initViewCaseUploader(caseSerial) {
+  const dropArea = document.getElementById("vc-drop-area");
+  const pickInput = document.getElementById("vc-fileElem");
+  const tbody = document.querySelector("#vc-newFilesTable tbody");
+  const uploadBtn = document.getElementById("vc-upload-btn");
+
+  if (!dropArea || !pickInput || !tbody || !uploadBtn) return;
+
+  // למנוע כפילות חיבורים אם הדף נטען מחדש/נרנדר שוב
+  if (dropArea.dataset.ready === "1") return;
+  dropArea.dataset.ready = "1";
+
+  // reset list if needed
+  window.vcFilesList = [];
+
+  // ---- Drag&Drop wiring (כמו add_case) ----
+  const stop = e => { e.preventDefault(); e.stopPropagation(); };
+  ["dragenter", "dragover", "dragleave", "drop"].forEach(ev =>
+    dropArea.addEventListener(ev, stop, false)
+  );
+  dropArea.addEventListener("click", () => pickInput.click());
+  dropArea.addEventListener("dragover", () => dropArea.classList.add("highlight"));
+  dropArea.addEventListener("dragleave", () => dropArea.classList.remove("highlight"));
+  dropArea.addEventListener("drop", (e) => {
+    dropArea.classList.remove("highlight");
+    if (e.dataTransfer?.files?.length) vcAddFiles(e.dataTransfer.files);
+  });
+  pickInput.addEventListener("change", () => {
+    if (pickInput.files?.length) vcAddFiles(pickInput.files);
+    pickInput.value = ""; // לאפשר בחירה חוזרת
+  });
+
+  function vcAddFiles(list) { [...list].forEach(f => vcAddRow(f)); ensurePlaceholder(); }
+
+  function ensurePlaceholder() {
+    if (window.vcFilesList.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="100%" class="text-muted py-3">לא נבחרו קבצים.</td></tr>`;
+    } else {
+      // אם יש לפחות שורה אחת אמיתית – ודא שאין placeholder
+      const alone = tbody.querySelectorAll("tr").length === 1 &&
+        tbody.querySelector("td[colspan]") != null;
+      if (alone) tbody.innerHTML = "";
+    }
+  }
+
+  async function vcAddRow(file) {
+    // אם זו השורה הראשונה – ננקה placeholder
+    ensurePlaceholder();
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="text-start">${window.utils.safeValue(file.name)}</td>
+      <td>
+        <select class="form-select form-select-sm vc-content-type">
+          <option>טוען...</option>
+        </select>
+      </td>
+      <td>
+        <input type="text" class="form-control form-control-sm vc-description" placeholder="תיאור הקובץ">
+      </td>
+      <td>
+        <select class="form-select form-select-sm vc-client">
+          <option value="">לא משויך</option>
+        </select>
+      </td>
+      <td>
+        <div class="progress" style="height:6px;">
+          <div class="progress-bar" role="progressbar" style="width:0%;"></div>
+        </div>
+      </td>
+      <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger vc-remove">✖</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    // מבנה רשומה פנימית (תואם add_case.js)
+    const entry = {
+      file,
+      technical_type: file.type || "application/octet-stream",
+      content_type: null,
+      description: "",
+      client_serial: "",
+      status: "pending",
+      key: null,
+      serial: null,
+      row: tr
+    };
+    window.vcFilesList.push(entry);
+
+    // מילוי סוגי תוכן (כמו add_case)
+    try {
+      const res = await window.API.getJson("/get_document_types");
+      const types = Array.isArray(res?.data) ? res.data : [];
+      const select = tr.querySelector(".vc-content-type");
+      select.innerHTML = "";
+      types.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.value;
+        opt.textContent = t.label;
+        select.appendChild(opt);
+      });
+      select.addEventListener("change", () => { entry.content_type = select.value; });
+      // ברירת מחדל: הראשון ברשימה (אם קיים)
+      if (types[0]?.value) entry.content_type = types[0].value;
+      select.value = entry.content_type || "";
+    } catch (err) {
+      console.error("Failed to load document types", err);
+    }
+
+    // מילוי שיוך ללקוח מתוך __caseClients שנשלפו ב-init_view_case
+    const clientSel = tr.querySelector(".vc-client");
+    clientSel.innerHTML = `<option value="">לא משויך</option>` +
+      (Array.isArray(window.__caseClients) ? window.__caseClients.map(c => {
+        const label = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.id_card_number || c.serial;
+        return `<option value="${c.serial}">${window.utils.safeValue(label)}</option>`;
+      }).join("") : "");
+    clientSel.addEventListener("change", () => { entry.client_serial = clientSel.value; });
+
+    // שמירת תיאור
+    const desc = tr.querySelector(".vc-description");
+    desc.addEventListener("input", () => { entry.description = desc.value.trim(); });
+
+    // מחיקת שורה מהתור
+    tr.querySelector(".vc-remove").addEventListener("click", () => {
+      tr.remove();
+      window.vcFilesList = window.vcFilesList.filter(x => x !== entry);
+      ensurePlaceholder();
+    });
+  }
+
+  uploadBtn.addEventListener("click", async () => {
+    if (!window.vcFilesList.length) {
+      window.Toast.warning("לא נבחרו קבצים");
+      return;
+    }
+
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = "מעלה...";
+
+    try {
+      // נשלוף office_serial פעם אחת לפני הסבב
+      const officeRes = await window.API.getJson("/get_office_serial");
+      if (!officeRes?.success || !officeRes.data?.office_serial) {
+        throw new Error("Office serial not found");
+      }
+      const office_serial = officeRes.data.office_serial;
+
+      // העלאה בפועל (מבוסס על uploadAllFilesToS3 ב-add_case.js)
+      const { success, uploaded, failed } =
+        await uploadAllFilesToS3_VC(window.vcFilesList, office_serial, caseSerial);
+
+      // עדכון התיק עם יוניון קבצים (A: בצד לקוח)
+      if (uploaded.length > 0) {
+        const existingSerials = (window.__allFiles || []).map(f => f.serial);
+        const newSerials = uploaded.map(u => u.serial);
+        const union = Array.from(new Set([...existingSerials, ...newSerials]));
+
+        const upd = await window.API.apiRequest(`/update_case?serial=${Number(caseSerial)}`, {
+          method: "PATCH",
+          body: { files_serials: union }
+        });
+        if (!upd?.success) {
+          window.Toast.danger(upd?.error || "שגיאה בשמירת הקבצים לתיק");
+        } else {
+          window.Toast.success("הקבצים נשמרו בתיק");
+        }
+      }
+
+      // רענון טבלת הקבצים הקיימת בדף (ללא ריענון מלא של כל הדף)
+      await vcRefreshExistingFiles(caseSerial);
+
+      // ניקוי התור
+      window.vcFilesList = [];
+      ensurePlaceholder();
+
+      // סיכום
+      if (failed.length > 0) {
+        window.Toast.danger(`חלק מהקבצים נכשלו (${failed.length}).`);
+      } else {
+        window.Toast.success("העלאה הושלמה בהצלחה");
+      }
+
+    } catch (err) {
+      console.error(err);
+      window.Toast.danger("שגיאה בהעלאה");
+    } finally {
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "העלה קבצים";
+    }
+  });
+};
+
+// העלאה בפועל — שכפול לוגיקה מ-add_case.js עם התאמות לדף צפייה
+async function uploadAllFilesToS3_VC(files, office_serial, case_serial) {
+  const toUpload = (files || []).filter(f => f.status === "pending" || f.status === "failed");
+  const uploaded = [];
+  const failed = [];
+  const timestamp = window.utils.buildLocalTimestamp
+    ? window.utils.buildLocalTimestamp()
+    : new Date().toISOString();
+
+  for (const entry of toUpload) {
+    const { file, row, technical_type, content_type, description, client_serial } = entry;
+    const bar = row.querySelector(".progress-bar");
+
+    try {
+      // 1) צור רשומת קובץ
+      bar.style.width = "10%";
+      bar.classList.remove("bg-success", "bg-danger");
+      bar.classList.add("bg-info");
+
+      const created = await window.API.postJson("/create_new_file", {
+        created_at: timestamp,
+        case_serial,
+        client_serial,
+        name: file.name,
+        technical_type,
+        content_type,
+        description
+      });
+      if (!created?.success || !created.data) throw new Error(created?.error || "create_new_file failed");
+      const file_serial = created.data;
+      entry.serial = file_serial;
+
+      // 2) בנה key
+      const key = `uploads/${office_serial}/${case_serial}/${file_serial}-${file.name}`;
+      entry.key = key;
+
+      // 3) Presign POST
+      const pres = await window.API.postJson("/presign/post", {
+        file_name: file.name,
+        file_type: technical_type || file.type || "application/octet-stream",
+        file_size: file.size,
+        key
+      });
+      const { url, fields } = pres?.data?.presigned || {};
+      if (!pres?.success || !url) throw new Error(pres?.error || "presign failed");
+
+      // 4) העלאה אמיתית ל-S3
+      entry.status = "uploading";
+      await new Promise((resolve, reject) => {
+        const formData = new FormData();
+        Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
+        formData.append("file", file);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+
+        xhr.upload.onprogress = (evt) => {
+          if (evt.lengthComputable) {
+            const pct = Math.round((evt.loaded / evt.total) * 100);
+            bar.style.width = `${pct}%`;
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status === 204) {
+            bar.style.width = "100%";
+            bar.classList.remove("bg-info");
+            bar.classList.add("bg-success");
+            entry.status = "done";
+            resolve();
+          } else {
+            reject(new Error(`Upload failed ${xhr.status}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.send(formData);
+      });
+
+      // 5) עדכן סטטוס הרשומה ל-available
+      await window.API.apiRequest(`/update_file?serial=${Number(entry.serial)}`, {
+        method: "PATCH",
+        body: { status: "available" }
+      });
+
+      uploaded.push({ name: file.name, key, serial: entry.serial });
+
+    } catch (err) {
+      console.error("Upload failed:", file?.name, err);
+      bar.classList.remove("bg-info");
+      bar.classList.add("bg-danger");
+      bar.style.width = "100%";
+      entry.status = "failed";
+
+      // ניקוי רשומה שבורה אם נוצר serial
+      if (entry.serial) {
+        try {
+          await window.API.apiRequest(`/delete_file?serial=${Number(entry.serial)}`, { method: "DELETE" });
+          entry.serial = null;
+        } catch (cleanupErr) {
+          console.error("Failed to cleanup failed record:", cleanupErr);
+        }
+      }
+      failed.push({ name: file?.name, serial: entry.serial, key: entry.key });
+    }
+  }
+
+  return { success: failed.length === 0, uploaded, failed };
+}
+
+// טען מחדש רק את רשימת הקבצים + פילטרים (בלי להוסיף מאזינים כפולים)
+async function vcRefreshExistingFiles(caseSerial) {
+  try {
+    const payload = await window.API.getJson(`/get_case?serial=${encodeURIComponent(caseSerial)}&expand=true`);
+    if (!payload?.success || !payload?.data?.length) return;
+    const item = payload.data[0] ?? {};
+    const caseObj = item.cases;
+    const files = caseObj.files || [];
+
+    window.__allFiles = files;
+    window.buildFileTypesDropdown(files);
+    window.loadFiles();
+  } catch (err) {
+    console.error("vcRefreshExistingFiles failed:", err);
+  }
+}
