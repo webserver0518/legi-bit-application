@@ -9,6 +9,7 @@ window.init_add_case = function () {
   initRequiredIndicators();    // ✅ Required fields indicators
   initHebrewBirthDatePicker(); // ✅ Birth date input display handling
   initClientAutocomplete();
+  initResponsibleAutocomplete();
 };
 
 window.caseClientsManager = {
@@ -37,6 +38,8 @@ window.caseClientsManager = {
   }
 
 };
+
+window.caseResponsible = null;
 
 function refreshClientSelectOptions() {
   document.querySelectorAll(".file-client_serial").forEach(select => {
@@ -268,8 +271,88 @@ function renderClientsTable() {
 
 
 
+// ✅ אחראי על התיק - autocomplete
+async function initResponsibleAutocomplete() {
+  const input = document.getElementById("responsible-input");
+  const suggestions = document.getElementById("responsible-suggestions");
+  if (!input || !suggestions) return;
 
+  // נאפס את האחראי הגלובלי
+  window.caseResponsible = null;
 
+  let officeUsers = [];
+  try {
+    const res = await window.API.getJson("/get_office_users");
+    if (res.success && Array.isArray(res.data)) {
+      console.log(res.data)
+      officeUsers = res.data;
+    }
+  } catch (err) {
+    console.error("❌ שגיאה בשליפת משתמשי משרד:", err);
+  }
+
+  function renderResponsibleSuggestions(filter = "") {
+    const value = filter.trim();
+
+    const matches = value
+      ? officeUsers.filter(u =>
+        (u.username).includes(value)
+      )
+      : officeUsers;
+
+    if (matches.length === 0) {
+      suggestions.style.display = "none";
+      suggestions.innerHTML = "";
+      return;
+    }
+
+    suggestions.innerHTML = matches
+      .map(u => `
+        <li class="list-group-item list-group-item-action" data-serial="${u.serial}">
+          ${u.username}
+        </li>
+      `)
+      .join("");
+
+    suggestions.style.display = "block";
+  }
+
+  // typing
+  input.addEventListener("input", () => {
+    if (!input.value.trim()) {
+      renderResponsibleSuggestions("");
+    } else {
+      renderResponsibleSuggestions(input.value);
+    }
+  });
+
+  // focusing
+  input.addEventListener("focus", () => {
+    renderResponsibleSuggestions(input.value || "");
+  });
+
+  // בחירת אחראי קיים
+  suggestions.addEventListener("click", (e) => {
+    const li = e.target.closest("li");
+    if (!li) return;
+    const serial = li.dataset.serial;
+    const selected = officeUsers.find(u => u.serial == serial);
+    if (!selected) return;
+
+    window.caseResponsible = selected;
+    input.value = `${selected.username}`;
+
+    window.Toast.success(`נבחר אחראי: ${selected.username}`);
+
+    suggestions.style.display = "none";
+  });
+
+  // סגור הצעות בלחיצה בחוץ
+  document.addEventListener("click", (e) => {
+    if (!suggestions.contains(e.target) && e.target !== input)
+      suggestions.style.display = "none";
+  });
+}
 
 function initFileUploader() {
   const dropArea = document.getElementById('drop-area');
@@ -488,6 +571,7 @@ function initCaseFormPreview() {
     const form_data = {
       created_at: timestamp,
       title: fd.get('title'),
+      responsible_serial: window.caseResponsible ? window.caseResponsible.serial : null,
       field: fd.get('field'),
       facts: fd.get('facts'),
       against: fd.get('against'),
