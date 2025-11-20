@@ -62,6 +62,44 @@
                 <i class="bi bi-paperclip me-1"></i> קבצים
             </h5>
 
+            <!-- 🟦 Upload new files to this case -->
+            <div class="case-section mb-4" id="vc-upload-panel">
+                <h6 class="section-title mb-2">
+                    <i class="bi bi-cloud-upload me-1"></i> העלאת קבצים לתיק
+                </h6>
+
+                <!-- Drag & Drop area (same look & feel as add_case) -->
+                <div id="vc-drop-area" class="drop-area" tabindex="0" role="button" aria-label="גרירת קבצים או בחירה">
+                    גרור קבצים לכאן או לחץ לבחירה
+                    <input type="file" id="vc-fileElem" hidden multiple>
+                </div>
+
+                <!-- Pending files table -->
+                <table id="vc-newFilesTable" class="table table-striped table-sm mt-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 30%;">שם קובץ</th>
+                            <th style="width: 10%;">סוג תוכן</th>
+                            <th style="width: 35%;">תיאור</th>
+                            <th style="width: 15%;">שיוך ללקוח</th>
+                            <th style="width: 10%;">התקדמות</th>
+                            <th style="width: 5%;">פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="100%" class="text-muted py-3">לא נבחרו קבצים.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="text-end">
+                    <button id="vc-upload-btn" type="button" class="btn btn-primary">
+                        העלה קבצים
+                    </button>
+                </div>
+            </div>
+
             <div class="filter-bar">
                 <input id="file-search" class="filter-input" type="text" placeholder="חיפוש...">
 
