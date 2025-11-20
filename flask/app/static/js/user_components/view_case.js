@@ -32,11 +32,11 @@ window.init_view_case = async function () {
       if (!payload?.success || !payload?.data?.length) return;
 
       const item = payload.data[0] ?? {};
-      const caseObj = item.cases ?? item;
+      const caseObj = item.cases;
 
-      const user = caseObj.user ?? item.user ?? caseObj.created_by ?? {};
-      const clients = Array.isArray(caseObj.clients ?? item.clients) ? (caseObj.clients ?? item.clients) : [];
-      const files = Array.isArray(caseObj.files ?? item.files) ? (caseObj.files ?? item.files) : [];
+      const user = caseObj.user;
+      const clients = caseObj.clients;
+      const files = caseObj.files;
 
       const setText = (id, val) => {
         const el = document.getElementById(id);
@@ -49,9 +49,7 @@ window.init_view_case = async function () {
       setText("case-against", `${caseObj.against} - ${caseObj.against_type}`);
 
       const createdAt = caseObj.created_at ? new Date(caseObj.created_at) : null;
-      const createdAtText = createdAt && !isNaN(createdAt)
-        ? createdAt.toLocaleDateString("he-IL")
-        : "-";
+      const createdAtText = createdAt && !isNaN(createdAt) ? createdAt.toLocaleDateString("he-IL") : "-";
       setText("case-created-at", createdAtText);
 
       const factsEl = document.getElementById("case-facts-text");
@@ -65,17 +63,16 @@ window.init_view_case = async function () {
         clientsTbody.innerHTML = clients.length === 0
           ? `<tr><td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td></tr>`
           : clients.map(c => {
-            const badge = `<span class="badge-level ${c.level}">${c.level === "main" ? "ראשי" : "משני"}</span>`;
             return `
-                            <tr>
-                                <td>${window.utils.safeValue(c.first_name)}</td>
-                                <td>${window.utils.safeValue(c.last_name)}</td>
-                                <td>${window.utils.safeValue(c.legal_role)}</td>
-                                <td>${window.utils.safeValue(c.id_card_number)}</td>
-                                <td>${window.utils.safeValue(c.phone)}</td>
-                                <td>${window.utils.safeValue(c.email)}</td>
-                                <td>${badge}</td>
-                            </tr>`;
+              <tr>
+                <td>${window.utils.safeValue(c.first_name)}</td>
+                <td>${window.utils.safeValue(c.last_name)}</td>
+                <td>${window.utils.safeValue(c.legal_role)}</td>
+                <td>${window.utils.safeValue(c.id_card_number)}</td>
+                <td>${window.utils.safeValue(c.phone)}</td>
+                <td>${window.utils.safeValue(c.email)}</td>
+                <td>${window.utils.safeValue(c.role)}</td>
+              </tr>`;
           }).join("");
       }
 
@@ -85,12 +82,12 @@ window.init_view_case = async function () {
         eventsTbody.innerHTML = evts.length === 0
           ? `<tr><td colspan="100%" class="text-muted py-3">אין אירועים להצגה</td></tr>`
           : evts.map(e => `
-                        <tr>
-                            <td>${window.utils.safeValue(new Date(e.date).toLocaleDateString("he-IL"))}</td>
-                            <td>${window.utils.safeValue(e.type)}</td>
-                            <td>${window.utils.safeValue(e.description)}</td>
-                            <td>${window.utils.safeValue(e.performed_by)}</td>
-                        </tr>`).join("");
+              <tr>
+                  <td>${window.utils.safeValue(new Date(e.date).toLocaleDateString("he-IL"))}</td>
+                  <td>${window.utils.safeValue(e.type)}</td>
+                  <td>${window.utils.safeValue(e.description)}</td>
+                  <td>${window.utils.safeValue(e.performed_by)}</td>
+              </tr>`).join("");
       }
 
       window.__caseClients = clients;
