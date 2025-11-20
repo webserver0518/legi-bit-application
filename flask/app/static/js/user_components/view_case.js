@@ -30,6 +30,7 @@ window.init_view_case = async function () {
     .then(payload => {
 
       if (!payload?.success || !payload?.data?.length) return;
+      console.log("View Case Payload:", payload);
 
       const item = payload.data[0] ?? {};
       const caseObj = item.cases;
@@ -44,7 +45,8 @@ window.init_view_case = async function () {
       };
       setText("case-title", caseObj.title);
       setText("case-serial", caseObj.serial.toString());
-      setText("case-created-by", user.first_name ?? user.username);
+      setText("case-created-by", user.username);
+      setText("case-responsible", caseObj.responsible.username);
       setText("case-field", caseObj.field);
       setText("case-against", `${caseObj.against} - ${caseObj.against_type}`);
 
