@@ -33,7 +33,6 @@
 
   // Safe string helpers
   utils.safeValue = (v) => {
-    console.log('utils.safeValue input:', v);
     if (v == null) return '-';
 
     const enToHe = {
@@ -58,7 +57,7 @@
       if (t === '') return '-';
 
       const key = t.toLowerCase();
-      console.log(enToHe[key]);
+
       if (enToHe[key]) return enToHe[key];
       else return t;
     }
