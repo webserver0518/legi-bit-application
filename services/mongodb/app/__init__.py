@@ -5,6 +5,7 @@ from flask import Flask
 from .managers.formatter_management import configure_logging, disable_all_logging
 from .managers.mongodb_management import MongoDBManager
 
+
 def create_flask_app():
     app = Flask(__name__)
     app.secret_key = os.getenv("SECRET_KEY", "fallback-secret-key")
@@ -15,6 +16,7 @@ def create_flask_app():
 
     # Register Blueprints
     from .routes import bp
+
     app.register_blueprint(bp)
 
     return app
