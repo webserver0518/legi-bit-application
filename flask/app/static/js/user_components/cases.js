@@ -140,6 +140,7 @@ window.init_cases = async function () {
       .map(obj => {
         const c = obj.cases || {};
         const user = c.user || {};
+        const responsible = c.responsible || {};
         const isArchived = c.status === "archived";
 
         let client = {};
@@ -168,7 +169,7 @@ window.init_cases = async function () {
             <td>${window.utils.safeValue(client.last_name)}</td>
             <td>${window.utils.safeValue(client.id_card_number)}</td>
             <td>${window.utils.safeValue(client.phone)}</td>
-            <td>${window.utils.safeValue(user.first_name ?? user.username)}</td>
+            <td>${window.utils.safeValue(responsible.username)}</td>
             <td>${window.utils.safeValue(createdDate)}</td>
             <td>${Array.isArray(c.files) ? c.files.length : "0"}</td>
           </tr>
@@ -196,6 +197,43 @@ window.init_cases = async function () {
   }
 
   loadCases();
+
+  document.getElementById("export-excel").addEventListener("click", () => {
+    if (!CURRENT_ROWS.length) {
+      window.toast?.show?.("אין תיקים לייצוא", "warning");
+      return;
+    }
+
+    const rows = CURRENT_ROWS.map(obj => {
+      const c = obj.cases || {};
+      const client = Array.isArray(c.clients)
+        ? (c.clients.find(cl => cl.level === "main") || c.clients[0] || {})
+        : {};
+      const responsible = c.responsible || {};
+      const createdDate = c.created_at
+        ? new Date(c.created_at).toLocaleDateString("he-IL")
+        : "-";
+
+      return {
+        "כותרת": c.title || "",
+        "מספר סידורי": c.serial || "",
+        "תחום": c.field || c.category || "",
+        "סטטוס": c.status || "",
+        "שם פרטי": client.first_name || "",
+        "שם משפחה": client.last_name || "",
+        "ת.ז": client.id_card_number || "",
+        "טלפון": client.phone || "",
+        "נוצר ע\"י": responsible.username || "",
+        "תאריך יצירה": createdDate,
+        "מספר קבצים": Array.isArray(c.files) ? c.files.length : 0,
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "תיקים");
+    XLSX.writeFile(wb, "cases.xlsx");
+  });
 };
 
 function storeCaseAndOpen(serial) {
