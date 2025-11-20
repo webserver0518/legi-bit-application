@@ -9,17 +9,16 @@ from .response_management import ResponseManager
 from ..constants.constants_mongodb import MongoDBEntity
 
 
-
 class MongoDBManager:
     """
     A simple MongoDB utility class to manage connections and CRUD operations.
     """
+
     _client = None
     MONGO_URI = None
     MONGO_SERVER_SELECTION_TIMEOUT_MS = None
     MONGO_SOCKET_TIMEOUT_MS = None
     MONGO_MAX_POOL_SIZE = None
-
 
     # admins db
     MONGO_ADMINS_DB_NAME = None
@@ -42,7 +41,6 @@ class MongoDBManager:
     clients_collection_name = "clients"
     files_collection_name = "files"
 
-
     # ------------------------ Connection -------------------------
 
     @classmethod
@@ -52,9 +50,11 @@ class MongoDBManager:
         """
         if cls._client is not None:
             return  # already initialized
-        
+
         cls.MONGO_URI = os.getenv("MONGO_URI")
-        cls.MONGO_SERVER_SELECTION_TIMEOUT_MS = int(os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "5000"))
+        cls.MONGO_SERVER_SELECTION_TIMEOUT_MS = int(
+            os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "5000")
+        )
         cls.MONGO_SOCKET_TIMEOUT_MS = int(os.getenv("MONGO_SOCKET_TIMEOUT_MS", "10000"))
         cls.MONGO_MAX_POOL_SIZE = int(os.getenv("MONGO_MAX_POOL_SIZE", "100"))
 
@@ -68,7 +68,9 @@ class MongoDBManager:
         )
 
         cls.MONGO_ADMINS_DB_NAME = str(os.getenv("MONGO_ADMINS_DB_NAME", "admins_db"))
-        cls.MONGO_OFFICES_DB_NAME = str(os.getenv("MONGO_OFFICES_DB_NAME", "offices_db"))
+        cls.MONGO_OFFICES_DB_NAME = str(
+            os.getenv("MONGO_OFFICES_DB_NAME", "offices_db")
+        )
 
     @classmethod
     def _get_client(cls) -> MongoClient:
@@ -77,7 +79,7 @@ class MongoDBManager:
 
         Args:
             None
-        
+
         Returns:
             MongoClient: A pymongo MongoClient instance.
         """
@@ -135,19 +137,18 @@ class MongoDBManager:
         collection = db[collection_name]
         return collection
 
-
     # ---------- CRUD (Create, Read, Update and Delete) Wrappers -----------
 
     # ---------- Reads -----------
     @classmethod
     def _get_records(
-            cls,
-            db_name: str,
-            collection_name: str,
-            filters: Optional[dict] = None,
-            projection: Optional[dict] = None,
-            sort: Optional[tuple[str, int]] = None,
-            limit: int = 0,
+        cls,
+        db_name: str,
+        collection_name: str,
+        filters: Optional[dict] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[tuple[str, int]] = None,
+        limit: int = 0,
     ):
         """
         Retrieve documents from a MongoDB collection with optional filters,
@@ -180,7 +181,9 @@ class MongoDBManager:
             return ResponseManager.bad_request(error="'db_name' is required")
         if not collection_name:
             # debug bad request
-            current_app.logger.debug(f"returning bad_request: 'collection_name' is required")
+            current_app.logger.debug(
+                f"returning bad_request: 'collection_name' is required"
+            )
             return ResponseManager.bad_request(error="'collection_name' is required")
 
         collection = cls._get_collection(db_name, collection_name)
@@ -197,7 +200,9 @@ class MongoDBManager:
 
         results = list(cursor)
         # debug db_name@collection_name number of results
-        current_app.logger.debug(f"[{db_name}@{collection_name}] Retrieved {len(results)} record(s)")
+        current_app.logger.debug(
+            f"[{db_name}@{collection_name}] Retrieved {len(results)} record(s)"
+        )
 
         if len(results) == 0:
             # debug not found
@@ -211,14 +216,14 @@ class MongoDBManager:
     # ---------- Updates -----------
     @classmethod
     def _update_fields(
-            cls,
-            db_name: str,
-            collection_name: str,
-            filters: dict,
-            update_data: dict,
-            *,
-            multiple: bool,
-            operator: str = "$set",
+        cls,
+        db_name: str,
+        collection_name: str,
+        filters: dict,
+        update_data: dict,
+        *,
+        multiple: bool,
+        operator: str = "$set",
     ):
         """
         Update one or multiple documents using a specified MongoDB update operator.
@@ -244,13 +249,19 @@ class MongoDBManager:
 
         if not collection_name:
             # debug bad request
-            current_app.logger.debug(f"returning bad_request: 'collection_name' is required")
+            current_app.logger.debug(
+                f"returning bad_request: 'collection_name' is required"
+            )
             return ResponseManager.bad_request(error="collection_name is required")
 
         if not operator.startswith("$"):
             # debug bad request
-            current_app.logger.debug(f"returning bad_request: Invalid MongoDB operator (must start with '$')")
-            return ResponseManager.bad_request(error="Invalid MongoDB operator (must start with '$')")
+            current_app.logger.debug(
+                f"returning bad_request: Invalid MongoDB operator (must start with '$')"
+            )
+            return ResponseManager.bad_request(
+                error="Invalid MongoDB operator (must start with '$')"
+            )
 
         collection = cls._get_collection(db_name, collection_name)
         update_query = {operator: update_data}
@@ -260,7 +271,6 @@ class MongoDBManager:
         else:
             result = collection.update_one(filters, update_query)
 
-        
         modified = result.modified_count
 
         # debug db_name@collection_name number of deleted docs
@@ -281,10 +291,10 @@ class MongoDBManager:
     # ---------- Deletes -----------
     @classmethod
     def _delete_records(
-            cls,
-            db_name: str,
-            collection_name: str,
-            filters: Optional[dict] = None,
+        cls,
+        db_name: str,
+        collection_name: str,
+        filters: Optional[dict] = None,
     ):
         """
         Delete documents from a MongoDB collection with optional filters.
@@ -311,7 +321,9 @@ class MongoDBManager:
 
         if not collection_name:
             # debug bad request
-            current_app.logger.debug(f"returning bad_request: 'collection_name' is required")
+            current_app.logger.debug(
+                f"returning bad_request: 'collection_name' is required"
+            )
             return ResponseManager.bad_request(error="'collection_name' is required")
 
         collection = cls._get_collection(db_name, collection_name)
@@ -321,17 +333,20 @@ class MongoDBManager:
         deleted_count = result.deleted_count
 
         # debug db_name@collection_name number of deleted docs
-        current_app.logger.debug(f"[{db_name}@{collection_name}] Deleted {deleted_count} record(s)")
+        current_app.logger.debug(
+            f"[{db_name}@{collection_name}] Deleted {deleted_count} record(s)"
+        )
 
         if deleted_count == 0:
             # debug not found
-            current_app.logger.debug(f"returning not found (no documents matched filters)")
+            current_app.logger.debug(
+                f"returning not found (no documents matched filters)"
+            )
             return ResponseManager.not_found(error="No documents matched filters")
 
         # debug success
         current_app.logger.debug(f"returning success with deleted count")
         return ResponseManager.success(data=deleted_count)
-
 
     # ---------------------- Index Management ----------------------
 
@@ -379,29 +394,29 @@ class MongoDBManager:
 
             for idx in collection.list_indexes():
                 created_indexes.append(f"{collection_name}.{idx['name']}")
-        
+
         if len(created_indexes) == 0:
             # debug not found
             current_app.logger.debug(f"returning not found (no indexes created)")
             return ResponseManager.not_found(error="no indexes created")
-        
+
         # debug success
         current_app.logger.debug(f"[{db_name}] Indexes ensured successfully")
         return ResponseManager.success(data=created_indexes)
 
-
     # ------------------------ Entity Helpers -------------------------
 
     @classmethod
-    def get_entity(cls,
-                   entity: str,
-                   office_serial: int = None,
-                   filters: dict = None,
-                   projection: dict = None,
-                   sort: tuple[str, int] = None,
-                   limit: int = 0,
-                   expand: bool = False
-                   ):
+    def get_entity(
+        cls,
+        entity: str,
+        office_serial: int = None,
+        filters: dict = None,
+        projection: dict = None,
+        sort: tuple[str, int] = None,
+        limit: int = 0,
+        expand: bool = False,
+    ):
 
         current_app.logger.debug(f"inside get_entity()")
         # debug inputs
@@ -417,7 +432,9 @@ class MongoDBManager:
             return ResponseManager.bad_request(error="Missing 'entity'")
 
         results = []
-        db_names = [str(office_serial)] if office_serial else list(cls._iter_tenant_dbs())
+        db_names = (
+            [str(office_serial)] if office_serial else list(cls._iter_tenant_dbs())
+        )
 
         # debug db names
         current_app.logger.debug(f"db_names: {db_names}")
@@ -432,20 +449,19 @@ class MongoDBManager:
                 filters=filters,
                 projection=projection,
                 sort=sort,
-                limit=limit
+                limit=limit,
             )
             if not ResponseManager.is_success(response=records_res):
                 # debug error from get records
-                current_app.logger.debug(f"skipping DB '{db_name}' due to response error  "
-                                           f"{ResponseManager.get_error(response=records_res)}")
+                current_app.logger.debug(
+                    f"skipping DB '{db_name}' due to response error  "
+                    f"{ResponseManager.get_error(response=records_res)}"
+                )
                 continue
 
             entity_docs = ResponseManager.get_data(response=records_res)
             for doc in entity_docs:
-                enriched = {
-                    f"{entity}": doc,
-                    "office_serial": int(db_name)
-                }
+                enriched = {f"{entity}": doc, "office_serial": int(db_name)}
 
                 # debug expansion
                 current_app.logger.debug(f"expand: {expand}")
@@ -460,14 +476,15 @@ class MongoDBManager:
 
         if not results:
             # debug not found
-            current_app.logger.debug(f"entity {entity} with filters {filters} not found.")
+            current_app.logger.debug(
+                f"entity {entity} with filters {filters} not found."
+            )
             current_app.logger.debug(f"returning not found")
             return ResponseManager.not_found(error=f"Not Found")
 
         # debug success
         current_app.logger.debug(f"returning success with results")
         return ResponseManager.success(data=results)
-
 
     @classmethod
     def _expand_case_user(cls, case_doc, office_serial):
@@ -477,7 +494,9 @@ class MongoDBManager:
         if not user_serial:
             # debug bad request
             current_app.logger.debug(f"Missing 'user_serial' in case document")
-            return ResponseManager.bad_request(error="Missing 'user_serial' in case document")
+            return ResponseManager.bad_request(
+                error="Missing 'user_serial' in case document"
+            )
 
         # debug func call
         current_app.logger.debug(f"calling get_entity() from get_entity()")
@@ -485,16 +504,18 @@ class MongoDBManager:
             entity=MongoDBEntity.USERS,
             office_serial=office_serial,
             filters={"serial": user_serial},
-            limit= 1,
+            limit=1,
             expand=False,
         )
 
         if not ResponseManager.is_success(response=user_res):
             # debug error
-            current_app.logger.debug(f"failed to expand user_serial={user_serial}, "
-                                    f"error={ResponseManager.get_error(response=user_res)}")
+            current_app.logger.debug(
+                f"failed to expand user_serial={user_serial}, "
+                f"error={ResponseManager.get_error(response=user_res)}"
+            )
             return user_res
-        
+
         # debug success
         user_entity = ResponseManager.get_data(response=user_res)[0]
         user = user_entity.get(MongoDBEntity.USERS, {})
@@ -506,20 +527,30 @@ class MongoDBManager:
     def _expand_case_clients(cls, case_doc, office_serial):
         current_app.logger.debug(f"inside _expand_case_clients()")
 
-        clients_serials = case_doc.pop("clients_serials", None)
-        if not clients_serials or not isinstance(clients_serials, dict):
+        print(case_doc)
+
+        clients_serials_with_roles = case_doc.pop("clients_serials_with_roles", None)
+        if not clients_serials_with_roles:
             # debug bad request
-            current_app.logger.debug(f"Missing 'clients_serials' in case document")
-            return ResponseManager.bad_request(error="Missing 'clients_serials' in case document")
+            current_app.logger.debug(
+                f"Missing 'clients_serials_with_roles' in case document"
+            )
+            return ResponseManager.bad_request(
+                error="Missing 'clients_serials_with_roles' in case document"
+            )
 
         expanded_clients = []
-        current_app.logger.debug(f"found clients_serials: {clients_serials}")
+        current_app.logger.debug(
+            f"found clients_serials_with_roles: {clients_serials_with_roles}"
+        )
 
-        for serial_str, level in clients_serials.items():
-            client_serial = int(serial_str)
+        for client_serial_str, role, legal_role in clients_serials_with_roles:
+            client_serial = int(client_serial_str)
 
             # debug func call
-            current_app.logger.debug(f"calling get_entity() from _expand_case_clients() for client_serial={client_serial}")
+            current_app.logger.debug(
+                f"calling get_entity() from _expand_case_clients() for client_serial={client_serial}"
+            )
             res = cls.get_entity(
                 entity=MongoDBEntity.CLIENTS,
                 office_serial=office_serial,
@@ -530,29 +561,33 @@ class MongoDBManager:
 
             if not ResponseManager.is_success(response=res):
                 # debug error
-                current_app.logger.debug(f"failed to expand client_serial={client_serial}, "
-                                        f"error={ResponseManager.get_error(response=res)}")
+                current_app.logger.debug(
+                    f"failed to expand client_serial={client_serial}, "
+                    f"error={ResponseManager.get_error(response=res)}"
+                )
                 continue
-                
-            
+
             client_entities = ResponseManager.get_data(response=res)
             if not client_entities:
                 # debug not found
                 current_app.logger.debug(f"no client found for serial={client_serial}")
                 continue
-            
+
             # debug success
             client_entity = client_entities[0].get(MongoDBEntity.CLIENTS, {})
-            client_entity["level"] = level
+            client_entity["role"] = role
+            client_entity["legal_role"] = legal_role
             expanded_clients.append(client_entity)
 
-            current_app.logger.debug(f"successfully expanded client_serial={client_serial} with level={level}")
+            current_app.logger.debug(
+                f"successfully expanded client_serial={client_serial} with role={role}, and legal_role={legal_role}"
+            )
 
         # debug success
         case_doc["clients"] = expanded_clients
-        current_app.logger.debug(f"returning from _expand_case_clients() with {len(expanded_clients)} expanded clients")
-
-
+        current_app.logger.debug(
+            f"returning from _expand_case_clients() with {len(expanded_clients)} expanded clients"
+        )
 
     @classmethod
     def _expand_case_files(cls, case_doc, office_serial):
@@ -562,7 +597,9 @@ class MongoDBManager:
         if not file_serials:
             # debug bad request
             current_app.logger.debug(f"Missing 'file_serials' in case document")
-            return ResponseManager.bad_request(error="Missing 'file_serials' in case document")
+            return ResponseManager.bad_request(
+                error="Missing 'file_serials' in case document"
+            )
 
         case_doc["files"] = []
 
@@ -573,7 +610,7 @@ class MongoDBManager:
                 entity=MongoDBEntity.FILES,
                 office_serial=office_serial,
                 filters={"serial": file_serial},
-                limit= 1,
+                limit=1,
                 expand=False,
             )
             if ResponseManager.is_success(response=file_res):
@@ -584,10 +621,7 @@ class MongoDBManager:
         current_app.logger.debug(f"returning from _expand_case_files()")
 
     @classmethod
-    def create_entity(cls,
-                      entity: str,
-                      office_serial: int,
-                      document: dict):
+    def create_entity(cls, entity: str, office_serial: int, document: dict):
         """
         Generic create for all entities (users/clients/cases/files)
         Automatically assign serial from the correct counter.
@@ -596,7 +630,7 @@ class MongoDBManager:
             entity (str): Entity type (users, clients, cases, files).
             office_serial (int): Tenant office serial number.
             document (dict): Document data to insert.
-        
+
         Returns:
             ResponseManager: success with new serial, or error response.
         """
@@ -614,12 +648,16 @@ class MongoDBManager:
 
         if not office_serial:
             # debug bad request
-            current_app.logger.debug(f"returning bad_request: 'office_serial' is required")
+            current_app.logger.debug(
+                f"returning bad_request: 'office_serial' is required"
+            )
             return ResponseManager.bad_request(error="Missing office_serial")
 
         if not document or not isinstance(document, dict):
             # debug bad request
-            current_app.logger.debug(f"returning bad_request: missing or invalid 'document'")
+            current_app.logger.debug(
+                f"returning bad_request: missing or invalid 'document'"
+            )
             return ResponseManager.bad_request(error="Missing or invalid document")
 
         db_name = str(office_serial)
@@ -651,15 +689,16 @@ class MongoDBManager:
         result = collection.insert_one(document)
 
         # debug success
-        current_app.logger.debug(f"Created new {entity} with serial={serial} in DB {db_name}")
+        current_app.logger.debug(
+            f"Created new {entity} with serial={serial} in DB {db_name}"
+        )
         current_app.logger.debug(f"returning success with serial={serial}")
         return ResponseManager.success(data=serial)
 
     @classmethod
-    def delete_entity(cls,
-                      entity: str,
-                      office_serial: int = None,
-                      filters: dict = None):
+    def delete_entity(
+        cls, entity: str, office_serial: int = None, filters: dict = None
+    ):
         """
         Delete entities from a given collection (and optionally tenant DB).
         Returns a ResponseManager response object.
@@ -669,7 +708,7 @@ class MongoDBManager:
             office_serial (int, optional): Tenant office serial number.
                 If None, deletes across all tenant DBs.
             filters (dict): MongoDB query filter to match documents to delete.
-        
+
         Returns:
             ResponseManager: success with deletion details, or error response.
         """
@@ -687,23 +726,25 @@ class MongoDBManager:
 
         if not filters:
             # debug bad request
-            current_app.logger.debug("returning bad_request: 'filters' are required for delete")
+            current_app.logger.debug(
+                "returning bad_request: 'filters' are required for delete"
+            )
             return ResponseManager.bad_request(error="Missing 'filters'")
 
         results = []
-        db_names = [str(office_serial)] if office_serial else list(cls._iter_tenant_dbs())
+        db_names = (
+            [str(office_serial)] if office_serial else list(cls._iter_tenant_dbs())
+        )
         current_app.logger.debug(f"db_names: {db_names}")
 
         total_deleted = 0
 
         for db_name in db_names:
-            
+
             # debug func call
             current_app.logger.debug(f"calling delete_records() for DB '{db_name}'")
             delete_res = cls._delete_records(
-                db_name=db_name,
-                collection_name=entity,
-                filters=filters
+                db_name=db_name, collection_name=entity, filters=filters
             )
 
             if not ResponseManager.is_success(response=delete_res):
@@ -717,30 +758,39 @@ class MongoDBManager:
             deleted_count = ResponseManager.get_data(response=delete_res)
             total_deleted += deleted_count
 
-            results.append({
-                "office_serial": int(db_name),
-                "deleted_count": deleted_count
-            })
+            results.append(
+                {"office_serial": int(db_name), "deleted_count": deleted_count}
+            )
 
         if total_deleted == 0:
             # debug not found
-            current_app.logger.debug(f"no entities deleted for {entity} with filters {filters}")
+            current_app.logger.debug(
+                f"no entities deleted for {entity} with filters {filters}"
+            )
             current_app.logger.debug(f"returning not found")
-            return ResponseManager.not_found(error=f"No matching {entity} found to delete")
+            return ResponseManager.not_found(
+                error=f"No matching {entity} found to delete"
+            )
 
         # debug success
-        current_app.logger.debug(f"returning success with results and total_deleted={total_deleted}")
-        return ResponseManager.success(data={"total_deleted": total_deleted, "details": results})
+        current_app.logger.debug(
+            f"returning success with results and total_deleted={total_deleted}"
+        )
+        return ResponseManager.success(
+            data={"total_deleted": total_deleted, "details": results}
+        )
 
     @classmethod
-    def update_entity(cls,
-                    entity: str,
-                    office_serial: int = None,
-                    filters: dict = None,
-                    update_data: dict = None,
-                    *,
-                    multiple: bool = False,
-                    operator: str = "$set"):
+    def update_entity(
+        cls,
+        entity: str,
+        office_serial: int = None,
+        filters: dict = None,
+        update_data: dict = None,
+        *,
+        multiple: bool = False,
+        operator: str = "$set",
+    ):
         """
         Public interface to update entities (users, clients, files, cases)
         inside a specific tenant DB or across all tenants.
@@ -758,7 +808,7 @@ class MongoDBManager:
                 - False → update the first matching document.
             operator (str): MongoDB operator (default: "$set").
                 Supported: "$set", "$inc", "$push", "$pull", "$addToSet", etc.
-        
+
         Returns:
             ResponseManager: success with update details, or error response.
         """
@@ -785,7 +835,9 @@ class MongoDBManager:
             current_app.logger.debug("returning bad_request: 'update_data' is required")
             return ResponseManager.bad_request("Missing 'update_data'")
 
-        db_names = [str(office_serial)] if office_serial else list(cls._iter_tenant_dbs())
+        db_names = (
+            [str(office_serial)] if office_serial else list(cls._iter_tenant_dbs())
+        )
         total_modified = 0
         results = []
 
@@ -799,7 +851,7 @@ class MongoDBManager:
                 filters=filters,
                 update_data=update_data,
                 multiple=multiple,
-                operator=operator
+                operator=operator,
             )
 
             if not ResponseManager.is_success(update_res):
@@ -813,19 +865,20 @@ class MongoDBManager:
             modified = ResponseManager.get_data(update_res)
             total_modified += modified
 
-            results.append({
-                "office_serial": int(db_name),
-                "modified": modified
-            })
+            results.append({"office_serial": int(db_name), "modified": modified})
 
         if total_modified == 0:
             # debug not found
             current_app.logger.debug(f"No {entity} updated with filters {filters}")
             current_app.logger.debug(f"returning not found")
-            return ResponseManager.not_found(error=f"No matching {entity} found to update")
+            return ResponseManager.not_found(
+                error=f"No matching {entity} found to update"
+            )
 
         # debug success
-        current_app.logger.debug(f"returning success with results and total_modified={total_modified}")
+        current_app.logger.debug(
+            f"returning success with results and total_modified={total_modified}"
+        )
         return ResponseManager.success(
             data={"total_modified": total_modified, "details": results}
         )
@@ -859,7 +912,9 @@ class MongoDBManager:
 
         if not counter_name:
             # debug bad request
-            current_app.logger.debug(f"returning bad_request: 'counter_name' is required")
+            current_app.logger.debug(
+                f"returning bad_request: 'counter_name' is required"
+            )
             return ResponseManager.bad_request(error="'counter_name' is required")
 
         collection = cls._get_collection(db_name, "counters")
@@ -873,16 +928,21 @@ class MongoDBManager:
 
         if not result or "value" not in result:
             # debug error
-            current_app.logger.debug(f"returning internal error: Counter '{counter_name}' could not be incremented")
-            return ResponseManager.internal(error=f"Counter '{counter_name}' could not be incremented")
+            current_app.logger.debug(
+                f"returning internal error: Counter '{counter_name}' could not be incremented"
+            )
+            return ResponseManager.internal(
+                error=f"Counter '{counter_name}' could not be incremented"
+            )
 
         new_value = int(result["value"])
 
         # debug success
-        current_app.logger.info(f"[{db_name}@counters] Incremented '{counter_name}' to {new_value}")
+        current_app.logger.info(
+            f"[{db_name}@counters] Incremented '{counter_name}' to {new_value}"
+        )
         current_app.logger.debug(f"returning success with value={new_value}")
         return ResponseManager.success(data=new_value)
-
 
     # ---------- Tenant ----------
     @classmethod
@@ -911,10 +971,7 @@ class MongoDBManager:
         """Increment and return the global office counter."""
         return cls._get_next_counter(cls.MONGO_OFFICES_DB_NAME, cls.office_counter_name)
 
-
-
     # ---------------------- Helpers ----------------------
-
 
     # ---------- Tenant ----------
     @classmethod
@@ -936,21 +993,26 @@ class MongoDBManager:
 
         if not office_serial:
             # debug bad request
-            current_app.logger.debug(f"returning bad_request: 'office_serial' is required")
+            current_app.logger.debug(
+                f"returning bad_request: 'office_serial' is required"
+            )
             return ResponseManager.bad_request(error="'office_serial' is required")
-
 
         client = cls._get_client()
         db_name = str(office_serial)
 
         if db_name in client.list_database_names():
             # debug conflict
-            current_app.logger.debug(f"returning conflict: DB '{db_name}' already exists")
+            current_app.logger.debug(
+                f"returning conflict: DB '{db_name}' already exists"
+            )
             return ResponseManager.conflict(error=f"DB '{db_name}' already exists")
 
         # debug func call
-        current_app.logger.debug(f"calling ensure_indexes() from _create_office_database()")
-        cls.ensure_indexes(db_name) # Ensure all required indexes exist
+        current_app.logger.debug(
+            f"calling ensure_indexes() from _create_office_database()"
+        )
+        cls.ensure_indexes(db_name)  # Ensure all required indexes exist
 
         # Initialize counter collection
         counters = cls._get_collection(db_name, cls.counters_collection_name)
@@ -963,20 +1025,25 @@ class MongoDBManager:
 
         for name in counter_names:
             counters.update_one(
-                {"_id": name},
-                {"$setOnInsert": {"value": 0}},
-                upsert=True
+                {"_id": name}, {"$setOnInsert": {"value": 0}}, upsert=True
             )
 
         # debug success
-        current_app.logger.info(f"[DB] [{db_name}] Office created and initialized successfully")
+        current_app.logger.info(
+            f"[DB] [{db_name}] Office created and initialized successfully"
+        )
         current_app.logger.info(f"returning success with db name: {db_name}")
         return ResponseManager.success(data={"db_name": db_name})
 
-
     @classmethod
     def _iter_tenant_dbs(cls):
-        excluded = {"admin", "local", "config", cls.MONGO_ADMINS_DB_NAME, cls.MONGO_OFFICES_DB_NAME}
+        excluded = {
+            "admin",
+            "local",
+            "config",
+            cls.MONGO_ADMINS_DB_NAME,
+            cls.MONGO_OFFICES_DB_NAME,
+        }
         for name in cls._get_client().list_database_names():
             if name not in excluded:
                 yield str(name)
@@ -999,32 +1066,38 @@ class MongoDBManager:
 
         if not office_name:
             # debug bad request
-            current_app.logger.debug(f"returning bad_request: 'office_name' is required")
-            return ResponseManager.bad_request(error="'office_name' is required for get_office_serial()")
-
+            current_app.logger.debug(
+                f"returning bad_request: 'office_name' is required"
+            )
+            return ResponseManager.bad_request(
+                error="'office_name' is required for get_office_serial()"
+            )
 
         db_name = cls.MONGO_OFFICES_DB_NAME
         collection_name = cls.offices_collection_name
 
         collection = cls._get_collection(db_name, collection_name)
         doc = collection.find_one(
-            {"office_name": office_name},
-            {"_id": 0, "office_serial": 1}
+            {"office_name": office_name}, {"_id": 0, "office_serial": 1}
         )
 
         if doc and "office_serial" in doc:
             office_serial = doc["office_serial"]
             # debug success
             current_app.logger.info(
-                f"[DB@Col] [{db_name}@{collection_name}] Found office_serial='{office_serial}'")
-            current_app.logger.info(f"returning success with office_serial: {office_serial}")
+                f"[DB@Col] [{db_name}@{collection_name}] Found office_serial='{office_serial}'"
+            )
+            current_app.logger.info(
+                f"returning success with office_serial: {office_serial}"
+            )
             return ResponseManager.success(data=office_serial)
 
         # debug not found
-        current_app.logger.debug(f"[DB@Col] [{db_name}@{collection_name}] No record found with office_name='{office_name}'")
+        current_app.logger.debug(
+            f"[DB@Col] [{db_name}@{collection_name}] No record found with office_name='{office_name}'"
+        )
         current_app.logger.info(f"returning not found")
         return ResponseManager.not_found(error=f"Office '{office_name}' not found")
-
 
     @classmethod
     def get_office_name(cls, office_serial: int):
@@ -1044,7 +1117,9 @@ class MongoDBManager:
 
         if not office_serial:
             # debug bad request
-            current_app.logger.debug(f"returning bad_request: 'office_serial' is required")
+            current_app.logger.debug(
+                f"returning bad_request: 'office_serial' is required"
+            )
             return ResponseManager.bad_request(error="'office_serial' is required")
 
         db_name = cls.MONGO_OFFICES_DB_NAME
@@ -1052,23 +1127,26 @@ class MongoDBManager:
 
         collection = cls._get_collection(db_name, collection_name)
         doc = collection.find_one(
-            {"office_serial": office_serial},
-            {"_id": 0, "office_name": 1}
+            {"office_serial": office_serial}, {"_id": 0, "office_name": 1}
         )
 
         if doc and "office_name" in doc:
             office_name = doc["office_name"]
             # debug success
             current_app.logger.info(
-                f"[DB@Col] [{db_name}@{collection_name}] Found office_name='{office_name}'")
-            current_app.logger.info(f"returning success with office_name: {office_name}")
+                f"[DB@Col] [{db_name}@{collection_name}] Found office_name='{office_name}'"
+            )
+            current_app.logger.info(
+                f"returning success with office_name: {office_name}"
+            )
             return ResponseManager.success(data=office_name)
 
         # debug not found
-        current_app.debug(f"[DB@Col] [{db_name}@{collection_name}] No record found with office_serial='{office_serial}'")
+        current_app.debug(
+            f"[DB@Col] [{db_name}@{collection_name}] No record found with office_serial='{office_serial}'"
+        )
         current_app.logger.debug(f"returning not found")
         return ResponseManager.not_found(error=f"Office '{office_serial}' not found")
-
 
     @classmethod
     def get_or_create_office_serial(cls, office_name: str):
@@ -1086,7 +1164,9 @@ class MongoDBManager:
 
         if not office_name:
             # debug bad request
-            current_app.logger.debug(f"returning bad_request: 'office_name' is required")
+            current_app.logger.debug(
+                f"returning bad_request: 'office_name' is required"
+            )
             return ResponseManager.bad_request(error="'office_name' is required")
 
         db_name = cls.MONGO_OFFICES_DB_NAME
@@ -1094,14 +1174,19 @@ class MongoDBManager:
 
         # Try to find existing office
         collection = cls._get_collection(db_name, collection_name)
-        existing = collection.find_one({"office_name": office_name}, {"_id": 0, "office_serial": 1})
+        existing = collection.find_one(
+            {"office_name": office_name}, {"_id": 0, "office_serial": 1}
+        )
 
         if existing:
             office_serial = existing["office_serial"]
             # debug success
             current_app.logger.info(
-                f"[DB@Col] [{db_name}@{collection_name}] Found existing office with office_name='{office_name}'")
-            current_app.logger.info(f"returning success with office_serial: {office_serial}")
+                f"[DB@Col] [{db_name}@{collection_name}] Found existing office with office_name='{office_name}'"
+            )
+            current_app.logger.info(
+                f"returning success with office_serial: {office_serial}"
+            )
             return ResponseManager.success(data={"office_serial": office_serial})
 
         # Create new office if not found
@@ -1116,39 +1201,49 @@ class MongoDBManager:
 
         if new_office_serial == -1:
             # debug error
-            current_app.logger.debug(f"returning internal error: Failed to generate office serial")
+            current_app.logger.debug(
+                f"returning internal error: Failed to generate office serial"
+            )
             return ResponseManager.internal(error="Failed to generate office serial")
 
         # Insert into global offices registry
-        collection.insert_one({
-            "office_name": office_name,
-            "office_serial": str(new_office_serial)
-        })
+        collection.insert_one(
+            {"office_name": office_name, "office_serial": str(new_office_serial)}
+        )
         # debug insertion
-        current_app.logger.info(f"Added new office '{office_name}' with serial={new_office_serial}")
+        current_app.logger.info(
+            f"Added new office '{office_name}' with serial={new_office_serial}"
+        )
 
         # Create a dedicated database for this office
         # debug func call
-        current_app.logger.info(f"calling _create_office_database() from get_or_create_office_serial()")
+        current_app.logger.info(
+            f"calling _create_office_database() from get_or_create_office_serial()"
+        )
         create_res = cls._create_office_database(new_office_serial)
 
         if not ResponseManager.is_success(response=create_res):
             # debug deletion
-            current_app.logger.debug(f"delete the office name and serial from collection")
+            current_app.logger.debug(
+                f"delete the office name and serial from collection"
+            )
             collection.delete_one({"office_name": office_name})
             # debug error
-            current_app.logger.debug(f"returning internal error: Failed to initialize office DB")
+            current_app.logger.debug(
+                f"returning internal error: Failed to initialize office DB"
+            )
             return ResponseManager.internal(error="Failed to initialize office DB")
 
         # debug success
-        current_app.logger.info(f"Created and initialized [DB] [{new_office_serial}] for '{office_name}'")
-        current_app.logger.info(f"returning success with office_serial: {new_office_serial}")
+        current_app.logger.info(
+            f"Created and initialized [DB] [{new_office_serial}] for '{office_name}'"
+        )
+        current_app.logger.info(
+            f"returning success with office_serial: {new_office_serial}"
+        )
         return ResponseManager.success(data={"office_serial": new_office_serial})
 
-
-
     # ---------------------- Login ----------------------
-
 
     # ---------- Admin ----------
     @classmethod
@@ -1159,7 +1254,9 @@ class MongoDBManager:
         collection_name = cls.admin_login_collection_name
 
         # debug func call
-        current_app.logger.info(f"calling _get_records() from get_admin_passwords_hashes()")
+        current_app.logger.info(
+            f"calling _get_records() from get_admin_passwords_hashes()"
+        )
         admin_passwords_hashes_res = cls._get_records(
             db_name=db_name,
             collection_name=collection_name,
@@ -1167,17 +1264,25 @@ class MongoDBManager:
         )
         if not ResponseManager.is_success(response=admin_passwords_hashes_res):
             # debug error
-            current_app.logger.debug(f"returning internal error: Failed to get admin passwords hashes")
-            return ResponseManager.internal(error="Failed to get admin passwords hashes")
+            current_app.logger.debug(
+                f"returning internal error: Failed to get admin passwords hashes"
+            )
+            return ResponseManager.internal(
+                error="Failed to get admin passwords hashes"
+            )
 
         passwords_hashes = ResponseManager.get_data(response=admin_passwords_hashes_res)
 
         if not passwords_hashes:
             # debug not found
-            current_app.logger.debug(f"returning not found: [DB@Col] [{db_name}@{collection_name}] "
-                                       f"No admin passwords hashes found")
+            current_app.logger.debug(
+                f"returning not found: [DB@Col] [{db_name}@{collection_name}] "
+                f"No admin passwords hashes found"
+            )
             return ResponseManager.not_found(error="No admin passwords hashes found")
 
         # debug success
-        current_app.logger.debug(f"returning success with {len(admin_passwords_hashes_res)} admin_passwords_hashes")
+        current_app.logger.debug(
+            f"returning success with {len(admin_passwords_hashes_res)} admin_passwords_hashes"
+        )
         return ResponseManager.success(data=passwords_hashes)
