@@ -451,24 +451,28 @@ def create_new_case():
         return ResponseManager.bad_request("Missing request JSON")
 
     # === Create all Clients ===
-    clients = data.get("clients", [])
-    if not clients or not isinstance(clients, list):
-        current_app.logger.debug("returning bad_request: No clients provided")
+    clients_with_roles = data.get("clients_with_roles", [])
+    if not clients_with_roles or not isinstance(clients_with_roles, list):
+        current_app.logger.debug(
+            "returning bad_request: No clients_with_roles provided"
+        )
         return ResponseManager.bad_request("At least one client is required")
 
-    clients_serials = {}  # { serial: role }
+    clients_serials_with_roles = []  # { serial: role }
 
-    for c in clients:
+    for c in clients_with_roles:
         serial = c.get("client_serial")
-        role = c.get("role", "secondary")
+        role = c.get("role")
+        legal_role = c.get("legal_role")
         if not serial:
             return ResponseManager.bad_request(
                 "Missing client_serial in one of the clients"
             )
-        clients_serials[str(serial)] = role
+        clients_serials_with_roles.append([str(serial), role, legal_role])
 
     # ✅ Ensure at least one main client exists
-    if "main" not in clients_serials.values():
+    has_main = any(role == "main" for _, role, _ in clients_serials_with_roles)
+    if not has_main:
         current_app.logger.debug("returning bad_request: no main client found")
         return ResponseManager.bad_request("At least one main client is required")
 
@@ -482,7 +486,7 @@ def create_new_case():
         "facts": data.get("facts", ""),
         "against": data.get("against"),
         "against_type": data.get("against_type"),
-        "clients_serials": clients_serials,
+        "clients_serials_with_roles": clients_serials_with_roles,
         "files_serials": [],
     }
 
@@ -678,8 +682,6 @@ def create_new_client():
         "home_number": data.get("home_number"),
         "postal_code": data.get("postal_code"),
         "birth_date": data.get("birth_date"),
-        "role": data.get("role", "secondary"),
-        "legal_role": data.get("legal_role", "prosecutor"),
         "status": "active",
     }
 
