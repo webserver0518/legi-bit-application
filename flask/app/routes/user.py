@@ -83,6 +83,43 @@ def get_username():
         return user_full_name
 
 
+@user_bp.route("/get_user_serial", methods=["GET"])
+def get_user_serial():
+    """Return the current logged-in user's serial."""
+    user_serial = AuthorizationManager.get_user_serial()
+    if not user_serial:
+        current_app.logger.debug("No user_serial found in session")
+        return ResponseManager.bad_request("Missing 'user_serial' in auth")
+    return ResponseManager.success(data={"user_serial": user_serial})
+
+
+@user_bp.route("/get_office_users", methods=["GET"])
+def get_office_users():
+    """
+    Return all users (staff) for the current office
+    for selection as 'responsible' in case creation.
+    """
+    office_serial = AuthorizationManager.get_office_serial()
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+
+    users_res = mongodb_service.get_entity(
+        entity=MongoDBEntity.USERS, office_serial=office_serial
+    )
+
+    if ResponseManager.is_not_found(users_res):
+        current_app.logger.debug("⚠️ No users found, returning empty list")
+        return ResponseManager.success(data=[])
+
+    if not ResponseManager.is_success(users_res):
+        return ResponseManager.internal("Failed to fetch office users")
+
+    users_data = ResponseManager.get_data(users_res)
+    users = [u.get("users") for u in users_data]
+    current_app.logger.debug(f"✅ Returning {len(users)} users")
+    return ResponseManager.success(data=users)
+
+
 # ---------------- FILES MANAGEMENT ---------------- #
 
 
@@ -480,6 +517,7 @@ def create_new_case():
     new_case_doc = {
         "created_at": data.get("created_at"),
         "user_serial": user_serial,
+        "responsible_serial": data.get("responsible_serial"),
         "status": "active",
         "title": data.get("title"),
         "field": data.get("field"),
