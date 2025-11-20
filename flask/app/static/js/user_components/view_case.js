@@ -438,6 +438,15 @@ window.initViewCaseUploader = function initViewCaseUploader(caseSerial) {
   // reset list if needed
   window.vcFilesList = [];
 
+  function vcToggleQueue() {
+    const table = document.getElementById("vc-newFilesTable");
+    const btn = document.getElementById("vc-upload-btn");
+    const empty = (window.vcFilesList?.length || 0) === 0;
+    if (table) table.classList.toggle("d-none", empty);
+    if (btn) btn.classList.toggle("d-none", empty);
+  }
+  vcToggleQueue();
+
   // ---- Drag&Drop wiring (כמו add_case) ----
   const stop = e => { e.preventDefault(); e.stopPropagation(); };
   ["dragenter", "dragover", "dragleave", "drop"].forEach(ev =>
@@ -466,6 +475,7 @@ window.initViewCaseUploader = function initViewCaseUploader(caseSerial) {
         tbody.querySelector("td[colspan]") != null;
       if (alone) tbody.innerHTML = "";
     }
+    vcToggleQueue();
   }
 
   async function vcAddRow(file) {
@@ -551,6 +561,7 @@ window.initViewCaseUploader = function initViewCaseUploader(caseSerial) {
       tr.remove();
       window.vcFilesList = window.vcFilesList.filter(x => x !== entry);
       ensurePlaceholder();
+      vcToggleQueue();
     });
   }
 
@@ -598,6 +609,8 @@ window.initViewCaseUploader = function initViewCaseUploader(caseSerial) {
       // ניקוי התור
       window.vcFilesList = [];
       ensurePlaceholder();
+
+      vcToggleQueue();
 
       // סיכום
       if (failed.length > 0) {
