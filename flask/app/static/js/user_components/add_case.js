@@ -366,6 +366,15 @@ function initFileUploader() {
   window.filesList = [];
   const nameCount = {};
 
+  // 👇 הצגה/הסתרה של טבלת התור בהתאם לאורך הרשימה
+  const tableEl = document.getElementById('fileTable');
+  function toggleFilesQueueTable() {
+    if (!tableEl) return;
+    tableEl.classList.toggle('d-none', (window.filesList?.length || 0) === 0);
+  }
+  // ברירת מחדל: אין פריטים -> מוסתר (קיים גם ב-HTML), שומרים סנכרון ב-JS:
+  toggleFilesQueueTable();
+
   // למנוע התנהגות דיפולטית של גרירה
   const stop = e => { e.preventDefault(); e.stopPropagation(); };
   ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
@@ -443,6 +452,8 @@ function initFileUploader() {
       row: tr       // נשתמש בזה כדי לעדכן את ה־progress bar
     });
 
+    toggleFilesQueueTable();
+
     // טעינת סוגי המסמכים
     try {
       const typesRes = await window.API.getJson("/get_document_types");
@@ -490,6 +501,7 @@ function initFileUploader() {
     tr.querySelector('button').onclick = () => {
       tr.remove();
       window.filesList = window.filesList.filter(f => f.file !== file);
+      toggleFilesQueueTable();
     };
   }
 }
