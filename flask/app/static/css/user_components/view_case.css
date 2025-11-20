@@ -144,24 +144,6 @@ table td {
   color: #343a40;
 }
 
-/* badge רמה (main/secondary) */
-.badge-level {
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #fff;
-}
-
-.badge-level.main {
-  background-color: #007bff;
-}
-
-.badge-level.secondary {
-  background-color: #6c757d;
-}
-
 /* 🧩 אנימציה קטנה */
 @keyframes fadeIn {
   from {
