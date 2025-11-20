@@ -469,6 +469,7 @@ class MongoDBManager:
                     # debug func call
                     current_app.logger.debug(f"calling expansion functions")
                     cls._expand_case_user(doc, db_name)
+                    cls._expand_case_responsible(doc, db_name)
                     cls._expand_case_clients(doc, db_name)
                     cls._expand_case_files(doc, db_name)
 
@@ -522,6 +523,43 @@ class MongoDBManager:
         case_doc["user"] = user
 
         current_app.logger.debug(f"returning from _expand_case_user()")
+
+    @classmethod
+    def _expand_case_responsible(cls, case_doc, office_serial):
+        current_app.logger.debug(f"inside _expand_case_responsible()")
+
+        responsible_serial = case_doc.pop("responsible_serial", None)
+        if not responsible_serial:
+            # debug bad request
+            current_app.logger.debug(f"Missing 'responsible_serial' in case document")
+            return ResponseManager.bad_request(
+                error="Missing 'responsible_serial' in case document"
+            )
+
+        # debug func call
+        current_app.logger.debug(f"calling get_entity() from get_entity()")
+        user_res = cls.get_entity(
+            entity=MongoDBEntity.USERS,
+            office_serial=office_serial,
+            filters={"serial": responsible_serial},
+            limit=1,
+            expand=False,
+        )
+
+        if not ResponseManager.is_success(response=user_res):
+            # debug error
+            current_app.logger.debug(
+                f"failed to expand responsible_serial={responsible_serial}, "
+                f"error={ResponseManager.get_error(response=user_res)}"
+            )
+            return user_res
+
+        # debug success
+        responsible_entity = ResponseManager.get_data(response=user_res)[0]
+        responsible = responsible_entity.get(MongoDBEntity.USERS, {})
+        case_doc["responsible"] = responsible
+
+        current_app.logger.debug(f"returning from _expand_case_responsible()")
 
     @classmethod
     def _expand_case_clients(cls, case_doc, office_serial):
