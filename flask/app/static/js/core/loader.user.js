@@ -92,8 +92,6 @@
 
         const result = await loadInternal(page, force);
 
-        console.log(page)
-
         if (window.Nav?.highlightInSidebar) {
             if (linkEl) {
                 const cls = linkEl.closest('.sub-sidebar') ? 'sub-sidebar' : 'sidebar';
