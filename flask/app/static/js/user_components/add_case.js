@@ -571,11 +571,11 @@ function initCaseFormPreview() {
     const form_data = {
       created_at: timestamp,
       title: fd.get('title'),
-      responsible_serial: window.caseResponsible ? window.caseResponsible.serial : null,
+      responsible_serial: window.caseResponsible,
       field: fd.get('field'),
       facts: fd.get('facts'),
       against: fd.get('against'),
-      against_type: document.getElementById('against-type')?.value || '',
+      against_type: fd.get('against_type'),
       clients_with_roles: window.caseClientsManager.list.map(c => ({
         client_serial: c.serial,
         role: c.role,
