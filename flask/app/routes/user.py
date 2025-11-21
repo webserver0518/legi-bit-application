@@ -101,6 +101,7 @@ def get_office_users():
     """
     office_serial = AuthorizationManager.get_office_serial()
     if not office_serial:
+        current_app.logger.debug("returning bad_request: 'office_serial' is required")
         return ResponseManager.error("Missing 'office_serial' in auth")
 
     users_res = mongodb_service.get_entity(
@@ -319,6 +320,29 @@ def delete_file():
     return ResponseManager.success(message="File deleted")
 
 
+@user_bp.route("/get_office_files", methods=["GET"])
+def get_office_files():
+    """
+    Return all files for the current office with full basic details
+    (for dropdown + table auto-fill).
+    """
+    office_serial = AuthorizationManager.get_office_serial()
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+
+    files_res = mongodb_service.get_entity(
+        entity=MongoDBEntity.FILES,
+        office_serial=office_serial,
+        filters=None,
+    )
+
+    if not ResponseManager.is_success(files_res):
+        return ResponseManager.internal("Failed to fetch clients")
+
+    files = ResponseManager.get_data(files_res)
+    return ResponseManager.success(data=files)
+
+
 # ---------------- CASES MANAGEMENT ---------------- #
 
 
@@ -387,67 +411,6 @@ def get_office_cases():
 
     filters = {}
 
-    # --- Simple filters ---
-    if field:
-        filters["field"] = {"$regex": field, "$options": "i"}
-        current_app.logger.debug(f"📘 Added field filter: {filters['field']}")
-    if status:
-        filters["status"] = status
-        current_app.logger.debug(f"⚙️ Added status filter: {status}")
-
-    # --- Title tokens (each token must appear in title) ---
-    if title_tokens:
-        filters.setdefault("$and", [])
-        for token in title_tokens:
-            filters["$and"].append({"title": {"$regex": token, "$options": "i"}})
-        current_app.logger.debug(f"🧩 Added title tokens filter: {filters['$and']}")
-
-    # --- Client tokens (search via CLIENTS collection) ---
-    if client_tokens:
-        client_filter = {"$and": []}
-        for token in client_tokens:
-            client_filter["$and"].append(
-                {
-                    "$or": [
-                        {"first_name": {"$regex": token, "$options": "i"}},
-                        {"last_name": {"$regex": token, "$options": "i"}},
-                    ]
-                }
-            )
-
-        current_app.logger.debug(f"👤 Searching clients with filters: {client_filter}")
-
-        clients_res = mongodb_service.get_entity(
-            entity=MongoDBEntity.CLIENTS,
-            office_serial=office_serial,
-            filters=client_filter,
-        )
-
-        if not ResponseManager.is_success(clients_res):
-            current_app.logger.error("❌ Client search failed")
-            return ResponseManager.success(data=[])
-
-        clients = ResponseManager.get_data(clients_res)
-        client_serials = [c["clients"]["serial"] for c in clients]
-        current_app.logger.debug(
-            f"👤 Found {len(client_serials)} matching clients: {client_serials}"
-        )
-
-        if not client_serials:
-            current_app.logger.debug("⚠️ No clients matched → returning []")
-            return ResponseManager.success(data=[])
-
-        # ✅ שינוי חשוב: תואם למבנה החדש של clients_serials
-        filters["$or"] = [
-            {f"clients_serials.{serial}": {"$exists": True}}
-            for serial in client_serials
-        ]
-        current_app.logger.debug(f"🔗 Added clients_serials filter: {filters['$or']}")
-
-    current_app.logger.debug(
-        f"🧱 Final Mongo filters: {filters if filters else 'None'}"
-    )
-
     # --- Fetch cases ---
     cases_res = mongodb_service.get_entity(
         entity=MongoDBEntity.CASES,
@@ -465,7 +428,7 @@ def get_office_cases():
         return cases_res
 
     cases = ResponseManager.get_data(cases_res)
-    current_app.logger.debug(f"✅ Returning {len(cases)} cases after applying filters")
+    current_app.logger.debug(f"✅ Returning {len(cases)} cases")
     return ResponseManager.success(data=cases)
 
 
@@ -802,34 +765,7 @@ def get_office_clients():
         return ResponseManager.internal("Failed to fetch clients")
 
     clients = ResponseManager.get_data(clients_res)
-    result = []
-
-    for c in clients:
-        doc = c.get("clients") or c  # תלוי איך נשמר אצלך במונגו
-        serial = doc.get("serial")
-        if not serial:
-            continue
-
-        result.append(
-            {
-                "serial": serial,
-                "first_name": doc.get("first_name", ""),
-                "last_name": doc.get("last_name", ""),
-                "id_card_number": doc.get("id_card_number", ""),
-                "phone": doc.get("phone", ""),
-                "city": doc.get("city", ""),
-                "street": doc.get("street", ""),
-                "home_number": doc.get("home_number", ""),
-                "postal_code": doc.get("postal_code", ""),
-                "email": doc.get("email", ""),
-                "birth_date": doc.get("birth_date", ""),
-                "role": doc.get("role", "secondary"),
-            }
-        )
-
-    result.sort(key=lambda x: (x.get("first_name", ""), x.get("last_name", "")))
-
-    return ResponseManager.success(data=result)
+    return ResponseManager.success(data=clients)
 
 
 # ---------------- LOADERS ---------------- #
@@ -873,6 +809,11 @@ def load_add_client():
 @user_bp.route("/load_view_client")
 def load_view_client():
     return render_template("user_components/view_client.html")
+
+
+@user_bp.route("/load_files")
+def load_files():
+    return render_template("user_components/files.html")
 
 
 @user_bp.route("/load_attendance_birds_view")
