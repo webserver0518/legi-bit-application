@@ -24,7 +24,6 @@ window.init_view_case = async function () {
         if (el) el.textContent = window.utils.safeValue(val);
       };
       setText("case-title", caseObj.title);
-      setText("case-serial", caseObj.serial.toString());
       setText("case-created-by", user.username);
       setText("case-responsible", caseObj.responsible.username);
       setText("case-field", caseObj.field);
