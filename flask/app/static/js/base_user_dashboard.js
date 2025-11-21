@@ -36,13 +36,23 @@ function showSubMenu(type, force = false) {
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="cases_birds_view">מבט על תיקים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="cases">תיקים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="add_case">הוספת תיק</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="view_case">צפייה בתיק</a>`;
+      <hr>
+      <div class="sub-group" id="recent-cases">
+        <ul class="list-unstyled mb-0" id="recent-cases-list"></ul>
+      </div>
+      `;
   } else if (type === 'all_clients') {
     html = `
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clients_birds_view">מבט על לקוחות</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clients">לקוחות</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="add_client">הוספת לקוח</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="view_client">צפייה בלקוח</a>`;
+      <hr>
+      `;
+  } else if (type === 'all_files') {
+    html = `
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="files">קבצים</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="add_file">הוספת קובץ</a>
+      <hr>
+      `;
   } else if (type === 'attendance') {
     html = `
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="attendance_birds_view">מבט על נוכחות</a>`;
@@ -53,11 +63,9 @@ function showSubMenu(type, force = false) {
   // make sure it’s visible after (re)build
   ensureSubmenuVisible();
 
-  // highlight retained page if exists
-  const pageNow = Store.get('current_dashboard_content');
-  if (pageNow) {
-    const link = cont.querySelector(`[data-page="${pageNow}"]`);
-    if (link) window.Nav.highlightInSidebar(link, 'sub-sidebar');
+  if (type === 'all_cases') {
+    renderRecentCases();
+    bindRecentCasesEvents();
   }
 }
 
@@ -106,6 +114,16 @@ window.addEventListener('DOMContentLoaded', () => {
       if (link.dataset.subSidebar) {
         showSubMenu(link.dataset.subSidebar);
         ensureSubmenuVisible(); // <- ensure visible after switching sections
+
+        let defaultPage = null;
+        if (link.dataset.subSidebar === 'all_cases') defaultPage = 'cases';
+        else if (link.dataset.subSidebar === 'all_clients') defaultPage = 'clients';
+        else if (link.dataset.subSidebar === 'all_files') defaultPage = 'files';
+        else if (link.dataset.subSidebar === 'attendance') defaultPage = 'attendance_birds_view';
+
+        if (defaultPage) {
+          window.UserLoader.navigate({ page: defaultPage, force: true });
+        }
       }
     });
   }
