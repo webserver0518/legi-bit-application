@@ -49,6 +49,7 @@
       "defendant": "נתבע",
       "main": "ראשי",
       "secondary": "משני",
+      "appendix": "נספח",
     };
 
 
