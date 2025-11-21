@@ -101,6 +101,7 @@
                 const mainLink = document.querySelector(`.sidebar a[data-page="${page}"]`);
                 if (subLink) window.Nav.highlightInSidebar(subLink, 'sub-sidebar');
                 else if (mainLink) window.Nav.highlightInSidebar(mainLink, 'sidebar');
+
             }
         }
         if (window.Nav?.setLastPage) window.Nav.setLastPage(page, 'user');
