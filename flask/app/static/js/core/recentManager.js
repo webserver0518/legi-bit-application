@@ -1,0 +1,101 @@
+// --- Recents Manager (queue of last items) ---
+(function () {
+    const MAX = 10;
+    const store = window.Core.storage.create('recents'); // uses localStorage if available
+
+    const keyFor = (kind) => `recent_${kind}s`; // 'case' -> 'recent_cases'
+    const titlesKey = 'recent_case_titles';
+
+    function get(kind) {
+        return store.get(keyFor(kind), []);
+    }
+
+    function set(kind, arr) {
+        store.set(keyFor(kind), Array.isArray(arr) ? arr : []);
+        return get(kind);
+    }
+
+    // ---- Titles map (serial -> title) ----
+    function getTitlesMap() {
+        return store.get(titlesKey, {});
+    }
+    function setTitlesMap(map) {
+        store.set(titlesKey, map || {});
+        return getTitlesMap();
+    }
+    function setCaseTitle(serial, title) {
+        const s = String(serial ?? '');
+        if (!s) return;
+        const map = getTitlesMap();
+        map[s] = String(title ?? '').trim();
+        setTitlesMap(map);
+    }
+    function getCaseTitle(serial) {
+        const map = getTitlesMap();
+        return map[String(serial ?? '')] || '';
+    }
+
+    // touch: move to front if exists; otherwise add to front; cap length to MAX
+    function touch(kind, id) {
+        const sid = String(id ?? '');
+        if (!sid) return { list: get(kind), existed: false };
+
+        let list = get(kind).filter(x => x !== sid); // remove if existed
+        const existed = (list.length !== get(kind).length);
+        list.unshift(sid);                            // put at front
+        if (list.length > MAX) list = list.slice(0, MAX);
+
+        set(kind, list);
+        return { list, existed };
+    }
+
+    async function openCase(serial) {
+        touch('case', serial);
+        window.renderRecentCases();
+
+        const a = document.querySelector(`.sub-sidebar a.recent-case[data-case-serial="${serial}"]`);
+        if (a) window.Nav.highlightInSidebar(a, 'sub-sidebar');
+
+        await window.UserLoader.navigate({ page: 'view_case', force: true });
+    }
+
+    window.Recents = { get, set, touch, openCase, setCaseTitle, getCaseTitle };
+})();
+
+
+
+// --- Recent Cases UI helpers ---
+function renderRecentCases() {
+    const ul = document.getElementById('recent-cases-list');
+
+    const list = window.Recents.get('case');
+    ul.innerHTML = '';
+
+    // בינתיים מציגים רק את המספר (serial) – בלי ניווט
+    const frag = document.createDocumentFragment();
+    list.forEach(serial => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <a href="#" class="sub-sidebar-link recent-case"
+                data-type="user" data-sidebar="sub-sidebar"
+                data-case-serial="${serial}">
+                ${window.Recents.getCaseTitle(serial)}
+            </a>`;
+        frag.appendChild(li);
+    });
+    ul.appendChild(frag);
+}
+
+function bindRecentCasesEvents() {
+    const cont = document.getElementById('subMenu');
+    if (!cont) return;
+
+    // לחיצה על פריט אחרון – נוגעים בתור בלבד (בלי ניווט)
+    cont.addEventListener('click', (e) => {
+        const a = e.target.closest('a.recent-case');
+        if (!a) return;
+        e.preventDefault();
+        const serial = a.dataset.caseSerial;
+        window.Recents.openCase(serial);
+    });
+}
