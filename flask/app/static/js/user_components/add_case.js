@@ -128,7 +128,7 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
       fileEntry.serial = file_serial;
 
       // 2️⃣ צור key ייחודי הכולל office, case, file
-      const uploadKey = `uploads/${office_serial}/${case_serial}/${file_serial}-${file.name}`;
+      const uploadKey = `uploads/${office_serial}/${case_serial}/${file_serial}/${file.name}`;
       fileEntry.key = uploadKey;
 
 
