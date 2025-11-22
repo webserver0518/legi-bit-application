@@ -144,177 +144,6 @@ table td {
   color: #343a40;
 }
 
-/* 🧩 אנימציה קטנה */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-
-.file-name-cell {
-  direction: rtl;
-  text-align: right;
-}
-
-.file-name-cell .file-icon {
-  width: 18px;
-  height: 18px;
-  vertical-align: middle;
-  margin-left: 6px;
-  /* רווח בין האייקון לשם */
-}
-
-
-
-
-
-
-/* ==========================================================
-   📁 FILES TABLE — SAME DESIGN AS CASES TABLE
-   ========================================================== */
-
-/* סרגל סינון – רק מבנה */
-.filter-bar {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 8px;
-  margin-bottom: 12px;
-
-  background: #c3daf5;
-  /* רקע עדין */
-  border: 1px solid #ddd;
-  /* מסגרת קלה */
-  border-radius: 8px;
-  /* עיגול פינות */
-  padding: 12px 14px;
-  /* ריווח פנימי */
-}
-
-/* === FILTER INPUT === */
-.filter-input {
-  flex: 1;
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-  outline: none;
-}
-
-/* מצב פוקוס */
-.filter-input:focus {
-  border-color: #888;
-}
-
-/* === FILTER SELECT === */
-.filter-select {
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-  outline: none;
-  background: white;
-  min-width: 140px;
-}
-
-.filter-select:focus {
-  border-color: #888;
-}
-
-/* === FILTER BUTTON === */
-.filter-btn {
-  padding: 8px 14px;
-  font-size: 14px;
-  border: 1px solid #bbb;
-  border-radius: 6px;
-  background: #f2f2f2;
-  cursor: pointer;
-}
-
-.filter-btn:hover {
-  background: #e6e6e6;
-}
-
-/* === TABLE BASE === */
-.customTable {
-  width: 100% !important;
-  border-collapse: collapse;
-  direction: rtl;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-/* === TABLE HEADER === */
-.customTable thead th {
-  background: #c3daf5;
-  /* רקע עדין לכותרת */
-  padding: 4px 6px;
-  border-bottom: 2px solid #444d58;
-  font-weight: 600;
-  text-align: center !important;
-  white-space: nowrap;
-}
-
-/* === TABLE BODY CELLS === */
-.customTable td {
-  padding: 4px 6px;
-  border-bottom: 1px solid #eee;
-  /* קו דק בין שורות */
-  text-align: center;
-}
-
-/* === ROW HEIGHT === */
-.customTable tr {
-  height: 32px;
-}
-
-/* === HOVER EFFECT === */
-.customTable tbody tr:hover {
-  background: #c3daf5 !important;
-}
-
-
-/* כותרת בטבלה */
-.customTable th.col-wide {
-  width: 350px;
-}
-
-/* התאים באותה עמודה (מבוסס מיקום) */
-.customTable td.col-wide {
-  width: 350px;
-  text-align: right !important;
-}
-
-.dataTables_paginate {
-  float: left !important;
-  text-align: left !important;
-  direction: rtl;
-}
-
-/* ✨ מצב טעינה של שורת הסינון */
-.filter-bar.loading {
-  opacity: 0.5;
-  transition: opacity 0.3s ease;
-}
-
-/* כשהיא חוזרת לפעילות */
-.filter-bar {
-  transition: opacity 0.3s ease;
-}
-
-.filter-bar.loading * {
-  cursor: not-allowed !important;
-}
-
-
-
-
 
 /* הנקודה עצמה */
 .status-dot {
@@ -337,45 +166,30 @@ table td {
 }
 
 
-
-
-/* Drag & Drop area */
-#vc-drop-area {
-  background: #f8f9fa;
-  border: 2px dashed #90caf9;
-  border-radius: 8px;
-  padding: 25px;
-  text-align: center;
-  cursor: pointer;
-  transition: background 0.2s;
+.event-row.file {
+  background-color: #e6aaef;
+  /* סגול בהיר */
 }
 
-#vc-drop-area.highlight {
-  border: 2px dashed #0d6efd !important;
-  background: #e1f5fe;
+.event-row.task {
+  background-color: #f5c983;
+  /* כתום בהיר */
 }
 
-/* Pending files table */
-#vc-newFilesTable {
-  margin-top: 0.75rem;
+.event-row {
+  max-height: 1rem;
+  /* גובה קבוע לשורה */
+  line-height: 1rem;
+  /* כדי שכל הטקסט והאייקון יהיו מיושרים אנכית */
+  overflow: hidden;
+  /* למנוע גלילה פנימית אם יש טקסט ארוך */
+  white-space: nowrap;
+  /* לא לשבור שורות */
 }
 
-#vc-newFilesTable thead th,
-#vc-newFilesTable tbody td {
-  vertical-align: middle;
-}
-
-/* Upload button – same look as add_case buttons */
-#vc-upload-btn {
-  border-radius: 6px;
-  padding: 10px 16px;
-  background-color: #039cc7;
-  color: #fff;
-  border: none;
-  transition: background-color 0.2s ease;
-}
-
-#vc-upload-btn:hover {
-  background-color: #0288d1;
-  color: #fff;
+.event-details {
+  text-overflow: ellipsis;
+  /* שלוש נקודות אם טקסט ארוך מדי */
+  overflow: hidden;
+  white-space: nowrap;
 }
