@@ -1,10 +1,12 @@
 # app/routes/user.py
+from datetime import datetime, timezone
 from flask import Blueprint, render_template, request, flash, current_app
 
 from ..services import mongodb_service, s3_service
 from ..managers.response_management import ResponseManager
 from ..managers.json_management import JSONManager
 from ..managers.auth_management import AuthorizationManager
+from ..managers.mfa_manager import MFAManager
 from ..constants.constants_mongodb import MongoDBEntity, MongoDBFilters, MongoDBData
 
 user_bp = Blueprint("user", __name__)
@@ -613,7 +615,7 @@ def update_case_status():
     update_data = MongoDBData.Case.status(new_status)
     if not update_data:
         return ResponseManager.bad_request(
-            f"Invalid status '{new_status}'. Must be one of: open, closed, archived"
+            f"Invalid status '{new_status}'. Must be one of: active, archived"
         )
 
     current_app.logger.debug(
@@ -771,6 +773,12 @@ def get_office_clients():
 # ---------------- LOADERS ---------------- #
 
 
+@user_bp.route("/load_security_mfa")
+@AuthorizationManager.login_required
+def load_security_mfa():
+    return render_template("user_components/security_mfa.html")
+
+
 @user_bp.route("/load_cases_birds_view")
 def load_cases_birds_view():
     return render_template("user_components/cases_birds_view.html")
@@ -849,3 +857,167 @@ def get_case_statuses():
     except Exception as e:
         current_app.logger.error(f"❌ get_case_statuses error: {e}")
         return ResponseManager.error("Failed to load case statuses")
+
+
+# ---------------- MFA (TOTP) ---------------- #
+
+
+@user_bp.route("/user/mfa/enroll", methods=["POST"])
+@AuthorizationManager.login_required
+def user_mfa_enroll():
+    office_serial = AuthorizationManager.get_office_serial()
+    user_serial = AuthorizationManager.get_user_serial()
+    username = AuthorizationManager.get_username() or f"user-{user_serial}"
+    if not office_serial or not user_serial:
+        return ResponseManager.error("Missing auth context")
+
+    # אם כבר מופעל – נחזיר שגיאה (אפשר לשנות למדיניות אחרת)
+    user_res = mongodb_service.get_entity(
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(user_serial)),
+        limit=1,
+    )
+    if not ResponseManager.is_success(user_res):
+        return user_res
+    docs = ResponseManager.get_data(user_res) or []
+    user_doc = (docs[0] or {}).get("users", {}) if docs else {}
+    if (user_doc.get("mfa") or {}).get("status") == "enabled":
+        return ResponseManager.bad_request(
+            "MFA already enabled. Reset first to re-enroll."
+        )
+
+    # יצירת הרשמה חדשה
+    secret, otpauth_uri, qr_data_uri = MFAManager.start_enrollment(
+        account_name=username
+    )
+    pending_doc = {
+        "mfa": {
+            "status": "pending",
+            "method": "totp",
+            "secret": secret,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+    }
+    up_res = mongodb_service.update_entity(
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(user_serial)),
+        update_data=pending_doc,
+        multiple=False,
+        operator="$set",
+    )
+    if not ResponseManager.is_success(up_res):
+        return up_res
+
+    return ResponseManager.success(
+        data={
+            "secret": secret,
+            "otpauth_uri": otpauth_uri,
+            "qr_image": qr_data_uri,
+        }
+    )
+
+
+@user_bp.route("/user/mfa/verify-enroll", methods=["POST"])
+@AuthorizationManager.login_required
+def user_mfa_verify_enroll():
+    payload = request.get_json(silent=True) or {}
+    code = (payload.get("code") or "").strip()
+
+    office_serial = AuthorizationManager.get_office_serial()
+    user_serial = AuthorizationManager.get_user_serial()
+    if not office_serial or not user_serial:
+        return ResponseManager.error("Missing auth context")
+    if not (code.isdigit() and len(code) == 6):
+        return ResponseManager.bad_request("Invalid code format")
+
+    # שליפת secret מ-mfa.pending
+    user_res = mongodb_service.get_entity(
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(user_serial)),
+        limit=1,
+    )
+    if not ResponseManager.is_success(user_res):
+        return user_res
+    docs = ResponseManager.get_data(user_res) or []
+    user_doc = (docs[0] or {}).get("users", {}) if docs else {}
+    mfa = user_doc.get("mfa") or {}
+    if mfa.get("status") != "pending" or not mfa.get("secret"):
+        return ResponseManager.bad_request("No pending MFA enrollment")
+
+    # אימות TOTP
+    verify_res = MFAManager.verify_and_enable(
+        office_serial, user_serial, mfa["secret"], code
+    )
+    if not ResponseManager.is_success(verify_res):
+        return verify_res
+
+    # עדכון סטטוס ל-enabled ושמירת enabled_at
+    final_res = mongodb_service.update_entity(
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(user_serial)),
+        update_data={
+            "mfa": {
+                "status": "enabled",
+                "method": "totp",
+                "secret": mfa["secret"],
+                "created_at": mfa.get("created_at"),
+                "enabled_at": datetime.now(timezone.utc).isoformat(),
+            }
+        },
+        multiple=False,
+        operator="$set",
+    )
+    if not ResponseManager.is_success(final_res):
+        return final_res
+
+    return ResponseManager.success(message="MFA enabled")
+
+
+@user_bp.route("/user/mfa/reset", methods=["POST"])
+@AuthorizationManager.login_required
+def user_mfa_reset():
+    """
+    איפוס מלא של MFA: מחזיר את שדה users.mfa ל-None.
+    כרגע נדרש שדה 'password' בבקשה (אימות מינימלי כפי שסוכם).
+    """
+    payload = request.get_json(silent=True) or {}
+    password = (payload.get("password") or "").strip()
+    if not password:
+        return ResponseManager.bad_request("Password confirmation is required")
+
+    office_serial = AuthorizationManager.get_office_serial()
+    user_serial = AuthorizationManager.get_user_serial()
+    if not office_serial or not user_serial:
+        return ResponseManager.error("Missing auth context")
+
+    # מאפס לחלוטין את שדה ה-mfa (ללא session, ללא mfa_pending)
+    res = MFAManager.reset_user_mfa(office_serial, user_serial)
+    if not ResponseManager.is_success(res):
+        return res
+
+    return ResponseManager.success(message="MFA reset")
+
+
+@user_bp.route("/user/mfa/status", methods=["GET"])
+@AuthorizationManager.login_required
+def user_mfa_status():
+    office_serial = AuthorizationManager.get_office_serial()
+    user_serial = AuthorizationManager.get_user_serial()
+    if not office_serial or not user_serial:
+        return ResponseManager.error("Missing auth context")
+
+    user_res = mongodb_service.get_entity(
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(user_serial)),
+        limit=1,
+    )
+    if not ResponseManager.is_success(user_res):
+        return user_res
+    docs = ResponseManager.get_data(user_res) or []
+    user_doc = (docs[0] or {}).get("users", {}) if docs else {}
+    return ResponseManager.success(data={"mfa": user_doc.get("mfa")})
