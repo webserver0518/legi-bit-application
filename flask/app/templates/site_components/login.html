@@ -1,16 +1,32 @@
 <div class="login-wrapper">
-  <div class="d-flex align-items-center justify-content-center">
-    <div class="login-card">
-      <form method="post" action="/login" id="loginForm">
-        <div class="mb-3">
-          <input type="text" name="username" class="form-control" required autocomplete="off" placeholder="שם משתמש"
-            autofocus>
+    <div class="d-flex align-items-center justify-content-center">
+        <div class="login-card">
+            <form method="post" action="/login" id="loginForm">
+
+
+                <div class="mb-3">
+                    <input type="text" name="username" class="form-control" required autocomplete="off"
+                        placeholder="שם משתמש" autofocus>
+                </div>
+                <div class="mb-3">
+                    <input type="password" name="password" class="form-control" required autocomplete="off"
+                        placeholder="סיסמא">
+                </div>
+                <button type="submit" class="btn btn-primary w-100" id="login-submit">התחבר</button>
+
+                <!-- בלוק MFA חבוי מראש -->
+                <div class="mb-3">
+                    <div id="mfa-block" hidden>
+                        <div class="mb-3">
+                            <input id="mfa_code" name="mfa_code" type="text" inputmode="numeric" maxlength="6"
+                                class="form-control" autocomplete="one-time-code" pattern="^[0-9]{6}$" dir="ltr"
+                                placeholder="קוד MFA (6 ספרות)" />
+                        </div>
+                        <button id="mfa-submit" type="button" class="btn btn-primary w-100">אימות דו־שלבי</button>
+                    </div>
+                </div>
+
+            </form>
         </div>
-        <div class="mb-3">
-          <input type="password" name="password" class="form-control" required autocomplete="off" placeholder="סיסמא">
-        </div>
-        <button type="submit" class="btn btn-primary w-100">התחבר</button>
-      </form>
     </div>
-  </div>
 </div>
