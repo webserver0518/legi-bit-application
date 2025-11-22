@@ -8,7 +8,7 @@ window.init_files = async function () {
         const tbody = table.find("tbody");
         let dataTableInstance = null;
 
-        let CURRENT_ROWS = [];
+        window.CURRENT_ROWS = [];
 
         function loadRows() {
 
@@ -25,7 +25,7 @@ window.init_files = async function () {
                         dataTableInstance = null;
                     }
                     const rows = Array.isArray(payload?.data) ? payload.data : [];
-                    CURRENT_ROWS = rows;
+                    window.CURRENT_ROWS = rows;
 
                     // Superstring for each
                     rows.forEach(obj => {
@@ -45,7 +45,7 @@ window.init_files = async function () {
                 })
                 .finally(() => {
                     // 🔓 רק אם יש תיקים — נפתח את הסינון
-                    const hasRows = (CURRENT_ROWS?.length || 0) > 0;
+                    const hasRows = (window.CURRENT_ROWS?.length || 0) > 0;
                     if (hasRows) {
                         window.Tables.setFilterBarLoading(filterBar, false);
                     }
@@ -59,7 +59,7 @@ window.init_files = async function () {
                 .value.trim()
                 .toLowerCase();
 
-            let filtered = [...CURRENT_ROWS];
+            let filtered = [...window.CURRENT_ROWS];
 
             // 🔍 סינון לפי חיפוש
             if (search) {
@@ -83,7 +83,7 @@ window.init_files = async function () {
             searchInput.value = "";
 
             // רנדר מחדש
-            renderRows(CURRENT_ROWS);
+            renderRows(window.CURRENT_ROWS);
         });
 
         function renderRows(list) {
@@ -109,10 +109,18 @@ window.init_files = async function () {
                         : "-";
 
                     return `
-                    <tr onclick="OpenNewTab('${file.serial}')">
-                        <td>${window.utils.safeValue(file.name)}</td>
-                        <td>${window.utils.safeValue(file.description)}</td>
-                        <td>${window.utils.safeValue(file.created_at)}</td>
+                    <tr data-file-serial="${file.serial}" data-case-serial="${file.case_serial || ''}">
+                        <td>
+                            ${getFileIconHTML(file.name)}
+                            <a href="#" onclick="return OpenNewTab('${file.serial}')">
+                                ${window.utils.safeValue(file.name)}
+                            </a>
+                        </td>
+                        <td class="editable-desc"
+                            data-old-value="${window.utils.safeValue(file.description)}">
+                                ${window.utils.safeValue(file.description)}
+                        </td>
+                        <td>${window.utils.safeValue(createdDate)}</td>
                     </tr>
                     `;
                 })
@@ -131,12 +139,12 @@ window.init_files = async function () {
         loadRows();
 
         document.getElementById("export-excel").addEventListener("click", () => {
-            if (!CURRENT_ROWS.length) {
+            if (!window.CURRENT_ROWS.length) {
                 window.toast.warning("אין רשומות לייצוא");
                 return;
             }
 
-            const rows = CURRENT_ROWS.map(obj => {
+            const rows = window.CURRENT_ROWS.map(obj => {
                 const file = obj.files || {};
 
                 const createdDate = file.created_at
@@ -157,6 +165,46 @@ window.init_files = async function () {
 };
 
 function OpenNewTab(serial) {
+    try {
+        // מצא את הרשומה (תומך גם במבנה {files: {...}})
+        const rec = (window.CURRENT_ROWS || [])
+            .map(o => o.files || o)
+            .find(f => String(f.serial) === String(serial));
+
+        if (!rec) {
+            window.toast?.error?.("קובץ לא נמצא");
+            return false;
+        }
+
+        const caseSerial = rec.case_serial;
+        const fileName = rec.name;
+
+        if (!caseSerial || !fileName) {
+            window.toast?.error?.("נתוני קובץ חסרים (case_serial / name)");
+            return false;
+        }
+
+        const qs =
+            `case_serial=${encodeURIComponent(caseSerial)}` +
+            `&file_serial=${encodeURIComponent(serial)}` +
+            `&file_name=${encodeURIComponent(fileName)}`;
+
+        window.API.getJson(`/get_file_url?${qs}`)
+            .then(res => {
+                if (!res?.success || !res?.data) {
+                    window.toast?.error?.("נכשל בהפקת קישור זמני לצפייה");
+                    return;
+                }
+                // פתח בלשונית חדשה
+                window.open(res.data, "_blank", "noopener,noreferrer");
+            })
+            .catch(() => window.toast?.error?.("שגיאה בבקשת קישור לקובץ"));
+
+    } catch (e) {
+        console.error(e);
+        window.toast?.error?.("שגיאה בפתיחת הקובץ");
+    }
+    return false; // למנוע ניווט <a href="#">
 }
 
 function RowToSuperString(file) {
@@ -201,3 +249,123 @@ function RowToSuperString(file) {
     walk(null, file);
     return parts.join("\n").toLowerCase();
 }
+
+
+
+// מחזיר HTML של <img> לאייקון מתאים לפי שם קובץ
+function getFileIconHTML(filename) {
+    const name = (filename || "").toLowerCase();
+
+    const byExt = (exts, icon) => exts.some(ex => name.endsWith("." + ex)) && icon;
+
+    const icon =
+        byExt(["pdf"], "PDF") ||
+        byExt(["doc", "docx", "rtf"], "WORD") ||
+        byExt(["xls", "xlsx", "csv"], "EXCEL") ||
+        byExt(["jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg"], "IMAGE") ||
+        byExt(["mp4", "mov", "avi", "mkv", "webm", "m4v"], "VIDEO") ||
+        byExt(["mp3", "m4a", "wav", "ogg", "flac"], "AUDIO") ||
+        byExt(["zip", "rar", "7z", "tar", "gz", "bz2"], "ARCHIVE") ||
+        "GENERIC";
+
+    const src = `/static/images/icons/${icon}.svg`;
+    // סגנון קטן inline כדי לא לגעת ב-CSS
+    return `<img src="${src}" alt="" style="width:18px;height:18px;vertical-align:-3px;margin-inline-end:6px;">`;
+}
+
+
+
+(function enableInlineEditDescription() {
+    const table = document.querySelector(".customTable");
+    if (!table) return;
+
+    // דאבל-קליק פותח input
+    table.addEventListener("dblclick", (e) => {
+        const cell = e.target.closest("td.editable-desc");
+        if (!cell) return;
+
+        // אל תפתח editor אם כבר פתוח
+        if (cell.querySelector("input")) return;
+
+        const row = cell.closest("tr");
+        const fileSerial = row?.dataset?.fileSerial;
+        const caseSerial = row?.dataset?.caseSerial || ""; // אם זמין
+        const oldValue = cell.textContent.trim();
+
+        // בונה אינפוט
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = oldValue;
+        input.className = "form-control";
+        input.style.minWidth = "220px";
+
+        // ריקון והכנסה
+        cell.innerHTML = "";
+        cell.appendChild(input);
+        input.focus();
+        input.select();
+
+        // ביטול (ESC)
+        input.addEventListener("keydown", (ev) => {
+            if (ev.key === "Escape") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                cell.textContent = oldValue;
+                return;
+            }
+            if (ev.key === "Enter") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                input.blur(); // מפעיל את שמירת ה-blur למטה
+            }
+        });
+
+        // שמירה (on blur)
+        input.addEventListener("blur", async () => {
+            const newValue = input.value.trim();
+
+            // לא השתנה? החזר ושלום
+            if (newValue === oldValue) {
+                cell.textContent = oldValue;
+                return;
+            }
+
+            // UI: מצב "שומר…"
+            cell.textContent = "שומר…";
+
+            try {
+                // שלח לשרת – שנה מסלול אם שונה אצלך
+                const payload = {
+                    file_serial: Number(fileSerial),
+                    case_serial: caseSerial ? Number(caseSerial) : undefined,
+                    description: newValue
+                };
+
+                const res = await window.API.postJson("/update_file_description", payload);
+
+                if (res?.success) {
+                    // עדכן UI
+                    cell.textContent = newValue;
+
+                    // עדכן גם בזיכרון כדי לשמור סינכרון
+                    const arr = (window.CURRENT_ROWS || []);
+                    const idx = arr.findIndex(o => String((o.files || o).serial) === String(fileSerial));
+                    if (idx >= 0) {
+                        const f = (arr[idx].files || arr[idx]);
+                        f.description = newValue;
+                    }
+
+                    // פידבק קטן (לא חובה)
+                    window.toast?.success?.("התיאור עודכן");
+                } else {
+                    cell.textContent = oldValue;
+                    window.toast?.error?.(res?.message || "נכשל בעדכון התיאור");
+                }
+            } catch (err) {
+                console.error(err);
+                cell.textContent = oldValue;
+                window.toast?.error?.("שגיאה בעת עדכון התיאור");
+            }
+        });
+    });
+})();
