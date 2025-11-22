@@ -48,37 +48,59 @@
 
         </div>
 
+        <div id="case-activity-list" class="activity-list d-flex flex-column gap-2">
 
-
-
-        <!-- 🟧 Clients table -->
-        <div class="case-section mb-5">
-            <h5 class="section-title mb-3">
-                <i class="bi bi-people me-1"></i> לקוחות
-            </h5>
-
-            <div class="table-responsive shadow-sm rounded">
-                <table id="clientsTable" class="table table-hover align-middle text-center">
-                    <thead class="table-light">
-                        <tr>
-                            <th>שם פרטי</th>
-                            <th>שם משפחה</th>
-                            <th>תובע/נתבע</th>
-                            <th>תעודת זהות</th>
-                            <th>טלפון</th>
-                            <th>דוא"ל</th>
-                            <th>ראשי/משני</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- 📄 Example: File item -->
+            <div class="event-row file d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
+                <div class="event-icon fs-5">📄</div>
+                <div class="event-details text-center flex-grow-1">
+                    חוזה_שירות.pdf — תיאור: חוזה מול הלקוח יוסי כהן | לקוח: רוני לוי
+                </div>
+                <div class="event-time text-muted small">21/11/2025 14:32</div>
             </div>
-        </div>
 
+            <!-- 📝 Example: Task item -->
+            <div class="event-row task d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
+                <div class="event-icon fs-5">✏️</div>
+                <div class="event-details text-center flex-grow-1">
+                    לבדוק מסמכים לפני הדיון | תאריך יעד: 22/11/2025 | סטטוס: פתוחה
+                </div>
+                <div class="event-time text-muted small">21/11/2025 13:15</div>
+            </div>
+
+        </div>
     </div>
+
+
+
+    <!-- 🟧 Clients table -->
+    <div class="case-section mb-5">
+        <h5 class="section-title mb-3">
+            <i class="bi bi-people me-1"></i> לקוחות
+        </h5>
+
+        <div class="table-responsive shadow-sm rounded">
+            <table id="clientsTable" class="table table-hover align-middle text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th>שם פרטי</th>
+                        <th>שם משפחה</th>
+                        <th>תובע/נתבע</th>
+                        <th>תעודת זהות</th>
+                        <th>טלפון</th>
+                        <th>דוא"ל</th>
+                        <th>ראשי/משני</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
 
 </div>
