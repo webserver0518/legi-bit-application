@@ -31,8 +31,23 @@ function showSubMenu(type, force = false) {
   cont.dataset.type = type;
 
   let html = '';
-  if (type === 'all_cases') {
+  if (type === 'office') {
     html = `
+      <hr>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_birds_view">מבט על המשרד</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_statuses">סטטוסים</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_add_user">הוספת משתמש</a>
+      `;
+  } else if (type === 'user') {
+    html = `
+      <hr>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="user_birds_view">מבט על משתמש</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="user_update">עדכון</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="security_mfa">אבטחת MFA</a>
+      `;
+  } else if (type === 'all_cases') {
+    html = `
+      <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="cases_birds_view">מבט על תיקים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="cases">תיקים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="add_case">הוספת תיק</a>
@@ -43,18 +58,21 @@ function showSubMenu(type, force = false) {
       `;
   } else if (type === 'all_clients') {
     html = `
+      <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clients">לקוחות</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="add_client">הוספת לקוח</a>
       <hr>
       `;
   } else if (type === 'all_files') {
     html = `
+      <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="files">קבצים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="add_file">הוספת קובץ</a>
       <hr>
       `;
   } else if (type === 'attendance') {
     html = `
+      <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="attendance_birds_view">מבט על נוכחות</a>`;
   }
 
