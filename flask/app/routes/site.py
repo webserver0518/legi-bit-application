@@ -15,6 +15,7 @@ from werkzeug.security import check_password_hash
 import uuid
 
 from ..managers.response_management import ResponseManager
+from ..managers.mfa_manager import MFAManager
 from ..managers.auth_management import AuthenticationManager, AuthorizationManager
 
 
@@ -88,53 +89,69 @@ def load_home():
 # ---------------- AUTH ROUTES ----------------
 
 
-@site_bp.route("/login", methods=["GET", "POST"])
+@site_bp.route("/login", methods=["POST"])
 @AuthorizationManager.logout_required
 def login():
-    try:
-        current_app.logger.debug("Login function called")
+    """
+    JSON-only login endpoint with inline MFA.
+    Returns ResponseManager responses exclusively.
+    Flow:
+      1) username+password → {success:true, data:{require_mfa:true}} if MFA enabled
+      2) username+password+mfa_code (6 digits) → {success:true, data:{redirect:"/dashboard"}}
+    """
+    username = (request.form.get("username") or "").strip()
+    password = (request.form.get("password") or "").strip()
+    mfa_code = (request.form.get("mfa_code") or "").strip()
 
-        if request.method == "POST":
-            username = request.form["username"].strip()
-            password = request.form["password"].strip()
+    if not username or not password:
+        return ResponseManager.bad_request("Missing username or password")
 
-            valid_login_res = AuthenticationManager.authenticate_login(
-                username, password
-            )
+    # 1) Verify credentials
+    valid_login_res = AuthenticationManager.authenticate_login(username, password)
+    if not ResponseManager.is_success(valid_login_res):
+        return ResponseManager.unauthorized(
+            ResponseManager.get_error(valid_login_res) or "Invalid credentials"
+        )
 
-            if not ResponseManager.is_success(response=valid_login_res):
-                flash(ResponseManager.get_error(response=valid_login_res), "danger")
-                return redirect(url_for("site.home"))
+    login_context = ResponseManager.get_data(valid_login_res) or {}
+    user_doc = login_context.get("user") or {}
+    user_doc.pop("password_hash", None)
 
-            # logged in
-            login_context = ResponseManager.get_data(response=valid_login_res)
+    # 2) MFA gate (TOTP)
+    mfa = user_doc.get("mfa") or {}
+    mfa_enabled = mfa.get("status") == "enabled" and mfa.get("method") == "totp"
 
-            if user_context := login_context.get("user", None):
-                user_context.pop("password_hash", None)
-            login_context["session_id"] = str(uuid.uuid4())
+    if mfa_enabled and not (mfa_code.isdigit() and len(mfa_code) == 6):
+        # Stage 1 complete: ask client to show MFA UI
+        return ResponseManager.success(data={"require_mfa": True})
 
-            AuthorizationManager.set_login_context(ctx=login_context)
+    if mfa_enabled:
+        secret = mfa.get("secret") or ""
+        if not MFAManager.verify_totp(secret, mfa_code):
+            return ResponseManager.unauthorized("קוד MFA שגוי")
 
-            expires_at = datetime.utcnow() + current_app.permanent_session_lifetime
-            response = redirect(url_for("site.dashboard"))
-            response.set_cookie(
-                "session_expires",
-                str(int(expires_at.timestamp())),
-                max_age=int(current_app.permanent_session_lifetime.total_seconds()),
-                httponly=False,  # חייב להיות False שה־JS יוכל לקרוא
-                samesite="Lax",
-                path="/",
-            )
+    # 3) Success → establish login context + cookie and return redirect url
+    login_context["session_id"] = str(uuid.uuid4())
+    AuthorizationManager.set_login_context(ctx=login_context)
 
-            return response
+    expires_at = datetime.utcnow() + current_app.permanent_session_lifetime
+    resp, status = ResponseManager.success(data={"redirect": url_for("site.dashboard")})
+    resp.set_cookie(
+        "session_expires",
+        str(int(expires_at.timestamp())),
+        max_age=int(current_app.permanent_session_lifetime.total_seconds()),
+        httponly=False,  # keep as in current app semantics
+        samesite="Lax",
+        path="/",
+    )
+    return resp, status
 
-        # GET fallback → redirect home
-        return redirect(url_for("site.load_login"))
 
-    except Exception as e:
-        current_app.logger.error(f"Login attempt failed")
-        flash(f"Error in Login: {e}", "danger")
-        return redirect(url_for("site.home"))
+@site_bp.route("/login", methods=["GET"])
+@AuthorizationManager.logout_required
+def login_get():
+    # Keep the loader-based flow so CSS/JS load correctly
+    return redirect(url_for("site.load_login"))
 
 
 @site_bp.route("/logout")
