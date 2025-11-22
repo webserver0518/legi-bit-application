@@ -1,0 +1,125 @@
+// user_mfa.js (minimal, no deps)
+(function () {
+    "use strict";
+
+    // --- Elements ---
+    const el = {
+        page: document.getElementById("user-mfa-page"),
+        enrollStart: document.getElementById("mfa-enroll-start"),
+        panel: document.getElementById("mfa-enroll-panel"),
+        qr: document.getElementById("mfa-qr-image"),
+        secret: document.getElementById("mfa-secret"),
+        code: document.getElementById("mfa-code"),
+        verifyBtn: document.getElementById("mfa-enroll-verify"),
+        cancelBtn: document.getElementById("mfa-enroll-cancel"),
+        resetForm: document.getElementById("mfa-reset-form"),
+        resetPassword: document.getElementById("mfa-reset-password"),
+    };
+
+    if (!el.page) return; // page not present
+
+    // --- Small helpers ---
+    function show(node) { if (node) node.hidden = false; }
+    function hide(node) { if (node) node.hidden = true; }
+    function setQR(src) { if (el.qr) el.qr.src = src || ""; }
+    function setSecret(v) { if (el.secret) el.secret.value = v || ""; }
+
+    function toast(msg, type = "info") {
+        // minimal “toast” via alert() fallback
+        // you can replace with your site’s toast later
+        console[type === "error" ? "error" : "log"](msg);
+        alert(msg);
+    }
+
+    async function apiPost(url, payload = {}) {
+        const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload),
+        });
+        // tolerate non-JSON errors
+        let data = null;
+        try { data = await res.json(); } catch { /* ignore */ }
+        return { ok: res.ok, status: res.status, json: data };
+    }
+
+    // --- Enroll: start ---
+    async function handleStartEnroll() {
+        // Ask server to create a new TOTP secret and QR
+        const { ok, json } = await apiPost("/user/mfa/enroll", {});
+        if (!ok || !json?.success) {
+            const msg = json?.message || json?.error || "נכשלה יצירת ה-MFA. נסה/י שוב.";
+            return toast(msg, "error");
+        }
+
+        const { secret, otpauth_uri, qr_image } = json.data || {};
+        // Expect qr_image: data:image/png;base64,...
+        setSecret(secret || "");
+        setQR(qr_image || "");
+
+        // show panel
+        show(el.panel);
+
+        // (Optional) If you want to expose the full URI in minimal page:
+        // You can add an element to show otpauth_uri later if needed.
+        console.log("otpauth_uri:", otpauth_uri);
+    }
+
+    // --- Enroll: verify first code ---
+    async function handleVerifyEnroll() {
+        const code = (el.code?.value || "").trim();
+        if (!/^\d{6}$/.test(code)) {
+            return toast("נא להזין קוד בן 6 ספרות.", "error");
+        }
+
+        const { ok, json } = await apiPost("/user/mfa/verify-enroll", { code });
+        if (!ok || !json?.success) {
+            const msg = json?.message || json?.error || "האימות נכשל. ודא/י את השעה במכשיר והקוד נסי/ה שוב.";
+            return toast(msg, "error");
+        }
+
+        toast("ה-MFA הופעל בהצלחה!");
+        // clean & collapse panel
+        setSecret("");
+        setQR("");
+        if (el.code) el.code.value = "";
+        hide(el.panel);
+    }
+
+    // --- Enroll: cancel ---
+    function handleCancelEnroll() {
+        setSecret("");
+        setQR("");
+        if (el.code) el.code.value = "";
+        hide(el.panel);
+    }
+
+    // --- Reset MFA ---
+    async function handleResetSubmit(e) {
+        e.preventDefault();
+        const password = (el.resetPassword?.value || "").trim();
+
+        const { ok, json } = await apiPost("/user/mfa/reset", { password });
+        if (!ok || !json?.success) {
+            const msg = json?.message || json?.error || "איפוס ה-MFA נכשל.";
+            return toast(msg, "error");
+        }
+
+        toast("ה-MFA אופס בהצלחה.");
+        // Clear UI just in case
+        handleCancelEnroll();
+        if (el.resetPassword) el.resetPassword.value = "";
+    }
+
+    // --- Wire events ---
+    el.enrollStart?.addEventListener("click", handleStartEnroll);
+    el.verifyBtn?.addEventListener("click", handleVerifyEnroll);
+    el.cancelBtn?.addEventListener("click", handleCancelEnroll);
+    el.resetForm?.addEventListener("submit", handleResetSubmit);
+
+    // --- Optional: restrict input to digits only ---
+    el.code?.addEventListener("input", () => {
+        el.code.value = el.code.value.replace(/\D+/g, "").slice(0, 6);
+    });
+})();
