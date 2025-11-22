@@ -112,6 +112,7 @@ window.init_files = async function () {
                     <tr onclick="OpenNewTab('${file.serial}')">
                         <td>${window.utils.safeValue(file.name)}</td>
                         <td>${window.utils.safeValue(file.description)}</td>
+                        <td>${window.utils.safeValue(file.created_at)}</td>
                     </tr>
                     `;
                 })
