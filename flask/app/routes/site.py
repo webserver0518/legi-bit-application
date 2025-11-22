@@ -37,6 +37,11 @@ def healthz():
     return "ok", 200
 
 
+@site_bp.route("/alb-health")
+def alb_health():
+    return {"status": "ok"}, 200
+
+
 # ---------------- HELPERS ---------------- #
 
 """
