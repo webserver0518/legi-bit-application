@@ -154,3 +154,9 @@
     background-color: #dc3545;
     /* אפור */
 }
+
+
+
+.customTable tbody td:first-child {
+    text-align: right !important;
+}

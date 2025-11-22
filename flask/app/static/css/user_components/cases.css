@@ -100,12 +100,12 @@
 
 /* כותרת בטבלה */
 .customTable th.col-wide {
-    width: 350px;
+    width: 300px;
 }
 
 /* התאים באותה עמודה (מבוסס מיקום) */
 .customTable td.col-wide {
-    width: 350px;
+    width: 300px;
     text-align: right !important;
 }
 
@@ -153,4 +153,9 @@
 .status-dot.archived {
     background-color: #dc3545;
     /* אפור */
+}
+
+
+.customTable tbody td:first-child {
+    text-align: right !important;
 }
