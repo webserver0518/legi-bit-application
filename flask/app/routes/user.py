@@ -222,7 +222,7 @@ def get_file_url():
         return ResponseManager.error("Missing 'file_name'")
 
     # 🧩 Build key using standard naming convention
-    key = f"uploads/{office_serial}/{case_serial}/{file_serial}-{file_name}"
+    key = f"uploads/{office_serial}/{case_serial}/{file_serial}/{file_name}"
     current_app.logger.debug(f"🔑 [get_file_url] Generated key: {key}")
 
     # 🧠 Request presigned URL from S3 service
@@ -271,7 +271,7 @@ def delete_file():
     # ----------------------------------------------------
     # Build S3 key
     # ----------------------------------------------------
-    key = f"uploads/{office_serial}/{case_serial}/{file_serial}-{file_name}"
+    key = f"uploads/{office_serial}/{case_serial}/{file_serial}/{file_name}"
     current_app.logger.debug(f"🗑️ [delete_file] Deleting key: {key}")
 
     # ----------------------------------------------------
@@ -343,6 +343,42 @@ def get_office_files():
 
     files = ResponseManager.get_data(files_res)
     return ResponseManager.success(data=files)
+
+
+@user_bp.route("/update_file_description", methods=["POST"])
+def update_file_description():
+    """
+    Update only the 'description' field of a file by its serial.
+    Body JSON:
+      { "file_serial": <int>, "description": "<string>" }
+    """
+    office_serial = AuthorizationManager.get_office_serial()
+    if not office_serial:
+        return ResponseManager.bad_request("Missing 'office_serial' in auth")
+
+    payload = request.get_json(silent=True) or {}
+    file_serial = payload.get("file_serial")
+    description = (payload.get("description") or "").strip()
+
+    if not file_serial:
+        return ResponseManager.bad_request("file_serial is required")
+
+    # בונה עדכון מינימלי; אם תרצה גם updated_at – הוסף כאן
+    update_data = {"description": description}
+
+    res = mongodb_service.update_entity(
+        entity=MongoDBEntity.FILES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(file_serial)),
+        update_data=update_data,
+        multiple=False,
+        operator="$set",
+    )
+
+    if not ResponseManager.is_success(res):
+        return ResponseManager.internal("Failed to update file description")
+
+    return ResponseManager.success(message="File description updated")
 
 
 # ---------------- CASES MANAGEMENT ---------------- #
