@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const proxiedRoutes = [
   { path: '/login', description: 'Form POST with username, password, optional mfa_code', method: 'POST' },
@@ -12,15 +12,15 @@ function App() {
   const [sessionStatus, setSessionStatus] = useState('idle');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchSession = async () => {
+  const fetchSession = useCallback(
+    async (signal) => {
       setSessionStatus('loading');
+      setError('');
+
       try {
         const response = await fetch('/auth_debug', {
           credentials: 'include',
-          signal: controller.signal,
+          signal,
         });
 
         if (!response.ok) {
@@ -35,12 +35,16 @@ function App() {
         setError(err.message || 'Unknown error');
         setSessionStatus('error');
       }
-    };
+    },
+    []
+  );
 
-    fetchSession();
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchSession(controller.signal);
 
     return () => controller.abort();
-  }, []);
+  }, [fetchSession]);
 
   const sessionBody = useMemo(() => {
     if (sessionStatus === 'loading') return 'Loading session from backend...';
@@ -68,6 +72,18 @@ function App() {
               <span className="badge text-bg-light text-uppercase">{sessionStatus}</span>
             </div>
             <div className="card-body">
+              <div className="d-flex gap-2 mb-3 flex-wrap">
+                <a className="btn btn-outline-primary" href="/login">
+                  Go to login
+                </a>
+                <button
+                  className="btn btn-secondary"
+                  disabled={sessionStatus === 'loading'}
+                  onClick={() => fetchSession()}
+                >
+                  Refresh session
+                </button>
+              </div>
               <p className="text-muted small mb-2">
                 Data comes from <code>/auth_debug</code> using <code>credentials: 'include'</code>.
                 Use the existing login flow at <code>/login</code> to populate it.
