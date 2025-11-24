@@ -20,11 +20,17 @@
         );
     }
 
+    const pageMap = {
+        cases: "search_case",
+        clients: "search_client",
+        files: "search_file"
+    };
+
     function pathsFor(page) {
         return {
-            fetchUrl: `/load_${page}`,
-            cssPath: `/static/css/user_components/${page}.css`,
-            jsPath: `/static/js/user_components/${page}.js`
+            fetchUrl: `/load_${pageMap[page]}`,
+            cssPath: `/static/css/user_components/${pageMap[page]}.css`,
+            jsPath: `/static/js/user_components/${pageMap[page]}.js`
         };
     }
 

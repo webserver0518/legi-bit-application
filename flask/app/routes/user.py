@@ -820,9 +820,9 @@ def load_birds_view_cases():
     return render_template("user_components/birds_view_cases.html")
 
 
-@user_bp.route("/load_cases")
-def load_cases():
-    return render_template("user_components/cases.html")
+@user_bp.route("/load_search_case")
+def load_search_case():
+    return render_template("user_components/search_case.html")
 
 
 @user_bp.route("/load_new_case")
@@ -840,9 +840,9 @@ def load_birds_view_clients():
     return render_template("user_components/birds_view_clients.html")
 
 
-@user_bp.route("/load_clients")
-def load_clients():
-    return render_template("user_components/clients.html")
+@user_bp.route("/load_search_client")
+def load_search_client():
+    return render_template("user_components/search_client.html")
 
 
 @user_bp.route("/load_new_client")
@@ -855,9 +855,9 @@ def load_view_client():
     return render_template("user_components/view_client.html")
 
 
-@user_bp.route("/load_files")
-def load_files():
-    return render_template("user_components/files.html")
+@user_bp.route("/load_search_file")
+def load_search_file():
+    return render_template("user_components/search_file.html")
 
 
 @user_bp.route("/load_birds_view_attendance")
