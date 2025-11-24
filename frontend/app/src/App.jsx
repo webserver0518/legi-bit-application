@@ -7,6 +7,9 @@ import CasesPage from './pages/CasesPage';
 import ClientsPage from './pages/ClientsPage';
 import DashboardPage from './pages/DashboardPage';
 import FilesPage from './pages/FilesPage';
+import FilesListPage from './pages/files/FilesListPage';
+import FileUploadPage from './pages/files/FileUploadPage';
+import FilePreviewPage from './pages/files/FilePreviewPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import PublicHomePage from './pages/PublicHomePage';
@@ -43,7 +46,11 @@ function App() {
                 <Route path=":clientSerial" element={<ClientDetailsPage />} />
                 <Route path=":clientSerial/edit" element={<ClientEditPage />} />
               </Route>
-              <Route path="files" element={<FilesPage />} />
+              <Route path="files" element={<FilesPage />}>
+                <Route index element={<FilesListPage />} />
+                <Route path="upload" element={<FileUploadPage />} />
+                <Route path="preview/:fileSerial" element={<FilePreviewPage />} />
+              </Route>
               <Route path="admin/*" element={<AdminPage />} />
             </Route>
       </Route>
