@@ -20,3 +20,8 @@ envs/
 # קבצי IDE (VSCode, PyCharm וכו')
 .vscode/
 .idea/
+# Node/React artifacts
+frontend/app/node_modules/
+frontend/app/dist/
+frontend/app/.vite/
+npm-debug.log*
