@@ -43,7 +43,7 @@ function showSubMenu(type, force = false) {
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_user">מבט על משתמש</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="user_update">עדכון</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="security_mfa">אבטחת MFA</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="security_mfa">אימות דו-שלבי</a>
       <hr>`;
   } else if (type === 'cases') {
     html = `
