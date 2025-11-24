@@ -37,14 +37,14 @@ function showSubMenu(type, force = false) {
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_office">מבט על המשרד</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_statuses">סטטוסים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_add_user">הוספת משתמש</a>
-      `;
+      <hr>`;
   } else if (type === 'user') {
     html = `
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_user">מבט על משתמש</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="user_update">עדכון</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="security_mfa">אבטחת MFA</a>
-      `;
+      <hr>`;
   } else if (type === 'cases') {
     html = `
       <hr>
@@ -55,7 +55,7 @@ function showSubMenu(type, force = false) {
       <div class="sub-group" id="recent-cases">
         <ul class="list-unstyled mb-0" id="recent-cases-list"></ul>
       </div>
-      `;
+      <hr>`;
   } else if (type === 'clients') {
     html = `
       <hr>
@@ -73,7 +73,8 @@ function showSubMenu(type, force = false) {
   } else if (type === 'attendance') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_attendance">מבט על נוכחות</a>`;
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_attendance">מבט על נוכחות</a>
+      <hr>`;
   }
 
   cont.innerHTML = html;
