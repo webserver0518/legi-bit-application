@@ -28,9 +28,9 @@
 
     function pathsFor(page) {
         return {
-            fetchUrl: `/load_${pageMap[page]}`,
-            cssPath: `/static/css/user_components/${pageMap[page]}.css`,
-            jsPath: `/static/js/user_components/${pageMap[page]}.js`
+            fetchUrl: `/load_${page}`,
+            cssPath: `/static/css/user_components/${page}.css`,
+            jsPath: `/static/js/user_components/${page}.js`
         };
     }
 
@@ -92,6 +92,7 @@
     }
 
     async function navigate({ linkEl = null, page = null, force }) {
+        page = pageMap[page] || page;
         if (typeof force !== 'boolean') throw new Error("UserLoader.navigate: 'force' must be boolean");
         if (!page && linkEl) page = linkEl.dataset.page;
         if (!page) throw new Error('UserLoader.navigate: missing page');

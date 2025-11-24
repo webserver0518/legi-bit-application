@@ -45,7 +45,7 @@ function showSubMenu(type, force = false) {
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="user_update">עדכון</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="security_mfa">אבטחת MFA</a>
       `;
-  } else if (type === 'all_cases') {
+  } else if (type === 'cases') {
     html = `
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_cases">מבט על תיקים</a>
@@ -56,7 +56,7 @@ function showSubMenu(type, force = false) {
         <ul class="list-unstyled mb-0" id="recent-cases-list"></ul>
       </div>
       `;
-  } else if (type === 'all_clients') {
+  } else if (type === 'clients') {
     html = `
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_clients">מבט על לקוחות</a>
@@ -64,7 +64,7 @@ function showSubMenu(type, force = false) {
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="new_client">לקוח חדש</a>
       <hr>
       `;
-  } else if (type === 'all_files') {
+  } else if (type === 'files') {
     html = `
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="search_file">חיפוש קובץ</a>
@@ -81,7 +81,7 @@ function showSubMenu(type, force = false) {
   // make sure it’s visible after (re)build
   ensureSubmenuVisible();
 
-  if (type === 'all_cases') {
+  if (type === 'cases') {
     renderRecentCases();
     bindRecentCasesEvents();
   }
@@ -107,7 +107,7 @@ window.addEventListener('DOMContentLoaded', () => {
     })
     .catch(() => { });
 
-  if (!Store.get('current_sub_sidebar')) Store.set('current_sub_sidebar', 'all_cases');
+  if (!Store.get('current_sub_sidebar')) Store.set('current_sub_sidebar', 'cases');
   showSubMenu(Store.get('current_sub_sidebar'), true);
   ensureSubmenuVisible(); // <- important
 
@@ -134,9 +134,9 @@ window.addEventListener('DOMContentLoaded', () => {
         ensureSubmenuVisible(); // <- ensure visible after switching sections
 
         let defaultPage = null;
-        if (link.dataset.subSidebar === 'all_cases') defaultPage = 'cases';
-        else if (link.dataset.subSidebar === 'all_clients') defaultPage = 'clients';
-        else if (link.dataset.subSidebar === 'all_files') defaultPage = 'files';
+        if (link.dataset.subSidebar === 'cases') defaultPage = 'cases';
+        else if (link.dataset.subSidebar === 'clients') defaultPage = 'clients';
+        else if (link.dataset.subSidebar === 'files') defaultPage = 'files';
         else if (link.dataset.subSidebar === 'attendance') defaultPage = 'birds_view_attendance';
 
         if (defaultPage) {
