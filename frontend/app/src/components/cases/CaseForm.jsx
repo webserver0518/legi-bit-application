@@ -13,6 +13,7 @@ function CaseForm({
   onSubmit,
   categories = [],
   statuses = [],
+  clientsOptions = [],
   mode = 'create',
 }) {
   const [formState, setFormState] = useState(() => ({
@@ -28,6 +29,15 @@ function CaseForm({
   }));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const clientsBySerial = useMemo(() => {
+    const map = new Map();
+    clientsOptions.forEach((client) => {
+      const key = `${client.serial || client.client_serial || ''}`.trim();
+      if (key) map.set(key, client);
+    });
+    return map;
+  }, [clientsOptions]);
 
   useEffect(() => {
     setFormState((prev) => ({
@@ -52,6 +62,22 @@ function CaseForm({
     setFormState((prev) => {
       const next = [...prev.clients_with_roles];
       next[index] = { ...next[index], [key]: value };
+      return { ...prev, clients_with_roles: next };
+    });
+  };
+
+  const handleClientSerialChange = (index, value) => {
+    const trimmed = value.trim();
+    setFormState((prev) => {
+      const next = [...prev.clients_with_roles];
+      const current = next[index] || defaultClient();
+      const match = clientsBySerial.get(trimmed);
+      next[index] = {
+        ...current,
+        client_serial: trimmed,
+        first_name: current.first_name || match?.first_name || '',
+        last_name: current.last_name || match?.last_name || '',
+      };
       return { ...prev, clients_with_roles: next };
     });
   };
@@ -224,6 +250,9 @@ function CaseForm({
         <div>
           <h5 className="mb-0">לקוחות בתיק</h5>
           <small className="text-muted">יש להוסיף לפחות לקוח ראשי אחד</small>
+          {clientsOptions.length ? (
+            <div className="text-muted small">ניתן לבחור מספר לקוח קיים ולקבל את שמו אוטומטית.</div>
+          ) : null}
         </div>
         <button type="button" className="btn btn-outline-primary" onClick={addClientRow}>
           ➕ הוסף לקוח
@@ -249,8 +278,9 @@ function CaseForm({
                   <input
                     type="text"
                     className="form-control"
+                    list="clients-serials"
                     value={client.client_serial}
-                    onChange={(e) => updateClient(index, 'client_serial', e.target.value)}
+                    onChange={(e) => handleClientSerialChange(index, e.target.value)}
                     required
                   />
                 </td>
@@ -306,6 +336,15 @@ function CaseForm({
           </tbody>
         </table>
       </div>
+
+      {clientsOptions.length ? (
+        <datalist id="clients-serials">
+          {clientsOptions.map((client) => {
+            const label = `${client.serial || ''} - ${client.first_name || ''} ${client.last_name || ''}`.trim();
+            return <option key={client.serial || client.id_card_number} value={client.serial}>{label}</option>;
+          })}
+        </datalist>
+      ) : null}
 
       <div className="d-flex justify-content-end gap-2 mt-3">
         <button type="submit" className="btn btn-success" disabled={submitting}>

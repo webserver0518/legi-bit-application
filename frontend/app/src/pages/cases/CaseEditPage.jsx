@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import casesApi from '../../api/casesApi';
+import clientsApi from '../../api/clientsApi';
 import CaseForm from '../../components/cases/CaseForm';
 
 function CaseEditPage() {
@@ -9,6 +10,7 @@ function CaseEditPage() {
   const [initialValues, setInitialValues] = useState(null);
   const [categories, setCategories] = useState([]);
   const [statuses, setStatuses] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -17,10 +19,11 @@ function CaseEditPage() {
       setLoading(true);
       setError('');
       try {
-        const [caseRes, catRes, statusRes] = await Promise.all([
+        const [caseRes, catRes, statusRes, clientsRes] = await Promise.all([
           casesApi.getCase(caseSerial, { expand: true }),
           casesApi.getCaseCategories(),
           casesApi.getCaseStatuses(),
+          clientsApi.getOfficeClients(),
         ]);
 
         const current = caseRes.data || {};
@@ -44,6 +47,7 @@ function CaseEditPage() {
         });
         setCategories(Array.isArray(catRes.data) ? catRes.data : []);
         setStatuses(Array.isArray(statusRes.data) ? statusRes.data : []);
+        setClients(Array.isArray(clientsRes.data) ? clientsRes.data : []);
       } catch (err) {
         setError(err.message || 'שגיאה בטעינת נתוני התיק');
       } finally {
@@ -101,6 +105,7 @@ function CaseEditPage() {
       onSubmit={handleSubmit}
       categories={categories}
       statuses={statuses}
+      clientsOptions={clients}
       mode="edit"
     />
   );
