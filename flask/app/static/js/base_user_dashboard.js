@@ -1,5 +1,5 @@
 /*  base_user_dashboard.js  */
-const USER_DEFAULT = 'cases_birds_view';
+const USER_DEFAULT = 'birds_view_cases';
 
 const rolesData = document.getElementById('user-info')?.dataset.roles || '';
 const roles = rolesData.split(',').map(r => r.trim()).filter(Boolean);
@@ -34,21 +34,21 @@ function showSubMenu(type, force = false) {
   if (type === 'office') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_birds_view">מבט על המשרד</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_office">מבט על המשרד</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_statuses">סטטוסים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_add_user">הוספת משתמש</a>
       `;
   } else if (type === 'user') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="user_birds_view">מבט על משתמש</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_user">מבט על משתמש</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="user_update">עדכון</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="security_mfa">אבטחת MFA</a>
       `;
   } else if (type === 'all_cases') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="cases_birds_view">מבט על תיקים</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_cases">מבט על תיקים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="cases">תיקים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="new_case">הוספת תיק</a>
       <hr>
@@ -59,6 +59,7 @@ function showSubMenu(type, force = false) {
   } else if (type === 'all_clients') {
     html = `
       <hr>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_clients">מבט על לקוחות</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clients">לקוחות</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="new_client">הוספת לקוח</a>
       <hr>
@@ -72,7 +73,7 @@ function showSubMenu(type, force = false) {
   } else if (type === 'attendance') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="attendance_birds_view">מבט על נוכחות</a>`;
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_attendance">מבט על נוכחות</a>`;
   }
 
   cont.innerHTML = html;
@@ -136,7 +137,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (link.dataset.subSidebar === 'all_cases') defaultPage = 'cases';
         else if (link.dataset.subSidebar === 'all_clients') defaultPage = 'clients';
         else if (link.dataset.subSidebar === 'all_files') defaultPage = 'files';
-        else if (link.dataset.subSidebar === 'attendance') defaultPage = 'attendance_birds_view';
+        else if (link.dataset.subSidebar === 'attendance') defaultPage = 'birds_view_attendance';
 
         if (defaultPage) {
           window.UserLoader.navigate({ page: defaultPage, force: true });

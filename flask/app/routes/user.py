@@ -815,9 +815,9 @@ def load_security_mfa():
     return render_template("user_components/security_mfa.html")
 
 
-@user_bp.route("/load_cases_birds_view")
-def load_cases_birds_view():
-    return render_template("user_components/cases_birds_view.html")
+@user_bp.route("/load_birds_view_cases")
+def load_birds_view_cases():
+    return render_template("user_components/birds_view_cases.html")
 
 
 @user_bp.route("/load_cases")
@@ -835,9 +835,9 @@ def load_view_case():
     return render_template("user_components/view_case.html")
 
 
-@user_bp.route("/load_clients_birds_view")
-def load_clients_birds_view():
-    return render_template("user_components/clients_birds_view.html")
+@user_bp.route("/load_birds_view_clients")
+def load_birds_view_clients():
+    return render_template("user_components/birds_view_clients.html")
 
 
 @user_bp.route("/load_clients")
@@ -860,9 +860,9 @@ def load_files():
     return render_template("user_components/files.html")
 
 
-@user_bp.route("/load_attendance_birds_view")
-def load_attendance_birds_view():
-    return render_template("user_components/attendance_birds_view.html")
+@user_bp.route("/load_birds_view_attendance")
+def load_birds_view_attendance():
+    return render_template("user_components/birds_view_attendance.html")
 
 
 #   --- helpers
