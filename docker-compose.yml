@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./flask
+    container_name: backend
+    restart: unless-stopped
+    expose:
+      - "9000"
+    ports:
+      - "9000:9000"
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    # Example Traefik labels for ingress; adjust hostnames as needed
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.legi-bit.rule=Host(`example.com`)"
+    #   - "traefik.http.routers.legi-bit.entrypoints=web"
+    #   - "traefik.http.services.legi-bit.loadbalancer.server.port=80"
+
+networks:
+  default:
+    name: legi-bit
+    driver: bridge
