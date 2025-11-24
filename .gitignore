@@ -12,6 +12,13 @@ venv/
 aws/
 envs/
 *.env
+*/.env
+*.pem
+*.key
+*.p12
+*.kubeconfig
+*/*.env
+/secrets/
 
 # קבצי לוג/פלט
 *.log

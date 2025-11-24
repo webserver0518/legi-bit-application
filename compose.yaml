@@ -4,8 +4,8 @@ services:
   frontend:
     container_name: frontend
     build:
-      context: ../legi-bit-application/frontend
-    volumes: [../legi-bit-application/frontend/nginx/conf/default.conf:/etc/nginx/conf.d/default.conf:ro]
+      context: ./frontend
+    volumes: [./frontend/nginx/conf/default.conf:/etc/nginx/conf.d/default.conf:ro]
     command: sh -c "envsubst < /etc/nginx/conf.d/nginx.conf > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
     ports: ["80:80"]
     depends_on:
@@ -16,10 +16,10 @@ services:
   backend:
     container_name: backend
     build:
-      context: ../legi-bit-application/flask
+      context: ./flask
     stop_signal: SIGINT
-    volumes: [../legi-bit-application/flask:/app]
-    env_file: [../secrets/envs/backend.env]
+    volumes: [./flask:/app]
+    env_file: [./secrets/envs/backend.env]
     ports: ["9000:9000"]
     depends_on: [redis]
     networks: [backend_net]
@@ -27,17 +27,17 @@ services:
   service-s3:
     container_name: service-s3
     build:
-      context: ../legi-bit-application/services/s3
-    env_file: [../secrets/envs/services/s3.env]
-    volumes: [../secrets/aws:/root/.aws:ro]
+      context: ./services/s3
+    env_file: [./secrets/envs/services/s3.env]
+    volumes: [./secrets/aws:/root/.aws:ro]
     ports: ["8000:8000"]
     networks: [backend_net]
 
   service-mongodb:
     container_name: service-mongodb
     build:
-      context: ../legi-bit-application/services/mongodb
-    env_file: [../secrets/envs/services/mongodb.env]
+      context: ./services/mongodb
+    env_file: [./secrets/envs/services/mongodb.env]
     ports: ["8001:8001"]
     networks: [backend_net]
 
