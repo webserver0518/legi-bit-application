@@ -3,6 +3,28 @@ const DEFAULT_HEADERS = {
 };
 
 async function parseResponse(response) {
+  const contentType = response.headers.get('content-type') || '';
+  const isJson = contentType.toLowerCase().includes('application/json');
+
+  if (!isJson) {
+    const text = await response.text();
+    if (!response.ok) {
+      const err = new Error(text || 'הבקשה נכשלה.');
+      err.name = 'ApiError';
+      err.status = response.status;
+      err.payload = text;
+      throw err;
+    }
+
+    return {
+      data: text,
+      message: null,
+      status: response.status,
+      success: true,
+      payload: text,
+    };
+  }
+
   let payload;
 
   try {
