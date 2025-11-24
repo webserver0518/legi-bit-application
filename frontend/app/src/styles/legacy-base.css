@@ -1,0 +1,53 @@
+:root {
+  --c1: #004e92;
+  --c2: #000428;
+  --accent: #00c2ff;
+  --bg: #f4f6fb;
+}
+
+html,
+body {
+  font-family: 'Alef', sans-serif;
+  background: var(--bg);
+  color: #1f2d3d;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--c1);
+  font-weight: 700;
+}
+
+.btn {
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+}
+
+.btn-success {
+  background-color: var(--accent);
+  border: none;
+  color: #fff;
+}
+
+.btn-warning {
+  background-color: #ffc107;
+  border: none;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  border: none;
+}
+
+input.form-control {
+  border-radius: 6px;
+}

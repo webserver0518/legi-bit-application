@@ -1,0 +1,47 @@
+body {
+  direction: rtl;
+}
+
+.hero-banner {
+  background: linear-gradient(135deg, var(--c2), var(--c1));
+  color: #fff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.hero-title {
+  font-size: clamp(24px, 4vw, 36px);
+  margin-bottom: 12px;
+}
+
+.hero-subtitle {
+  font-size: 18px;
+  margin-bottom: 0;
+  opacity: 0.95;
+}
+
+.card-accent {
+  border: 1px solid rgba(0, 78, 146, 0.16);
+  border-radius: 14px;
+}
+
+.badge-accent {
+  background: rgba(0, 194, 255, 0.14);
+  color: #004e92;
+}
+
+code {
+  background: #0c1724;
+  color: #e2f1ff;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: block;
+  white-space: pre-wrap;
+  direction: ltr;
+}
+
+.footer-note {
+  font-size: 14px;
+  color: #526376;
+}
