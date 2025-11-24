@@ -50,7 +50,7 @@ function showSubMenu(type, force = false) {
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="cases_birds_view">מבט על תיקים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="cases">תיקים</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="add_case">הוספת תיק</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="new_case">הוספת תיק</a>
       <hr>
       <div class="sub-group" id="recent-cases">
         <ul class="list-unstyled mb-0" id="recent-cases-list"></ul>
@@ -60,14 +60,13 @@ function showSubMenu(type, force = false) {
     html = `
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clients">לקוחות</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="add_client">הוספת לקוח</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="new_client">הוספת לקוח</a>
       <hr>
       `;
   } else if (type === 'all_files') {
     html = `
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="files">קבצים</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="add_file">הוספת קובץ</a>
       <hr>
       `;
   } else if (type === 'attendance') {

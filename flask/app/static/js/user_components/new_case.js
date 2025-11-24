@@ -1,6 +1,6 @@
-// static/js/user_components/add_case.js
+// static/js/user_components/new_case.js
 
-window.init_add_case = function () {
+window.init_new_case = function () {
   initFileUploader();          // Initialize drag & drop + file handling
   initAccordionSections();     // Accordion animation logic
   initCaseFormPreview();       // Form submission & validation

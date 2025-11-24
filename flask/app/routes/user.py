@@ -825,9 +825,9 @@ def load_cases():
     return render_template("user_components/cases.html")
 
 
-@user_bp.route("/load_add_case")
-def load_add_case():
-    return render_template("user_components/add_case.html")
+@user_bp.route("/load_new_case")
+def load_new_case():
+    return render_template("user_components/new_case.html")
 
 
 @user_bp.route("/load_view_case")
@@ -845,9 +845,9 @@ def load_clients():
     return render_template("user_components/clients.html")
 
 
-@user_bp.route("/load_add_client")
-def load_add_client():
-    return render_template("user_components/add_client.html")
+@user_bp.route("/load_new_client")
+def load_new_client():
+    return render_template("user_components/new_client.html")
 
 
 @user_bp.route("/load_view_client")
