@@ -48,9 +48,37 @@
 
     </div>
 
-    <div class="filter-bar">
-      <input id="task-description" class="filter-input" type="text" placeholder="תיאור משימה...">
-      <button id="add-task" class="filter-btn" type="button">הוסף</button>
+    <div id="case-add-data-section" class="mb-4">
+
+      <div class="filter-bar">
+        <input id="task-description" class="filter-input" type="text" placeholder="תיאור משימה...">
+        <button id="add-task" class="filter-btn" type="button">הוסף</button>
+      </div>
+
+      <div class="accordion-body section-content">
+
+        <!-- Drap & Drop -->
+        <div id="drop-area">
+          גרור קבצים לכאן או לחץ לבחירה
+          <input type="file" id="fileElem" hidden multiple>
+        </div>
+
+        <!-- Table -->
+        <table class="table table-striped table-sm mt-3 d-none" id="fileTable">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 30%;">שם קובץ</th>
+              <th style="width: 10%;">סוג תוכן</th>
+              <th style="width: 35%;">תיאור</th>
+              <th style="width: 15%;">שיוך ללקוח</th>
+              <th style="width: 10%;">התקדמות</th>
+              <th style="width: 5%;">פעולות</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
     </div>
 
     <div id="case-activity-list" class="activity-list d-flex flex-column gap-2">
