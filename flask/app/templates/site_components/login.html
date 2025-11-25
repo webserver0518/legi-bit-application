@@ -16,12 +16,21 @@
           <button type="submit" class="btn btn-primary w-100" id="login-submit">התחבר</button>
         </div>
 
+        <div class="mb-3">
+          <a href="#" id="forgot-password" class="link-primary text-black">שכחת סיסמא?</a>
+          <a href="#" id="forgot-username" class="link-primary ms-3 text-black">שכחת שם משתמש?</a>
+        </div>
+
         <!-- בלוק MFA חבוי מראש -->
         <div class="mb-3">
           <div id="mfa-block" hidden>
             <div class="mb-3">
               <input id="mfa_code" name="mfa_code" type="text" inputmode="numeric" maxlength="6" class="form-control"
                 autocomplete="one-time-code" pattern="^[0-9]{6}$" dir="ltr" placeholder="אימות דו שלבי (6 ספרות)" />
+            </div>
+
+            <div class="mb-3">
+              <a href="#" id="forgot-mfa" class="link-primary text-black">איפוס אימות דו-שלבי</a>
             </div>
           </div>
         </div>
