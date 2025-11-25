@@ -1101,7 +1101,7 @@ def user_mfa_reset():
 
     # 2) Verify password (use the SAME verifier you use in your auth layer)
     if not check_password_hash(password_hash, password):
-        return ResponseManager.unauthorized("Invalid password")
+        return ResponseManager.unauthorized(error="סיסמא שגויה")
 
     # מאפס לחלוטין את שדה ה-mfa (ללא session, ללא mfa_pending)
     res = MFAManager.reset_user_mfa(office_serial, user_serial)

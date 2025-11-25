@@ -61,7 +61,7 @@
         // Ask server to create a new TOTP secret and QR
         const res = await window.API.postJson("/user/mfa/enroll", {});
         if (!res.success) {
-            const msg = res.message || res.error || "נכשלה יצירת ה-MFA. נסה/י שוב.";
+            const msg = res.message || res.error || "נכשלה יצירת קוד לאימות דו-שלבי";
             return window.Toast.warning(msg);
         }
         const { secret, otpauth_uri, qr_image } = res.data || {};
@@ -116,12 +116,12 @@
 
         const res = await window.API.postJson("/user/mfa/reset", { password });
         if (!res.success) {
-            const msg = res.message || res.error || "איפוס ה-MFA נכשל.";
+            const msg = res.message || res.error || "איפוס קוד לאימות דו-שלבי נכשל.";
             return window.Toast.warning(msg);
         }
 
 
-        window.Toast.success("ה-MFA אופס בהצלחה.");
+        window.Toast.success("הקוד לאימות דו-שלבי אופס בהצלחה.");
         // Clear UI just in case
         handleCancelEnroll();
         if (el.resetPassword) el.resetPassword.value = "";
