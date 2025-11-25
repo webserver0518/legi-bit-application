@@ -1,11 +1,12 @@
 # app/routes/user.py
 from datetime import datetime, timezone
+from werkzeug.security import check_password_hash
 from flask import Blueprint, render_template, request, flash, current_app
 
 from ..services import mongodb_service, s3_service
 from ..managers.response_management import ResponseManager
 from ..managers.json_management import JSONManager
-from ..managers.auth_management import AuthorizationManager, AuthenticationManager
+from ..managers.auth_management import AuthorizationManager
 from ..managers.mfa_manager import MFAManager
 from ..constants.constants_mongodb import MongoDBEntity, MongoDBFilters, MongoDBData
 
@@ -1099,7 +1100,7 @@ def user_mfa_reset():
         return ResponseManager.error("Missing password hash")
 
     # 2) Verify password (use the SAME verifier you use in your auth layer)
-    if not AuthenticationManager.verify_password_hash(password_hash, password):
+    if not check_password_hash(password_hash, password):
         return ResponseManager.unauthorized("Invalid password")
 
     # מאפס לחלוטין את שדה ה-mfa (ללא session, ללא mfa_pending)
