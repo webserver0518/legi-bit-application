@@ -900,6 +900,11 @@ def load_faq():
     return render_template("user_components/faq.html")
 
 
+@user_bp.route("/load_remote_control")
+def load_remote_control():
+    return render_template("user_components/remote_control.html")
+
+
 #   --- helpers
 
 

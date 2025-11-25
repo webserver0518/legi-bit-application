@@ -78,8 +78,9 @@ function showSubMenu(type, force = false) {
   } else if (type === 'support') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_attendance">צור קשר</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="contact">צור קשר</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="faq">שאלות ותשובות</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="remote_control">שליטה מרחוק</a>
       <hr>`;
   }
 
