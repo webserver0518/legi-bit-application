@@ -824,6 +824,11 @@ def load_birds_view_user():
     return render_template("user_components/birds_view_user.html")
 
 
+@user_bp.route("/load_personal_details")
+def load_personal_details():
+    return render_template("user_components/personal_details.html")
+
+
 @user_bp.route("/load_security_mfa")
 @AuthorizationManager.login_required
 def load_security_mfa():
@@ -880,9 +885,9 @@ def load_birds_view_attendance():
     return render_template("user_components/birds_view_attendance.html")
 
 
-@user_bp.route("/load_personal_details")
-def load_personal_details():
-    return render_template("user_components/personal_details.html")
+@user_bp.route("/load_clock_in_out")
+def load_clock_in_out():
+    return render_template("user_components/clock_in_out.html")
 
 
 #   --- helpers

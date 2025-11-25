@@ -73,6 +73,7 @@ function showSubMenu(type, force = false) {
     html = `
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_attendance">מבט על נוכחות</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clock_in_out">דיווח</a>
       <hr>`;
   }
 
@@ -139,7 +140,7 @@ window.addEventListener('DOMContentLoaded', () => {
         else if (link.dataset.subSidebar === 'cases') defaultPage = 'cases';
         else if (link.dataset.subSidebar === 'clients') defaultPage = 'clients';
         else if (link.dataset.subSidebar === 'files') defaultPage = 'files';
-        else if (link.dataset.subSidebar === 'attendance') defaultPage = 'birds_view_attendance';
+        else if (link.dataset.subSidebar === 'attendance') defaultPage = 'clock_in_out';
 
         if (defaultPage) {
           window.UserLoader.navigate({ page: defaultPage, force: true });
