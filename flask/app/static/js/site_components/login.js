@@ -99,6 +99,10 @@ window.init_login = function () {
     }, { capture: true });
 
     // Stage 2: MFA verify
-    mfaBtn?.addEventListener('click', () => postLogin(true));
-    mfaInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') mfaBtn.click(); });
+    mfaInput?.addEventListener('input', () => {
+        const val = mfaInput.value.trim();
+        if (/^\d{6}$/.test(val)) {
+            postLogin(true);
+        }
+    });
 };

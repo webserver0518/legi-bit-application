@@ -114,9 +114,17 @@
 
     // --- Wire events ---
     el.enrollStart?.addEventListener("click", handleStartEnroll);
-    el.verifyBtn?.addEventListener("click", handleVerifyEnroll);
     el.cancelBtn?.addEventListener("click", handleCancelEnroll);
     el.resetForm?.addEventListener("submit", handleResetSubmit);
+
+    // Auto-submit MFA code when 6 digits typed
+    el.code?.addEventListener("input", () => {
+        el.code.value = el.code.value.replace(/\D+/g, "").slice(0, 6);
+
+        if (/^\d{6}$/.test(el.code.value)) {
+            handleVerifyEnroll(); // ← שולח אוטומטית
+        }
+    });
 
     // --- Optional: restrict input to digits only ---
     el.code?.addEventListener("input", () => {
