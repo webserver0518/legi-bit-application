@@ -82,9 +82,10 @@ function showSubMenu(type, force = false) {
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="faq">שאלות ותשובות</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="remote_control">שליטה מרחוק</a>
       <hr>`;
-  } else if (type === 'statement') {
+  } else if (type === 'regulations') {
     html = `
       <hr>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="statement">הצהרה</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="accessibility_statement">הצהרת נגישות</a>
       <hr>`;
   }

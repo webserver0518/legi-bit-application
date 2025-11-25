@@ -28,7 +28,7 @@
         files: "search_file",
         attendance: "birds_view_attendance",
         support: "contact",
-        statement: "accessibility_statement"
+        regulations: "statement"
     };
 
     function pathsFor(page) {

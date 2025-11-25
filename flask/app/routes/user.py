@@ -905,6 +905,11 @@ def load_remote_control():
     return render_template("user_components/remote_control.html")
 
 
+@user_bp.route("/load_statement")
+def load_statement():
+    return render_template("user_components/statement.html")
+
+
 @user_bp.route("/load_accessibility_statement")
 def load_accessibility_statement():
     return render_template("user_components/accessibility_statement.html")
