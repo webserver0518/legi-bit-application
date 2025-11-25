@@ -1,13 +1,13 @@
 <main id="user-mfa-page">
-  <h1>אימות דו-שלבי (MFA)</h1>
+  <h1>אימות דו-שלבי (MFA - Multi Factor Authentication)</h1>
 
-  <section id="mfa-enroll-section" aria-labelledby="mfa-enroll-title">
-    <h2 id="mfa-enroll-title" class="sr-only">הפעלת MFA</h2>
-    <button id="mfa-enroll-start" type="button">התחל הרשמה</button>
+  <section id="mfa-enroll-section" aria-labelledby="mfa-enroll-title" hidden>
+    <h2>הפעלה</h2>
+    <button id="mfa-enroll-start" type="button">התחל</button>
 
-    <div id="mfa-enroll-panel" hidden>
+    <div id="mfa-enroll-panel">
       <div>
-        <img id="mfa-qr-image" alt="קוד QR ל-TOTP">
+        <img id="mfa-qr-image" alt="קוד לסריקה">
       </div>
 
       <label for="mfa-secret">Secret (קריאה בלבד)</label>
@@ -24,12 +24,12 @@
 
   <hr>
 
-  <section id="mfa-reset-section" aria-labelledby="mfa-reset-title">
-    <h2 id="mfa-reset-title" class="sr-only">איפוס/הסרת MFA</h2>
+  <section id="mfa-reset-section" aria-labelledby="mfa-reset-title" hidden>
+    <h2>הסרת אימות דו-שלבי</h2>
     <form id="mfa-reset-form">
       <label for="mfa-reset-password">אישור סיסמה</label>
       <input id="mfa-reset-password" type="password" placeholder="סיסמה">
-      <button id="mfa-reset-btn" type="submit">אפס / הסר MFA</button>
+      <button id="mfa-reset-btn" type="submit">אפס</button>
     </form>
   </section>
 
