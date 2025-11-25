@@ -23,10 +23,12 @@
     const pageMap = {
         cases: "search_case",
         clients: "search_client",
-        files: "search_file"
+        files: "search_file",
+        attendance: "birds_view_attendance",
     };
 
     function pathsFor(page) {
+        console.log('UserLoader: pathsFor', page);
         return {
             fetchUrl: `/load_${page}`,
             cssPath: `/static/css/user_components/${page}.css`,
@@ -92,6 +94,7 @@
     }
 
     async function navigate({ linkEl = null, page = null, force }) {
+        console.log('UserLoader: navigate', { linkEl, page, force });
         page = pageMap[page] || page;
         if (typeof force !== 'boolean') throw new Error("UserLoader.navigate: 'force' must be boolean");
         if (!page && linkEl) page = linkEl.dataset.page;
