@@ -5,6 +5,12 @@
     // --- Elements ---
     const el = {
         page: document.getElementById("user-mfa-page"),
+
+        // Sections
+        enrollSection: document.getElementById("mfa-enroll-section"),
+        resetSection: document.getElementById("mfa-reset-section"),
+
+        // Enroll
         enrollStart: document.getElementById("mfa-enroll-start"),
         panel: document.getElementById("mfa-enroll-panel"),
         qr: document.getElementById("mfa-qr-image"),
@@ -12,6 +18,8 @@
         code: document.getElementById("mfa-code"),
         verifyBtn: document.getElementById("mfa-enroll-verify"),
         cancelBtn: document.getElementById("mfa-enroll-cancel"),
+
+        // Reset
         resetForm: document.getElementById("mfa-reset-form"),
         resetPassword: document.getElementById("mfa-reset-password"),
     };
@@ -23,13 +31,6 @@
     function hide(node) { if (node) node.hidden = true; }
     function setQR(src) { if (el.qr) el.qr.src = src || ""; }
     function setSecret(v) { if (el.secret) el.secret.value = v || ""; }
-
-    function toast(msg, type = "info") {
-        // minimal “toast” via alert() fallback
-        // you can replace with your site’s toast later
-        console[type === "error" ? "error" : "log"](msg);
-        alert(msg);
-    }
 
     async function apiPost(url, payload = {}) {
         const res = await fetch(url, {
@@ -50,7 +51,7 @@
         const { ok, json } = await apiPost("/user/mfa/enroll", {});
         if (!ok || !json?.success) {
             const msg = json?.message || json?.error || "נכשלה יצירת ה-MFA. נסה/י שוב.";
-            return toast(msg, "error");
+            return window.Toast.warning(msg);
         }
 
         const { secret, otpauth_uri, qr_image } = json.data || {};
@@ -70,16 +71,16 @@
     async function handleVerifyEnroll() {
         const code = (el.code?.value || "").trim();
         if (!/^\d{6}$/.test(code)) {
-            return toast("נא להזין קוד בן 6 ספרות.", "error");
+            return window.Toast.warning("נא להזין קוד בן 6 ספרות.");
         }
 
         const { ok, json } = await apiPost("/user/mfa/verify-enroll", { code });
         if (!ok || !json?.success) {
             const msg = json?.message || json?.error || "האימות נכשל. ודא/י את השעה במכשיר והקוד נסי/ה שוב.";
-            return toast(msg, "error");
+            return window.Toast.warning(msg);
         }
 
-        toast("ה-MFA הופעל בהצלחה!");
+        return window.Toast.success("ה-MFA הופעל בהצלחה!");
         // clean & collapse panel
         setSecret("");
         setQR("");
@@ -103,10 +104,11 @@
         const { ok, json } = await apiPost("/user/mfa/reset", { password });
         if (!ok || !json?.success) {
             const msg = json?.message || json?.error || "איפוס ה-MFA נכשל.";
-            return toast(msg, "error");
+            return window.Toast.warning(msg);
         }
 
-        toast("ה-MFA אופס בהצלחה.");
+
+        window.Toast.success("ה-MFA אופס בהצלחה.");
         // Clear UI just in case
         handleCancelEnroll();
         if (el.resetPassword) el.resetPassword.value = "";
