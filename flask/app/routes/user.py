@@ -895,6 +895,11 @@ def load_contact():
     return render_template("user_components/contact.html")
 
 
+@user_bp.route("/load_faq")
+def load_faq():
+    return render_template("user_components/faq.html")
+
+
 #   --- helpers
 
 

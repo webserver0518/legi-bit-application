@@ -79,6 +79,7 @@ function showSubMenu(type, force = false) {
     html = `
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_attendance">צור קשר</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="faq">שאלות ותשובות</a>
       <hr>`;
   }
 
