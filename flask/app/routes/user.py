@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, flash, current_app
 from ..services import mongodb_service, s3_service
 from ..managers.response_management import ResponseManager
 from ..managers.json_management import JSONManager
-from ..managers.auth_management import AuthorizationManager
+from ..managers.auth_management import AuthorizationManager, AuthenticationManager
 from ..managers.mfa_manager import MFAManager
 from ..constants.constants_mongodb import MongoDBEntity, MongoDBFilters, MongoDBData
 
@@ -1079,6 +1079,28 @@ def user_mfa_reset():
     user_serial = AuthorizationManager.get_user_serial()
     if not office_serial or not user_serial:
         return ResponseManager.error("Missing auth context")
+
+    # 1) Fetch user to validate password
+
+    user_res = mongodb_service.get_entity(
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(user_serial)),
+        limit=1,
+    )
+    if not ResponseManager.is_success(user_res):
+        return user_res
+
+    docs = ResponseManager.get_data(user_res) or []
+    user_doc = (docs[0] or {}).get("users", {}) if docs else {}
+
+    password_hash = user_doc.get("password_hash")
+    if not password_hash:
+        return ResponseManager.error("Missing password hash")
+
+    # 2) Verify password (use the SAME verifier you use in your auth layer)
+    if not AuthenticationManager.verify_password_hash(password_hash, password):
+        return ResponseManager.unauthorized("Invalid password")
 
     # מאפס לחלוטין את שדה ה-mfa (ללא session, ללא mfa_pending)
     res = MFAManager.reset_user_mfa(office_serial, user_serial)
