@@ -807,6 +807,57 @@ def get_office_clients():
     return ResponseManager.success(data=clients)
 
 
+# ---------------- TASKS MANAGEMENT ---------------- #
+
+
+@user_bp.route("/create_new_task", methods=["POST"])
+def create_new_task():
+    current_app.logger.debug("inside create_new_task()")
+
+    office_serial = AuthorizationManager.get_office_serial()
+    user_serial = AuthorizationManager.get_user_serial()
+    if not office_serial:
+        current_app.logger.debug("returning bad_request: 'office_serial' is required")
+        return ResponseManager.bad_request("Missing 'office_serial' in auth")
+    if not user_serial:
+        current_app.logger.debug("returning bad_request: 'user_serial' is required")
+        return ResponseManager.bad_request("Missing 'user_serial' in auth")
+
+    data = request.get_json(force=True)
+    if not data:
+        current_app.logger.debug("returning bad_request: Missing request JSON")
+        return ResponseManager.bad_request("Missing request JSON")
+
+    case_serial = data.get("case_serial")
+    description = (data.get("description") or "").strip()
+
+    if not case_serial:
+        return ResponseManager.bad_request("Missing 'case_serial'")
+    if not description:
+        return ResponseManager.bad_request("Missing 'description'")
+
+    new_task_doc = {
+        "created_at": data.get("created_at"),
+        "user_serial": user_serial,
+        "case_serial": int(case_serial),
+        "description": description,
+    }
+
+    new_task_res = mongodb_service.create_entity(
+        entity=MongoDBEntity.TASKS,
+        office_serial=office_serial,
+        document=new_task_doc,
+    )
+
+    if not ResponseManager.is_success(new_task_res):
+        current_app.logger.debug("Failed to create task")
+        return ResponseManager.internal("Failed to create task")
+
+    new_task_serial = ResponseManager.get_data(new_task_res)
+    current_app.logger.debug(f"Created new task with serial={new_task_serial}")
+    return ResponseManager.success(data=new_task_serial)
+
+
 # ---------------- LOADERS ---------------- #
 
 

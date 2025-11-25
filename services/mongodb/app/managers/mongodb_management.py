@@ -35,11 +35,13 @@ class MongoDBManager:
     case_counter_name = "case_counter"
     client_counter_name = "client_counter"
     file_counter_name = "file_counter"
+    task_counter_name = "task_counter"
 
     users_collection_name = "users"
     cases_collection_name = "cases"
     clients_collection_name = "clients"
     files_collection_name = "files"
+    tasks_collection_name = "tasks"
 
     # ------------------------ Connection -------------------------
 
@@ -374,23 +376,16 @@ class MongoDBManager:
             cls.cases_collection_name,
             cls.clients_collection_name,
             cls.files_collection_name,
+            cls.tasks_collection_name,
         ]
 
         for collection_name in collections_names:
             collection = cls._get_collection(db_name, collection_name)
 
+            collection.create_index("serial", unique=True)
+
             if collection_name == "users":
                 collection.create_index("username", unique=True)
-                collection.create_index("email", unique=False)
-            elif collection_name == "cases":
-                collection.create_index("case_serial", unique=True)
-                collection.create_index("status")
-            elif collection_name == "clients":
-                collection.create_index("client_serial", unique=True)
-                collection.create_index("status")
-            elif collection_name == "files":
-                collection.create_index("file_serial", unique=True)
-                collection.create_index("status")
 
             for idx in collection.list_indexes():
                 created_indexes.append(f"{collection_name}.{idx['name']}")
@@ -1003,6 +998,11 @@ class MongoDBManager:
         """Increment and return the file counter for the given tenant DB."""
         return cls._get_next_counter(db_name, cls.file_counter_name)
 
+    @classmethod
+    def get_task_counter(cls, db_name: str) -> tuple:
+        """Increment and return the file counter for the given tenant DB."""
+        return cls._get_next_counter(db_name, cls.task_counter_name)
+
     # ---------- Global ----------
     @classmethod
     def get_offices_counter(cls) -> tuple:
@@ -1059,6 +1059,7 @@ class MongoDBManager:
             cls.case_counter_name,
             cls.client_counter_name,
             cls.file_counter_name,
+            cls.task_counter_name,
         ]
 
         for name in counter_names:

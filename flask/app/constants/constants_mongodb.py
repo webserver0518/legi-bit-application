@@ -6,6 +6,7 @@ class MongoDBEntity:
     CLIENTS = "clients"
     FILES = "files"
     CASES = "cases"
+    TASKS = "tasks"
 
     @classmethod
     def all(cls):
@@ -13,7 +14,8 @@ class MongoDBEntity:
             cls.USERS,
             cls.CLIENTS,
             cls.FILES,
-            cls.CASES
+            cls.CASES,
+            cls.TASKS,
         }
 
 
