@@ -35,8 +35,7 @@ function showSubMenu(type, force = false) {
     html = `
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_office">מבט על המשרד</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_statuses">סטטוסים</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_add_user">הוספת משתמש</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_details">פרטי המשרד</a>
       <hr>`;
   } else if (type === 'user') {
     html = `

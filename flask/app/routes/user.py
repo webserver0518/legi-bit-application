@@ -814,6 +814,11 @@ def load_birds_view_office():
     return render_template("user_components/birds_view_office.html")
 
 
+@user_bp.route("/load_office_details")
+def load_office_details():
+    return render_template("user_components/office_details.html")
+
+
 @user_bp.route("/load_security_mfa")
 @AuthorizationManager.login_required
 def load_security_mfa():
