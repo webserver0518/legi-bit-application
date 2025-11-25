@@ -809,6 +809,11 @@ def get_office_clients():
 # ---------------- LOADERS ---------------- #
 
 
+@user_bp.route("/load_birds_view_office")
+def load_birds_view_office():
+    return render_template("user_components/birds_view_office.html")
+
+
 @user_bp.route("/load_security_mfa")
 @AuthorizationManager.login_required
 def load_security_mfa():

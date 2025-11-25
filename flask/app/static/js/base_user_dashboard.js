@@ -135,7 +135,8 @@ window.addEventListener('DOMContentLoaded', () => {
         ensureSubmenuVisible(); // <- ensure visible after switching sections
 
         let defaultPage = null;
-        if (link.dataset.subSidebar === 'cases') defaultPage = 'cases';
+        if (link.dataset.subSidebar === 'office') defaultPage = 'birds_view_office';
+        else if (link.dataset.subSidebar === 'cases') defaultPage = 'cases';
         else if (link.dataset.subSidebar === 'clients') defaultPage = 'clients';
         else if (link.dataset.subSidebar === 'files') defaultPage = 'files';
         else if (link.dataset.subSidebar === 'attendance') defaultPage = 'birds_view_attendance';
