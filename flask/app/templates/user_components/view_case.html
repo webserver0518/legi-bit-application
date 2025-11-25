@@ -1,105 +1,110 @@
 <div class="container-fluid">
 
-    <!-- 🟦 Header (case title + status dot) -->
-    <div class="case-header position-relative text-center mb-4">
-        <!-- Status dot (left side). JS will add class by status (active/archived). -->
-        <div class="status-dot" id="case-status-dot"></div>
-        <h3 class="fw-bold mb-0">
-            <span id="case-title">---</span>
-        </h3>
+  <!-- 🟦 Header (case title + status dot) -->
+  <div class="case-header position-relative text-center mb-4">
+    <!-- Status dot (left side). JS will add class by status (active/archived). -->
+    <div class="status-dot" id="case-status-dot"></div>
+    <h3 class="fw-bold mb-0">
+      <span id="case-title">---</span>
+    </h3>
+  </div>
+
+  <!-- app/templates/view_case.html -->
+  <div class="container-fluid mt-4 view-case-page">
+
+    <!-- 🟩 Case general info row -->
+    <div class="case-info-row d-flex flex-wrap justify-content-center gap-4 mb-4 text-center">
+
+      <!-- Created by -->
+      <div class="case-info-item shadow-sm rounded p-3 bg-light">
+        <span class="label d-block fw-semibold">נוצר ע"י</span>
+        <span id="case-created-by" class="value text-muted">-</span>
+      </div>
+
+      <!-- Responsible -->
+      <div class="case-info-item shadow-sm rounded p-3 bg-light">
+        <span class="label d-block fw-semibold">אחראי</span>
+        <span id="case-responsible" class="value text-muted">-</span>
+      </div>
+
+      <!-- Field -->
+      <div class="case-info-item shadow-sm rounded p-3 bg-light">
+        <span class="label d-block fw-semibold">תחום</span>
+        <span id="case-field" class="value text-muted">-</span>
+      </div>
+
+      <!-- Created date (date only, no time) -->
+      <div class="case-info-item shadow-sm rounded p-3 bg-light">
+        <span class="label d-block fw-semibold">תאריך יצירה</span>
+        <!-- JS will format with toLocaleDateString('he-IL') -->
+        <span id="case-created-at" class="value text-muted">-</span>
+      </div>
+
+      <!-- 🟪 Case facts (full width under the info blocks) -->
+      <div class="case-facts case-info-item shadow-sm rounded p-3 bg-light">
+        <span class="label d-block fw-semibold">מה הסיפור?</span>
+        <div id="case-facts-text" class="value text-muted text-start" dir="rtl">-</div>
+      </div>
+
     </div>
 
-    <!-- app/templates/view_case.html -->
-    <div class="container-fluid mt-4 view-case-page">
-
-        <!-- 🟩 Case general info row -->
-        <div class="case-info-row d-flex flex-wrap justify-content-center gap-4 mb-4 text-center">
-
-            <!-- Created by -->
-            <div class="case-info-item shadow-sm rounded p-3 bg-light">
-                <span class="label d-block fw-semibold">נוצר ע"י</span>
-                <span id="case-created-by" class="value text-muted">-</span>
-            </div>
-
-            <!-- Responsible -->
-            <div class="case-info-item shadow-sm rounded p-3 bg-light">
-                <span class="label d-block fw-semibold">אחראי</span>
-                <span id="case-responsible" class="value text-muted">-</span>
-            </div>
-
-            <!-- Field -->
-            <div class="case-info-item shadow-sm rounded p-3 bg-light">
-                <span class="label d-block fw-semibold">תחום</span>
-                <span id="case-field" class="value text-muted">-</span>
-            </div>
-
-            <!-- Created date (date only, no time) -->
-            <div class="case-info-item shadow-sm rounded p-3 bg-light">
-                <span class="label d-block fw-semibold">תאריך יצירה</span>
-                <!-- JS will format with toLocaleDateString('he-IL') -->
-                <span id="case-created-at" class="value text-muted">-</span>
-            </div>
-
-            <!-- 🟪 Case facts (full width under the info blocks) -->
-            <div class="case-facts case-info-item shadow-sm rounded p-3 bg-light">
-                <span class="label d-block fw-semibold">מה הסיפור?</span>
-                <div id="case-facts-text" class="value text-muted text-start" dir="rtl">-</div>
-            </div>
-
-        </div>
-
-        <div id="case-activity-list" class="activity-list d-flex flex-column gap-2">
-
-            <!-- 📄 Example: File item -->
-            <div class="event-row file d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
-                <div class="event-icon fs-5">📄</div>
-                <div class="event-details text-center flex-grow-1">
-                    חוזה_שירות.pdf — תיאור: חוזה מול הלקוח יוסי כהן | לקוח: רוני לוי
-                </div>
-                <div class="event-time text-muted small">21/11/2025 14:32</div>
-            </div>
-
-            <!-- 📝 Example: Task item -->
-            <div class="event-row task d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
-                <div class="event-icon fs-5">✏️</div>
-                <div class="event-details text-center flex-grow-1">
-                    לבדוק מסמכים לפני הדיון | תאריך יעד: 22/11/2025 | סטטוס: פתוחה
-                </div>
-                <div class="event-time text-muted small">21/11/2025 13:15</div>
-            </div>
-
-        </div>
+    <div class="filter-bar">
+      <input id="task-description" class="filter-input" type="text" placeholder="תיאור משימה...">
+      <button id="add-task" class="filter-btn" type="button">הוסף</button>
     </div>
 
+    <div id="case-activity-list" class="activity-list d-flex flex-column gap-2">
 
-
-    <!-- 🟧 Clients table -->
-    <div class="case-section mb-5">
-        <h5 class="section-title mb-3">
-            <i class="bi bi-people me-1"></i> לקוחות
-        </h5>
-
-        <div class="table-responsive shadow-sm rounded">
-            <table id="clientsTable" class="table table-hover align-middle text-center">
-                <thead class="table-light">
-                    <tr>
-                        <th>שם פרטי</th>
-                        <th>שם משפחה</th>
-                        <th>תובע/נתבע</th>
-                        <th>תעודת זהות</th>
-                        <th>טלפון</th>
-                        <th>דוא"ל</th>
-                        <th>ראשי/משני</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td>
-                    </tr>
-                </tbody>
-            </table>
+      <!-- 📄 Example: File item -->
+      <div class="event-row file d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
+        <div class="event-icon fs-5">📄</div>
+        <div class="event-details text-center flex-grow-1">
+          חוזה_שירות.pdf — תיאור: חוזה מול הלקוח יוסי כהן | לקוח: רוני לוי
         </div>
+        <div class="event-time text-muted small">21/11/2025 14:32</div>
+      </div>
+
+      <!-- 📝 Example: Task item -->
+      <div class="event-row task d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
+        <div class="event-icon fs-5">✏️</div>
+        <div class="event-details text-center flex-grow-1">
+          לבדוק מסמכים לפני הדיון | תאריך יעד: 22/11/2025 | סטטוס: פתוחה
+        </div>
+        <div class="event-time text-muted small">21/11/2025 13:15</div>
+      </div>
+
     </div>
+  </div>
+
+
+
+  <!-- 🟧 Clients table -->
+  <div class="case-section mb-5">
+    <h5 class="section-title mb-3">
+      <i class="bi bi-people me-1"></i> לקוחות
+    </h5>
+
+    <div class="table-responsive shadow-sm rounded">
+      <table id="clientsTable" class="table table-hover align-middle text-center">
+        <thead class="table-light">
+          <tr>
+            <th>שם פרטי</th>
+            <th>שם משפחה</th>
+            <th>תובע/נתבע</th>
+            <th>תעודת זהות</th>
+            <th>טלפון</th>
+            <th>דוא"ל</th>
+            <th>ראשי/משני</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
 </div>
 
