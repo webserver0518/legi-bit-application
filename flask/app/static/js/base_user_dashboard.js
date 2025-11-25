@@ -135,6 +135,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         let defaultPage = null;
         if (link.dataset.subSidebar === 'office') defaultPage = 'birds_view_office';
+        else if (link.dataset.subSidebar === 'user') defaultPage = 'birds_view_user';
         else if (link.dataset.subSidebar === 'cases') defaultPage = 'cases';
         else if (link.dataset.subSidebar === 'clients') defaultPage = 'clients';
         else if (link.dataset.subSidebar === 'files') defaultPage = 'files';
