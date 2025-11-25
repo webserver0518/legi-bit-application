@@ -32,29 +32,40 @@
     function setQR(src) { if (el.qr) el.qr.src = src || ""; }
     function setSecret(v) { if (el.secret) el.secret.value = v || ""; }
 
-    async function apiPost(url, payload = {}) {
-        const res = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify(payload),
-        });
-        // tolerate non-JSON errors
-        let data = null;
-        try { data = await res.json(); } catch { /* ignore */ }
-        return { ok: res.ok, status: res.status, json: data };
+    async function fetchStatus() {
+        const res = await window.API.getJson("/user/mfa/status");
+        if (!res?.success) return { hasMfa: false };
+        return { hasMfa: !!res.data?.mfa };
+    }
+
+    function applyVisibility(hasMfa) {
+        if (hasMfa) {
+            hide(el.enrollSection);
+            show(el.resetSection);
+        } else {
+            hide(el.resetSection);
+            show(el.enrollSection);
+        }
+        show(el.page); // B: מציגים רק אחרי החלטה
+    }
+
+    async function loadStatusAndApply() {
+        hide(el.page);
+        hide(el.panel);
+        const { hasMfa } = await fetchStatus();
+        applyVisibility(hasMfa);
     }
 
     // --- Enroll: start ---
     async function handleStartEnroll() {
         // Ask server to create a new TOTP secret and QR
-        const { ok, json } = await apiPost("/user/mfa/enroll", {});
-        if (!ok || !json?.success) {
-            const msg = json?.message || json?.error || "נכשלה יצירת ה-MFA. נסה/י שוב.";
+        const res = await window.API.postJson("/user/mfa/enroll", {});
+        if (!res.success) {
+            const msg = res.message || res.error || "נכשלה יצירת ה-MFA. נסה/י שוב.";
             return window.Toast.warning(msg);
         }
+        const { secret, otpauth_uri, qr_image } = res.data || {};
 
-        const { secret, otpauth_uri, qr_image } = json.data || {};
         // Expect qr_image: data:image/png;base64,...
         setSecret(secret || "");
         setQR(qr_image || "");
@@ -74,26 +85,28 @@
             return window.Toast.warning("נא להזין קוד בן 6 ספרות.");
         }
 
-        const { ok, json } = await apiPost("/user/mfa/verify-enroll", { code });
-        if (!ok || !json?.success) {
-            const msg = json?.message || json?.error || "האימות נכשל. ודא/י את השעה במכשיר והקוד נסי/ה שוב.";
+        const res = await window.API.postJson("/user/mfa/verify-enroll", { code });
+        if (!res.success) {
+            const msg = res.message || res.error || "האימות נכשל. ודא/י את השעה במכשיר והקוד נסי/ה שוב.";
             return window.Toast.warning(msg);
         }
 
-        return window.Toast.success("ה-MFA הופעל בהצלחה!");
+        window.Toast.success("ה-MFA הופעל בהצלחה!");
         // clean & collapse panel
         setSecret("");
         setQR("");
         if (el.code) el.code.value = "";
         hide(el.panel);
+        await loadStatusAndApply();
     }
 
     // --- Enroll: cancel ---
-    function handleCancelEnroll() {
+    async function handleCancelEnroll() {
         setSecret("");
         setQR("");
         if (el.code) el.code.value = "";
         hide(el.panel);
+        await loadStatusAndApply();
     }
 
     // --- Reset MFA ---
@@ -101,9 +114,9 @@
         e.preventDefault();
         const password = (el.resetPassword?.value || "").trim();
 
-        const { ok, json } = await apiPost("/user/mfa/reset", { password });
-        if (!ok || !json?.success) {
-            const msg = json?.message || json?.error || "איפוס ה-MFA נכשל.";
+        const res = await window.API.postJson("/user/mfa/reset", { password });
+        if (!res.success) {
+            const msg = res.message || res.error || "איפוס ה-MFA נכשל.";
             return window.Toast.warning(msg);
         }
 
@@ -128,8 +141,6 @@
         }
     });
 
-    // --- Optional: restrict input to digits only ---
-    el.code?.addEventListener("input", () => {
-        el.code.value = el.code.value.replace(/\D+/g, "").slice(0, 6);
-    });
+    loadStatusAndApply();
+
 })();
