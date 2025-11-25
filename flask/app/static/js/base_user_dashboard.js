@@ -139,17 +139,7 @@ window.addEventListener('DOMContentLoaded', () => {
         showSubMenu(link.dataset.subSidebar);
         ensureSubmenuVisible(); // <- ensure visible after switching sections
 
-        let defaultPage = null;
-        if (link.dataset.subSidebar === 'office') defaultPage = 'birds_view_office';
-        else if (link.dataset.subSidebar === 'user') defaultPage = 'personal_details';
-        else if (link.dataset.subSidebar === 'cases') defaultPage = 'cases';
-        else if (link.dataset.subSidebar === 'clients') defaultPage = 'clients';
-        else if (link.dataset.subSidebar === 'files') defaultPage = 'files';
-        else if (link.dataset.subSidebar === 'attendance') defaultPage = 'clock_in_out';
-
-        if (defaultPage) {
-          window.UserLoader.navigate({ page: defaultPage, force: true });
-        }
+        window.UserLoader.navigate({ page: link.dataset.subSidebar, force: true });
       }
     });
   }
