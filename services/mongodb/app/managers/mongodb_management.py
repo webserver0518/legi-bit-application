@@ -705,6 +705,8 @@ class MongoDBManager:
                 counter_res = cls.get_case_counter(db_name)
             case cls.files_collection_name:
                 counter_res = cls.get_file_counter(db_name)
+            case cls.tasks_collection_name:
+                counter_res = cls.get_task_counter(db_name)
             case _:
                 return ResponseManager.bad_request(error=f"Unknown entity: {entity}")
 
