@@ -865,6 +865,11 @@ def load_birds_view_attendance():
     return render_template("user_components/birds_view_attendance.html")
 
 
+@user_bp.route("/load_personal_details")
+def load_personal_details():
+    return render_template("user_components/personal_details.html")
+
+
 #   --- helpers
 
 
