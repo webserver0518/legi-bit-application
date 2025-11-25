@@ -21,10 +21,13 @@
     }
 
     const pageMap = {
+        office: "birds_view_office",
+        user: "personal_details",
         cases: "search_case",
         clients: "search_client",
         files: "search_file",
         attendance: "birds_view_attendance",
+        support: "contact",
     };
 
     function pathsFor(page) {
@@ -109,6 +112,7 @@
             } else {
                 const subLink = document.querySelector(`.sub-sidebar a[data-page="${page}"]`);
                 const mainLink = document.querySelector(`.sidebar a[data-page="${page}"]`);
+                console.log({ subLink, mainLink });
                 if (subLink) window.Nav.highlightInSidebar(subLink, 'sub-sidebar');
                 else if (mainLink) window.Nav.highlightInSidebar(mainLink, 'sidebar');
 

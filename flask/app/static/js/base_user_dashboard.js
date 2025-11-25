@@ -75,6 +75,11 @@ function showSubMenu(type, force = false) {
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_attendance">מבט על נוכחות</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clock_in_out">דיווח</a>
       <hr>`;
+  } else if (type === 'support') {
+    html = `
+      <hr>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_attendance">צור קשר</a>
+      <hr>`;
   }
 
   cont.innerHTML = html;
@@ -136,7 +141,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         let defaultPage = null;
         if (link.dataset.subSidebar === 'office') defaultPage = 'birds_view_office';
-        else if (link.dataset.subSidebar === 'user') defaultPage = 'birds_view_user';
+        else if (link.dataset.subSidebar === 'user') defaultPage = 'personal_details';
         else if (link.dataset.subSidebar === 'cases') defaultPage = 'cases';
         else if (link.dataset.subSidebar === 'clients') defaultPage = 'clients';
         else if (link.dataset.subSidebar === 'files') defaultPage = 'files';

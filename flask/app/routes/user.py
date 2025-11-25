@@ -890,6 +890,11 @@ def load_clock_in_out():
     return render_template("user_components/clock_in_out.html")
 
 
+@user_bp.route("/load_contact")
+def load_contact():
+    return render_template("user_components/contact.html")
+
+
 #   --- helpers
 
 
