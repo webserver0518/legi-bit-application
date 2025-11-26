@@ -159,7 +159,7 @@ function renderActivityRow(item) {
     : "";
 
   return `
-    <div class="event-row ${isFile ? "file" : "task"} d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
+    <div class="event-row ${isFile ? "file" : "task"} d-flex justify-content-between align-items-center p-3 rounded">
       <div class="event-icon fs-5">${icon}</div>
       <div class="event-details text-center flex-grow-1">
         <a${attrs}>${window.utils?.safeValue ? window.utils.safeValue(middleText) : middleText}</a>
