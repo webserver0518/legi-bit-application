@@ -426,7 +426,7 @@ async function appendFileSerialToCase(case_serial, file_serial) {
     }
   });
 
-  if (!upd?.success) {
+  if (!upd.success) {
     throw new Error(upd?.error || "Failed to attach file to case");
   }
 }
