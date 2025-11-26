@@ -9,8 +9,7 @@ window.init_view_case = async function () {
   const queue = (window.Recents?.get('case') || []);
   const serial = queue[0];
 
-  const addTaskBtn = document.getElementById("add-task");
-  if (addTaskBtn) addTaskBtn.onclick = createTask;
+  document.getElementById("add-task").onclick = () => createTask(serial);
 
   // ✅ שלב 1: העלאת קבצים מיידית (בלי טבלה/תצוגה)
   if (serial) initInstantCaseFileUploader(serial);
@@ -73,9 +72,6 @@ async function createTask() {
   const addTaskBtn = document.getElementById("add-task");
 
   const description = (taskInput?.value || "").trim();
-  if (!serial) return window.Toast?.warning?.("לא נמצא מספר תיק.");
-  if (!description) return window.Toast?.warning?.("נא להזין תיאור משימה.");
-
   if (addTaskBtn) addTaskBtn.disabled = true;
 
   const payload = {
@@ -88,9 +84,9 @@ async function createTask() {
 
   if (addTaskBtn) addTaskBtn.disabled = false;
 
-  if (!res?.success) {
+  if (!res.success) {
     const msg = res.message || res.error || "יצירת משימה נכשלה.";
-    return window.Toast?.warning?.(msg);
+    return window.Toast.warning(msg);
   }
 
   const newTaskSerial = res.data;
@@ -103,11 +99,11 @@ async function createTask() {
     }
   });
   if (!upd?.success) {
-    return window.Toast?.warning?.(upd?.error || "עדכון התיק נכשל");
+    return window.Toast.warning(upd?.error || "עדכון התיק נכשל");
   }
 
-  if (taskInput) taskInput.value = "";
-  window.Toast?.success?.("המשימה נוספה בהצלחה!");
+  taskInput.value = "";
+  window.Toast.success("המשימה נוספה בהצלחה!");
 
   try { await reloadCaseActivityMinimal(serial); } catch { }
 }
