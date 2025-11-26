@@ -42,22 +42,19 @@ window.init_view_case = async function () {
 
       document.getElementById("case-status-dot").classList.add(caseObj.status || "unknown");
 
-      const clientsTbody = document.querySelector("#clientsTable tbody");
-      if (clientsTbody) {
-        clientsTbody.innerHTML = clients.length === 0
-          ? `<tr><td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td></tr>`
-          : clients.map(c => `
-              <tr>
-                <td>${window.utils.safeValue(c.first_name)}</td>
-                <td>${window.utils.safeValue(c.last_name)}</td>
-                <td>${window.utils.safeValue(c.legal_role)}</td>
-                <td>${window.utils.safeValue(c.id_card_number)}</td>
-                <td>${window.utils.safeValue(c.phone)}</td>
-                <td>${window.utils.safeValue(c.email)}</td>
-                <td>${window.utils.safeValue(c.role)}</td>
-              </tr>
-            `).join("");
-      }
+      document.querySelector("#clientsTable tbody").innerHTML = clients.length
+        ? clients.map(c => `
+          <tr>
+            <td>${window.utils.safeValue(c.first_name)}</td>
+            <td>${window.utils.safeValue(c.last_name)}</td>
+            <td>${window.utils.safeValue(c.legal_role)}</td>
+            <td>${window.utils.safeValue(c.id_card_number)}</td>
+            <td>${window.utils.safeValue(c.phone)}</td>
+            <td>${window.utils.safeValue(c.email)}</td>
+            <td>${window.utils.safeValue(c.role)}</td>
+          </tr>
+        `).join("")
+        : `<tr><td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td></tr>`;
     });
 };
 
