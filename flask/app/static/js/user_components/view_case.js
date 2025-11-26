@@ -134,8 +134,8 @@ function formatDateTimeShort(iso) {
 }
 
 function buildActivityModelFromCase(caseObj) {
-  const files = Array.isArray(caseObj?.files) ? caseObj.files : [];
-  const tasks = Array.isArray(caseObj?.tasks) ? caseObj.tasks : [];
+  const files = Array.isArray(caseObj.files) ? caseObj.files : [];
+  const tasks = Array.isArray(caseObj.tasks) ? caseObj.tasks : [];
 
   const fileItems = files.map(f => ({
     TYPE: "file",
