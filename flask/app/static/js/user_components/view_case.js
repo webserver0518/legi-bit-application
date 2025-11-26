@@ -11,8 +11,8 @@ window.init_view_case = async function () {
   document.getElementById("add-task").onclick = () => createTask(serial);
 
   // ✅ שלב 1: העלאת קבצים מיידית (בלי טבלה/תצוגה)
-  if (serial) initInstantCaseFileUploader(serial);
-  if (serial) { try { await reloadCaseActivityMinimal(serial); } catch { } }
+  initInstantCaseFileUploader(serial);
+  await reloadCaseActivityMinimal(serial);
 
   window.API.getJson(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)
     .then(payload => {
