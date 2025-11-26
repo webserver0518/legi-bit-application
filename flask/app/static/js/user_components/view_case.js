@@ -211,7 +211,6 @@ function renderActivityRow(item) {
 
 async function reloadCaseActivityMinimal(caseSerial) {
   const host = document.getElementById("case-activity-list");
-  if (!host) return;
 
   host.innerHTML = `<div class="text-center text-muted py-3">טוען פעילות…</div>`;
 
