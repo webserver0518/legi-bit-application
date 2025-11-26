@@ -419,8 +419,7 @@ async function appendFileSerialToCase(case_serial, file_serial) {
     throw new Error("Failed to load case for updating files_serials");
   }
 
-  const item = payload.data[0] ?? {};
-  const caseObj = item.cases || {};
+  const caseObj = payload.data[0].cases;
   const current = Array.isArray(caseObj.files_serials) ? caseObj.files_serials : [];
 
   const next = Array.from(new Set([
