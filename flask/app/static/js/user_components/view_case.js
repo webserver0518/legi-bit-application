@@ -250,10 +250,10 @@ async function reloadCaseActivityMinimal(caseSerial) {
     const url = `/get_file_url?case_serial=${encodeURIComponent(caseSerial)}&file_serial=${encodeURIComponent(fileSerial)}&file_name=${encodeURIComponent(fileName)}`;
     const res = await window.API.getJson(url);
     console.log("Get file URL response:", res);
-    if (res?.success && res?.data) {
+    if (res.success && res.data) {
       window.open(res.data, "_blank");
     } else {
-      window.Toast.danger(res?.error || "שגיאה בפתיחת הקובץ");
+      window.Toast.danger(res.error || "שגיאה בפתיחת הקובץ");
     }
   };
 }
