@@ -3,8 +3,7 @@
 window.init_view_case = async function () {
   await window.utils.waitForDom();
 
-  const activityBox = document.getElementById("case-activity-list");
-  if (activityBox) lockScrollInside(activityBox);
+  lockScrollInside(document.getElementById("case-activity-list"));
 
   const queue = (window.Recents?.get('case') || []);
   const serial = queue[0];
