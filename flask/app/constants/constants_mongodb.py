@@ -7,21 +7,17 @@ class MongoDBEntity:
     FILES = "files"
     CASES = "cases"
     TASKS = "tasks"
+    PROFILES = "profiles"
 
     @classmethod
     def all(cls):
-        return {
-            cls.USERS,
-            cls.CLIENTS,
-            cls.FILES,
-            cls.CASES,
-            cls.TASKS,
-        }
+        return {cls.USERS, cls.CLIENTS, cls.FILES, cls.CASES, cls.TASKS, cls.PROFILES}
 
 
 class MongoDBFilters:
     @staticmethod
     def by_serial(serial: int):
+        serial = int(serial)
         return {"serial": serial}
 
     class Case:
@@ -44,12 +40,3 @@ class MongoDBFilters:
 class MongoDBSort:
     newest = ("serial", -1)
     oldest = ("serial", 1)
-
-
-class MongoDBData:
-    class Case:
-
-        @staticmethod
-        def status(value: str) -> dict:
-            valid_statuses = {"active", "archived"}
-            return {"status": value} if value in valid_statuses else None
