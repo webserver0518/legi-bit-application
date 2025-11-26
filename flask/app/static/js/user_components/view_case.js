@@ -300,12 +300,11 @@ function initInstantCaseFileUploader(case_serial) {
 
   async function getOfficeSerial() {
     if (!officeSerialPromise) {
-      officeSerialPromise = window.API.getJson("/get_office_serial")
-        .then(res => {
-          const officeSerial = res?.data?.office_serial;
-          if (!res?.success || !officeSerial) throw new Error("Office serial not found");
-          return officeSerial;
-        });
+      officeSerialPromise = window.API.getJson("/get_office_serial").then(res => {
+        const officeSerial = res.data.office_serial;
+        if (!res.success || !officeSerial) throw new Error("Office serial not found");
+        return officeSerial;
+      });
     }
     return officeSerialPromise;
   }
