@@ -5,8 +5,7 @@ window.init_view_case = async function () {
 
   lockScrollInside(document.getElementById("case-activity-list"));
 
-  const queue = (window.Recents?.get('case') || []);
-  const serial = queue[0];
+  const serial = window.Recents.get('case')[0];
 
   document.getElementById("add-task").onclick = () => createTask(serial);
 
