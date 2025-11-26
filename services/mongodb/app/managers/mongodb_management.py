@@ -36,12 +36,14 @@ class MongoDBManager:
     client_counter_name = "client_counter"
     file_counter_name = "file_counter"
     task_counter_name = "task_counter"
+    profile_counter_name = "profile_counter"
 
     users_collection_name = "users"
     cases_collection_name = "cases"
     clients_collection_name = "clients"
     files_collection_name = "files"
     tasks_collection_name = "tasks"
+    profiles_collection_name = "profiles"
 
     # ------------------------ Connection -------------------------
 
@@ -87,7 +89,7 @@ class MongoDBManager:
         """
 
         if cls._client is None:
-            cls.init_client()
+            cls.init()
 
         return cls._client
 
@@ -377,6 +379,7 @@ class MongoDBManager:
             cls.clients_collection_name,
             cls.files_collection_name,
             cls.tasks_collection_name,
+            cls.profiles_collection_name,
         ]
 
         for collection_name in collections_names:
@@ -386,6 +389,9 @@ class MongoDBManager:
 
             if collection_name == "users":
                 collection.create_index("username", unique=True)
+
+            if collection_name == cls.profiles_collection_name:
+                collection.create_index("name", unique=True)
 
             for idx in collection.list_indexes():
                 created_indexes.append(f"{collection_name}.{idx['name']}")
@@ -756,6 +762,8 @@ class MongoDBManager:
                 counter_res = cls.get_file_counter(db_name)
             case cls.tasks_collection_name:
                 counter_res = cls.get_task_counter(db_name)
+            case cls.profiles_collection_name:
+                counter_res = cls.get_profile_counter(db_name)
             case _:
                 return ResponseManager.bad_request(error=f"Unknown entity: {entity}")
 
@@ -1054,6 +1062,11 @@ class MongoDBManager:
         """Increment and return the file counter for the given tenant DB."""
         return cls._get_next_counter(db_name, cls.task_counter_name)
 
+    @classmethod
+    def get_profile_counter(cls, db_name: str) -> tuple:
+        """Increment and return the profile counter for the given tenant DB."""
+        return cls._get_next_counter(db_name, cls.profile_counter_name)
+
     # ---------- Global ----------
     @classmethod
     def get_offices_counter(cls) -> tuple:
@@ -1111,6 +1124,7 @@ class MongoDBManager:
             cls.client_counter_name,
             cls.file_counter_name,
             cls.task_counter_name,
+            cls.profile_counter_name,
         ]
 
         for name in counter_names:

@@ -7,16 +7,11 @@ class MongoDBEntity:
     FILES = "files"
     CASES = "cases"
     TASKS = "tasks"
+    PROFILES = "profiles"
 
     @classmethod
     def all(cls):
-        return {
-            cls.USERS,
-            cls.CLIENTS,
-            cls.FILES,
-            cls.CASES,
-            cls.TASKS,
-        }
+        return {cls.USERS, cls.CLIENTS, cls.FILES, cls.CASES, cls.TASKS, cls.PROFILES}
 
 
 class MongoDBFilters:
