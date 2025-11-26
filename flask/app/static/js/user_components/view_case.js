@@ -34,9 +34,7 @@ window.init_view_case = async function () {
       setText("case-responsible", caseObj.responsible.username);
       setText("case-field", caseObj.field);
 
-      const createdAt = caseObj.created_at ? new Date(caseObj.created_at) : null;
-      const createdAtText = createdAt && !isNaN(createdAt) ? createdAt.toLocaleDateString("he-IL") : "-";
-      setText("case-created-at", createdAtText);
+      setText("case-created-at", new Date(caseObj.created_at).toLocaleDateString("he-IL"));
 
       document.getElementById("case-facts-text").textContent = window.utils.safeValue(caseObj.facts || "");
 
