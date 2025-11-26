@@ -124,6 +124,189 @@ def get_office_users():
     return ResponseManager.success(data=users)
 
 
+# ---------------- PROFILES MANAGEMENT ---------------- #
+
+
+@user_bp.route("/create_new_profile", methods=["POST"])
+def create_new_profile():
+    office_serial = AuthorizationManager.get_office_serial()
+    user_serial = AuthorizationManager.get_user_serial()
+
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or "").strip()
+
+    doc = {
+        "name": name or f"profile_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
+        "created_at": datetime.utcnow().isoformat() + "Z",
+        "created_by": user_serial,
+    }
+
+    return mongodb_service.create_entity(
+        entity=MongoDBEntity.PROFILES,
+        office_serial=office_serial,
+        document=doc,
+    )
+
+
+@user_bp.route("/get_office_profiles", methods=["GET"])
+def get_office_profiles():
+    office_serial = AuthorizationManager.get_office_serial()
+    res = mongodb_service.get_entity(
+        entity=MongoDBEntity.PROFILES,
+        office_serial=office_serial,
+        filters={},
+    )
+    if not ResponseManager.is_success(res):
+        return res
+
+    profiles_data = ResponseManager.get_data(res) or []
+    profiles = [c.get("profiles") for c in profiles_data]
+    return ResponseManager.success(data=profiles)
+
+
+@user_bp.route("/get_profile", methods=["GET"])
+def get_profile():
+    office_serial = AuthorizationManager.get_office_serial()
+
+    serial = request.args.get("serial")
+
+    return mongodb_service.get_entity(
+        entity=MongoDBEntity.PROFILES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(serial)),
+        limit=1,
+    )
+
+
+@user_bp.route("/update_profile_statuses", methods=["PATCH"])
+def update_profile_statuses():
+    office_serial = AuthorizationManager.get_office_serial()
+    serial = request.args.get("serial", type=int)
+    if serial is None:
+        return ResponseManager.bad_request("serial is required")
+
+    payload = request.get_json(force=True) or {}
+
+    # align with existing pattern (e.g., update_case)
+    operator = payload.pop("_operator", "$set")
+
+    # only fields we allow here; keep it minimal and clear
+    update_data = {}
+    if "case_statuses" in payload:
+        update_data["case_statuses"] = payload["case_statuses"]
+    if "task_statuses" in payload:
+        update_data["task_statuses"] = payload["task_statuses"]
+
+    if not update_data:
+        return ResponseManager.bad_request("nothing to update")
+
+    # If caller wants to append items to arrays, support multi-append with $each
+    if operator in ("$push", "$addToSet"):
+        transformed = {}
+        for k, v in update_data.items():
+            if isinstance(v, list):
+                transformed[k] = {"$each": v}
+            else:
+                transformed[k] = v
+        update_data = transformed
+
+    return mongodb_service.update_entity(
+        entity=MongoDBEntity.PROFILES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(serial),
+        update_data=update_data,
+        multiple=False,
+        operator=operator,
+    )
+
+
+@user_bp.route("/delete_profile", methods=["DELETE"])
+def delete_profile():
+    office_serial = AuthorizationManager.get_office_serial()
+    serial = request.args.get("serial")
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+    if not serial:
+        return ResponseManager.bad_request("serial is required")
+
+    return mongodb_service.delete_entity(
+        entity=MongoDBEntity.PROFILES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(serial)),
+    )
+
+
+@user_bp.route("/add_profile_status", methods=["PATCH"])
+def add_profile_status():
+    """
+    Append a single status to case_statuses or task_statuses using $addToSet.
+    Query:  ?serial=<int>&scope=case|task
+    Body:   { "value": <string or object> }
+    """
+    office_serial = AuthorizationManager.get_office_serial()
+    serial = request.args.get("serial")
+    scope = (request.args.get("scope") or "").strip().lower()
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("value")
+
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+    if not serial:
+        return ResponseManager.bad_request("serial is required")
+    if scope not in ("case", "task"):
+        return ResponseManager.bad_request("scope must be 'case' or 'task'")
+    if value is None:
+        return ResponseManager.bad_request("value is required")
+
+    field = "case_statuses" if scope == "case" else "task_statuses"
+
+    # נשתמש ב-$addToSet; המיקרו-סרביס תומך ב-operator ועובר הלאה לאפליי עדכון.
+    # למחיצות מרובות אפשר לשלוח $each ברוט המקורי; כאן שומרים על API פשוט של פריט בודד.
+    return mongodb_service.update_entity(
+        entity=MongoDBEntity.PROFILES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(serial)),
+        update_data={field: value},
+        multiple=False,
+        operator="$addToSet",
+    )
+
+
+@user_bp.route("/remove_profile_status", methods=["PATCH"])
+def remove_profile_status():
+    """
+    Remove a single status value from case_statuses or task_statuses using $pull.
+    Query:  ?serial=<int>&scope=case|task
+    Body:   { "value": <string or object> }
+    """
+    office_serial = AuthorizationManager.get_office_serial()
+    serial = request.args.get("serial")
+    scope = (request.args.get("scope") or "").strip().lower()
+    payload = request.get_json(silent=True) or {}
+    value = payload.get("value")
+
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+    if not serial:
+        return ResponseManager.bad_request("serial is required")
+    if scope not in ("case", "task"):
+        return ResponseManager.bad_request("scope must be 'case' or 'task'")
+    if value is None:
+        return ResponseManager.bad_request("value is required")
+
+    field = "case_statuses" if scope == "case" else "task_statuses"
+
+    # כאן זו מחיקה מתוך מערך בתוך מסמך — לא מסמך שלם — ולכן נכון להשתמש ב-$pull ולא ב-delete_entity.
+    return mongodb_service.update_entity(
+        entity=MongoDBEntity.PROFILES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(serial)),
+        update_data={field: value},
+        multiple=False,
+        operator="$pull",
+    )
+
+
 # ---------------- FILES MANAGEMENT ---------------- #
 
 
