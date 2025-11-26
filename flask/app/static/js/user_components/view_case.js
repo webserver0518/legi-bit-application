@@ -200,7 +200,7 @@ function renderActivityRow(item) {
       <div class="event-row task d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
         <div class="event-icon fs-5" title="משימה">✏️</div>
         <div class="event-details text-start flex-grow-1" dir="rtl">
-          <div>${window.utils?.safeValue ? window.utils.safeValue(taskText) : taskText}</div>
+          <div>${window.utils.safeValue(taskText)}</div>
         </div>
         <div class="d-flex align-items-center gap-2">
 
@@ -223,12 +223,12 @@ async function reloadCaseActivityMinimal(caseSerial) {
   host.innerHTML = `<div class="text-center text-muted py-3">טוען פעילות…</div>`;
 
   const payload = await window.API.getJson(`/get_case?serial=${encodeURIComponent(caseSerial)}&expand=true`);
-  if (!payload?.success || !payload?.data?.length) {
-    host.innerHTML = `<div class="text-center text-danger py-3">${payload?.error || "שגיאה בטעינת פעילות"}</div>`;
+  if (!payload.success || !payload.data.length) {
+    host.innerHTML = `<div class="text-center text-danger py-3">${payload.error || "שגיאה בטעינת פעילות"}</div>`;
     return;
   }
 
-  const caseObj = (payload.data[0] || {}).cases || {};
+  const caseObj = payload.data[0].cases;
   const items = buildActivityModelFromCase(caseObj);
 
   if (!items.length) {
