@@ -1,1 +1,74 @@
-<h2 class="text-center">פרטי המשרד</h2>
+<h2 class="text-center">פרטי המשרד</h2><!-- Office Profiles Management -->
+<section id="office-profiles" class="p-3">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h5 class="mb-0">פרופילים</h5>
+    <div class="d-flex gap-2">
+      <input id="new-profile-name" type="text" class="form-control form-control-sm"
+        placeholder="שם פרופיל (אופציונלי)" />
+      <button id="btn-create-profile" class="btn btn-primary btn-sm">צור פרופיל</button>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Profiles list -->
+    <div class="col-12 col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header py-2">פרופילים קיימים</div>
+        <div class="card-body p-0">
+          <ul id="profiles-list" class="list-group list-group-flush">
+            <!-- Filled by JS -->
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statuses editor -->
+    <div class="col-12 col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+          <span>סטטוסים בפרופיל הנבחר</span>
+          <div class="d-flex gap-2">
+            <button id="btn-save-statuses" class="btn btn-success btn-sm">שמירה מלאה</button>
+            <button id="btn-delete-profile" class="btn btn-outline-danger btn-sm">מחק פרופיל</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="no-profile-selected" class="text-muted">בחר פרופיל כדי לערוך סטטוסים.</div>
+
+          <div id="profile-editor" class="d-none">
+            <div class="row g-3">
+              <!-- Case statuses -->
+              <div class="col-12 col-lg-6">
+                <h6 class="mb-2">סטטוסי תיקים</h6>
+                <div id="case-statuses" class="d-flex flex-wrap gap-2 mb-2">
+                  <!-- badges by JS -->
+                </div>
+                <div class="d-flex gap-2">
+                  <input id="input-case-status" type="text" class="form-control form-control-sm"
+                    placeholder="הוסף סטטוס תיק" />
+                  <button id="btn-add-case-status" class="btn btn-outline-primary btn-sm">הוסף</button>
+                </div>
+              </div>
+
+              <!-- Task statuses -->
+              <div class="col-12 col-lg-6">
+                <h6 class="mb-2">סטטוסי משימות</h6>
+                <div id="task-statuses" class="d-flex flex-wrap gap-2 mb-2">
+                  <!-- badges by JS -->
+                </div>
+                <div class="d-flex gap-2">
+                  <input id="input-task-status" type="text" class="form-control form-control-sm"
+                    placeholder="הוסף סטטוס משימה" />
+                  <button id="btn-add-task-status" class="btn btn-outline-primary btn-sm">הוסף</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="small text-muted mt-3">טיפ: “הוסף” מבצע הוספה נקודתית, ו“שמירה מלאה” כותבת את שתי הרשימות כפי
+              שמופיעות על המסך.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
