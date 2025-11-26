@@ -27,8 +27,7 @@ window.init_view_case = async function () {
       const clients = caseObj.clients;
 
       const setText = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = window.utils.safeValue(val);
+        document.getElementById(id).textContent = window.utils.safeValue(val);
       };
 
       setText("case-title", caseObj.title);
@@ -248,7 +247,7 @@ async function reloadCaseActivityMinimal(caseSerial) {
     const fileSerial = a.getAttribute("data-file-serial");
     const fileName = a.getAttribute("data-file-name");
     if (!fileSerial || !fileName) {
-      return window.Toast?.danger?.("חסר מידע על הקובץ (serial/name)");
+      return window.Toast.danger("חסר מידע על הקובץ (serial/name)");
     }
     const url = `/get_file_url?case_serial=${encodeURIComponent(caseSerial)}&file_serial=${encodeURIComponent(fileSerial)}&file_name=${encodeURIComponent(fileName)}`;
     const res = await window.API.getJson(url);
@@ -256,7 +255,7 @@ async function reloadCaseActivityMinimal(caseSerial) {
     if (res?.success && res?.data) {
       window.open(res.data, "_blank");
     } else {
-      window.Toast?.danger?.(res?.error || "שגיאה בפתיחת הקובץ");
+      window.Toast.danger(res?.error || "שגיאה בפתיחת הקובץ");
     }
   };
 }
