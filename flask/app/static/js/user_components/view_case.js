@@ -107,6 +107,26 @@ window.init_view_case = async function () {
     });
 };
 
+function getFileIconHTML(filename) {
+  const name = (filename || "").toLowerCase();
+
+  const byExt = (exts, icon) => exts.some(ex => name.endsWith("." + ex)) && icon;
+
+  const icon =
+    byExt(["pdf"], "PDF") ||
+    byExt(["doc", "docx", "rtf"], "WORD") ||
+    byExt(["xls", "xlsx", "csv"], "EXCEL") ||
+    byExt(["jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg"], "IMAGE") ||
+    byExt(["mp4", "mov", "avi", "mkv", "webm", "m4v"], "VIDEO") ||
+    byExt(["mp3", "m4a", "wav", "ogg", "flac"], "AUDIO") ||
+    byExt(["zip", "rar", "7z", "tar", "gz", "bz2"], "ARCHIVE") ||
+    "GENERIC";
+
+  const src = `/static/images/icons/${icon}.svg`;
+  // סגנון קטן inline כדי לא לגעת ב-CSS
+  return `<img src="${src}" alt="" style="width:18px;height:18px;vertical-align:-3px;margin-inline-end:6px;">`;
+}
+
 // === Minimal Activity List (TYPE, CREATEDAT, META) ===
 
 function formatDateTimeShort(iso) {
@@ -127,6 +147,7 @@ function buildActivityModelFromCase(caseObj) {
     META: {
       serial: f.serial,
       name: f.name || "ללא שם",
+      description: f.description || "",
       size: f.size,
       uploaded_by: f.uploaded_by,
     }
@@ -158,15 +179,35 @@ function renderActivityRow(item) {
     ? ` class="activity-file-link text-decoration-none" data-file-serial="${String(item.META?.serial || "")}" data-file-name="${String(item.META?.name || "")}"`
     : "";
 
-  return `
-    <div class="event-row ${isFile ? "file" : "task"} d-flex justify-content-between align-items-center p-3 rounded">
-      <div class="event-icon fs-5">${icon}</div>
-      <div class="event-details text-center flex-grow-1">
-        <a${attrs}>${window.utils?.safeValue ? window.utils.safeValue(middleText) : middleText}</a>
+  if (isFile) {
+    const fileName = item.META?.name || "קובץ";
+    const fileDesc = item.META?.description || ""; // תיאור להצגה בלבד
+    const fileEmoji = getFileIconHTML(fileName);
+
+    return `
+      <div class="event-row file d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
+        <div class="event-icon fs-5" title="קובץ">${fileEmoji}</div>
+        <div class="event-details text-center flex-grow-1">
+          <div class="fw-semibold text-start">
+            <a${attrs}>${window.utils.safeValue(fileName)}</a>
+            - ${window.utils.safeValue(fileDesc)}
+          </div>
+        </div>
+        <div class="event-time text-muted small">${when}</div>
       </div>
-      <div class="event-time text-muted small">${when}</div>
-    </div>
-  `;
+    `;
+  } else {
+    const taskText = item.META?.description || "משימה";
+    return `
+      <div class="event-row task d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
+        <div class="event-icon fs-5" title="משימה">✏️</div>
+        <div class="event-details text-start flex-grow-1" dir="rtl">
+          <div>${window.utils?.safeValue ? window.utils.safeValue(taskText) : taskText}</div>
+        </div>
+        <div class="event-time text-muted small">${when}</div>
+      </div>
+    `;
+  }
 }
 
 async function reloadCaseActivityMinimal(caseSerial) {
