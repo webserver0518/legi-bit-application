@@ -107,6 +107,8 @@ window.init_view_case = async function () {
     });
 };
 
+// === Minimal Activity List (TYPE, CREATEDAT, META) ===
+
 function formatDateTimeShort(iso) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -153,7 +155,7 @@ function renderActivityRow(item) {
     : (item.META?.description || "משימה");
   const when = formatDateTimeShort(item.CREATEDAT);
   const attrs = isFile
-    ? ` class="activity-file-link text-decoration-none" data-file-serial="${String(item.META?.serial || "")}"`
+    ? ` class="activity-file-link text-decoration-none" data-file-serial="${String(item.META?.serial || "")}" data-file-name="${String(item.META?.name || "")}"`
     : "";
 
   return `
@@ -167,13 +169,13 @@ function renderActivityRow(item) {
   `;
 }
 
-async function reloadCaseActivityMinimal(serial) {
+async function reloadCaseActivityMinimal(caseSerial) {
   const host = document.getElementById("case-activity-list");
   if (!host) return;
 
   host.innerHTML = `<div class="text-center text-muted py-3">טוען פעילות…</div>`;
 
-  const payload = await window.API.getJson(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`);
+  const payload = await window.API.getJson(`/get_case?serial=${encodeURIComponent(caseSerial)}&expand=true`);
   if (!payload?.success || !payload?.data?.length) {
     host.innerHTML = `<div class="text-center text-danger py-3">${payload?.error || "שגיאה בטעינת פעילות"}</div>`;
     return;
@@ -189,21 +191,27 @@ async function reloadCaseActivityMinimal(serial) {
 
   host.innerHTML = items.map(renderActivityRow).join("");
 
-  // פתיחת קובץ בלחיצה
+  // פתיחת קובץ בלחיצה – שולחים את שלושת הפרמטרים שה-API דורש
   host.onclick = async (ev) => {
     const a = ev.target.closest(".activity-file-link");
     if (!a) return;
     ev.preventDefault();
     const fileSerial = a.getAttribute("data-file-serial");
-    if (!fileSerial) return;
-    const res = await window.API.getJson(`/get_file_url?serial=${fileSerial}`);
-    if (res?.success && res?.data?.url) {
-      window.open(res.data.url, "_blank");
+    const fileName = a.getAttribute("data-file-name");
+    if (!fileSerial || !fileName) {
+      return window.Toast?.danger?.("חסר מידע על הקובץ (serial/name)");
+    }
+    const url = `/get_file_url?case_serial=${encodeURIComponent(caseSerial)}&file_serial=${encodeURIComponent(fileSerial)}&file_name=${encodeURIComponent(fileName)}`;
+    const res = await window.API.getJson(url);
+    console.log("Get file URL response:", res);
+    if (res?.success && res?.data) {
+      window.open(res.data, "_blank");
     } else {
       window.Toast?.danger?.(res?.error || "שגיאה בפתיחת הקובץ");
     }
   };
 }
+
 
 function initInstantCaseFileUploader(case_serial) {
   const dropArea = document.getElementById("drop-area");
@@ -320,6 +328,8 @@ function initInstantCaseFileUploader(case_serial) {
       await appendFileSerialToCase(case_serial, file_serial);
 
       window.Toast?.success?.(`הקובץ "${file.name}" הועלה בהצלחה`);
+      try { await reloadCaseActivityMinimal(case_serial); } catch (e) { console.error(e); }
+
     } catch (err) {
       console.error("Upload failed:", file.name, err);
       window.Toast?.danger?.(`העלאת "${file.name}" נכשלה`);
@@ -373,7 +383,10 @@ async function appendFileSerialToCase(case_serial, file_serial) {
 
   const upd = await window.API.apiRequest(`/update_case?serial=${encodeURIComponent(case_serial)}`, {
     method: "PATCH",
-    body: { files_serials: next }
+    body: {
+      _operator: "$addToSet",
+      files_serials: Number(file_serial)
+    }
   });
 
   if (!upd?.success) {
