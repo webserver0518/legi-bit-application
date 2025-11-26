@@ -828,7 +828,7 @@ function initHebrewBirthDatePicker() {
 }
 
 async function initClientAutocomplete() {
-  console.log("Initializing client autocomplete...");
+  //console.log("Initializing client autocomplete...");
   const input = document.getElementById("client-first-name-input");
   const suggestions = document.getElementById("client-name-suggestions");
   if (!input || !suggestions) return;
@@ -838,7 +838,7 @@ async function initClientAutocomplete() {
     const res = await window.API.getJson("/get_office_clients");
     if (res.success && Array.isArray(res.data)) {
       officeClients = res.data;
-      console.log("Loaded office clients for autocomplete:", officeClients);
+      //console.log("Loaded office clients for autocomplete:", officeClients);
     }
   } catch (err) {
     console.error("❌ שגיאה בשליפת לקוחות מהמשרד:", err);
