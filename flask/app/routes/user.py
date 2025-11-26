@@ -528,6 +528,7 @@ def create_new_case():
         "against_type": data.get("against_type"),
         "clients_serials_with_roles": clients_serials_with_roles,
         "files_serials": [],
+        "tasks_serials": [],
     }
 
     current_app.logger.debug(f"new_case_doc: {new_case_doc}")
@@ -593,19 +594,22 @@ def delete_case():
 def update_case():
     office_serial = AuthorizationManager.get_office_serial()
     case_serial = request.args.get("serial")
-    update_data = request.get_json(force=True) or {}
+    payload = request.get_json(force=True) or {}
 
     if not office_serial:
         return ResponseManager.error("Missing 'office_serial' in auth")
     if not case_serial:
         return ResponseManager.bad_request("Missing 'case_serial'")
-    if not update_data:
+    if not payload:
         return ResponseManager.bad_request("Missing 'update_data' in request body")
 
     case_serial = int(case_serial)
 
+    operator = payload.pop("_operator", "$set")
+    update_data = payload
+
     current_app.logger.debug(
-        f"PATCH /update_case | office={office_serial}, case={case_serial}, update={update_data}"
+        f"PATCH /update_case | office={office_serial}, case={case_serial}, operator={operator}, update={update_data}"
     )
 
     # perform the update via MongoDB microservice
@@ -615,6 +619,7 @@ def update_case():
         filters=MongoDBFilters.by_serial(case_serial),
         update_data=update_data,
         multiple=False,
+        operator=operator,
     )
 
     if not ResponseManager.is_success(response=update_res):

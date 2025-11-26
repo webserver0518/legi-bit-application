@@ -31,6 +31,19 @@ window.init_view_case = async function () {
       return window.Toast?.warning?.(msg);
     }
 
+    const newTaskSerial = res.data;
+
+    const upd = await window.API.apiRequest(`/update_case?serial=${serial}`, {
+      method: "PATCH",
+      body: {
+        _operator: "$addToSet",
+        tasks_serials: newTaskSerial
+      }
+    });
+    if (!upd?.success) {
+      return window.Toast?.warning?.(upd?.error || "עדכון התיק נכשל");
+    }
+
     if (taskInput) taskInput.value = "";
     window.Toast?.success?.("המשימה נוספה בהצלחה!");
   }
