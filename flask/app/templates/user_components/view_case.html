@@ -40,6 +40,15 @@
         <span id="case-created-at" class="value text-muted">-</span>
       </div>
 
+      <!-- Created date (date only, no time) -->
+      <div class="case-info-item shadow-sm rounded p-3 bg-light">
+        <span class="label d-block fw-semibold">סטטוס</span>
+        <!-- JS will format with toLocaleDateString('he-IL') -->
+        <select id="case-status-select" class="form-select form-select-sm w-auto">
+          <!-- options ימולאו מ-JS -->
+        </select>
+      </div>
+
       <!-- 🟪 Case facts (full width under the info blocks) -->
       <div class="case-facts case-info-item shadow-sm rounded p-3 bg-light">
         <span class="label d-block fw-semibold">מה הסיפור?</span>

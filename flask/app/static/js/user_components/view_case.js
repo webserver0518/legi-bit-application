@@ -1,5 +1,26 @@
 // static/js/user_components/view_case.js
 
+// helper: unique array of strings
+function uniqueStrings(arr) {
+  const out = [];
+  const seen = new Set();
+  for (const s of arr || []) {
+    const v = (s ?? "").toString().trim();
+    if (!v || seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+  }
+  return out;
+}
+
+// helper: update status dot class safely
+function applyStatusDot(status) {
+  const dot = document.getElementById("case-status-dot");
+  if (!dot) return;
+  dot.className = "status-dot"; // reset
+  if (status) dot.classList.add(status);
+}
+
 window.init_view_case = async function () {
   await window.utils.waitForDom();
 
@@ -12,6 +33,30 @@ window.init_view_case = async function () {
   // ✅ שלב 1: העלאת קבצים מיידית (בלי טבלה/תצוגה)
   initInstantCaseFileUploader(serial);
   await reloadCaseActivityMinimal(serial);
+
+  // ⬇️ נטען גם פרופילים (בשביל רשימת הסטטוסים לבוחר)
+  const profilesPayload = await window.API.getJson("/get_office_profiles");
+  const profileList = (profilesPayload?.data || []);
+  const profileStatuses = uniqueStrings(
+    profileList.flatMap(p => Array.isArray(p.case_statuses) ? p.case_statuses : [])
+  );
+
+  // אפשר לשמר גם ברירות מחדל קיימות אם תרצה:
+  const defaults = []; // לדוגמה: ["active", "archived"]
+  const allStatuses = uniqueStrings([...defaults, ...profileStatuses]);
+
+  // נמלא את ה-select
+  const selectEl = document.getElementById("case-status-select");
+  const ensureSelect = (cur) => {
+    if (!selectEl) return;
+    selectEl.innerHTML = allStatuses.length
+      ? allStatuses.map(s => `<option value="${window.utils.safeValue(s)}">${window.utils.safeValue(s)}</option>`).join("")
+      : `<option value="">(אין סטטוסים בפרופילים)</option>`;
+    // נבחר את הסטטוס הנוכחי של התיק (אם קיים ברשימה)
+    if (cur && allStatuses.includes(cur)) {
+      selectEl.value = cur;
+    }
+  };
 
   window.API.getJson(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)
     .then(payload => {
@@ -38,7 +83,8 @@ window.init_view_case = async function () {
 
       document.getElementById("case-facts-text").textContent = window.utils.safeValue(caseObj.facts || "");
 
-      document.getElementById("case-status-dot").classList.add(caseObj.status || "unknown");
+      applyStatusDot(caseObj.status || "unknown");
+      ensureSelect(caseObj.status);
 
       document.querySelector("#clientsTable tbody").innerHTML = clients.length
         ? clients.map(c => `
@@ -54,6 +100,26 @@ window.init_view_case = async function () {
         `).join("")
         : `<tr><td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td></tr>`;
     });
+
+  // שינוי סטטוס בלייב
+  if (selectEl) {
+    selectEl.onchange = async () => {
+      const newStatus = (selectEl.value || "").trim();
+      if (!newStatus) return;
+
+      const res = await window.API.apiRequest(`/update_case?serial=${encodeURIComponent(serial)}`, {
+        method: "PATCH",
+        body: { status: newStatus } // _operator ברירת מחדל $set בצד השרת
+      });
+
+      if (!res?.success) {
+        window.Toast?.danger?.(res?.error || "עדכון הסטטוס נכשל");
+        return;
+      }
+      applyStatusDot(newStatus);
+      window.Toast?.success?.("סטטוס התיק עודכן");
+    };
+  }
 };
 
 async function createTask() {
