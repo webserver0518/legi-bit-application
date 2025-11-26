@@ -204,7 +204,15 @@ function renderActivityRow(item) {
         <div class="event-details text-start flex-grow-1" dir="rtl">
           <div>${window.utils?.safeValue ? window.utils.safeValue(taskText) : taskText}</div>
         </div>
-        <div class="event-time text-muted small">${when}</div>
+        <div class="d-flex align-items-center gap-2">
+
+          <!-- 🔔 אייקון הפעמון -->
+         <img src="/static/images/icons/BELL.svg" style="width:16px;height:16px;cursor:pointer;">
+
+          <!-- התאריך -->
+          <div class="event-time text-muted small">${when}</div>
+
+        </div>
       </div>
     `;
   }
