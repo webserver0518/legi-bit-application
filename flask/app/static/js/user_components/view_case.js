@@ -38,8 +38,7 @@ window.init_view_case = async function () {
       const createdAtText = createdAt && !isNaN(createdAt) ? createdAt.toLocaleDateString("he-IL") : "-";
       setText("case-created-at", createdAtText);
 
-      const factsEl = document.getElementById("case-facts-text");
-      if (factsEl) factsEl.textContent = window.utils.safeValue(caseObj.facts ?? "");
+      document.getElementById("case-facts-text").textContent = window.utils.safeValue(caseObj.facts || "");
 
       const statusDot = document.getElementById("case-status-dot");
       if (statusDot) statusDot.classList.add(caseObj.status || "unknown");
