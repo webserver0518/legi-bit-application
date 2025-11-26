@@ -808,7 +808,8 @@ def get_office_clients():
     if not ResponseManager.is_success(clients_res):
         return ResponseManager.internal("Failed to fetch clients")
 
-    clients = ResponseManager.get_data(clients_res)
+    clients_data = ResponseManager.get_data(clients_res)
+    clients = [c.get("clients") for c in clients_data]
     return ResponseManager.success(data=clients)
 
 
