@@ -40,8 +40,7 @@ window.init_view_case = async function () {
 
       document.getElementById("case-facts-text").textContent = window.utils.safeValue(caseObj.facts || "");
 
-      const statusDot = document.getElementById("case-status-dot");
-      if (statusDot) statusDot.classList.add(caseObj.status || "unknown");
+      document.getElementById("case-status-dot").classList.add(caseObj.status || "unknown");
 
       const clientsTbody = document.querySelector("#clientsTable tbody");
       if (clientsTbody) {
