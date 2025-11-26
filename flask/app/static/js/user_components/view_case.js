@@ -326,7 +326,7 @@ function initInstantCaseFileUploader(case_serial) {
     const timestamp = window.utils.buildLocalTimestamp();
     const caseSerialNum = Number(case_serial);
 
-    window.Toast?.info?.(`מעלה "${file.name}"...`);
+    window.Toast.info(`מעלה "${file.name}"...`);
 
     let file_serial = null;
 
@@ -375,12 +375,12 @@ function initInstantCaseFileUploader(case_serial) {
       // 5) attach to case (fetch latest -> set full array)
       await appendFileSerialToCase(case_serial, file_serial);
 
-      window.Toast?.success?.(`הקובץ "${file.name}" הועלה בהצלחה`);
-      try { await reloadCaseActivityMinimal(case_serial); } catch (e) { console.error(e); }
+      window.Toast.success(`הקובץ "${file.name}" הועלה בהצלחה`);
+      await reloadCaseActivityMinimal(case_serial);
 
     } catch (err) {
       console.error("Upload failed:", file.name, err);
-      window.Toast?.danger?.(`העלאת "${file.name}" נכשלה`);
+      window.Toast.danger(`העלאת "${file.name}" נכשלה`);
 
       // cleanup mongo record (same approach as new_case)
       if (file_serial) {
