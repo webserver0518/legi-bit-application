@@ -9,50 +9,7 @@ window.init_view_case = async function () {
   const queue = (window.Recents?.get('case') || []);
   const serial = queue[0];
 
-  const taskInput = document.getElementById("task-description");
   const addTaskBtn = document.getElementById("add-task");
-
-  async function createTask() {
-    const description = (taskInput?.value || "").trim();
-    if (!serial) return window.Toast?.warning?.("לא נמצא מספר תיק.");
-    if (!description) return window.Toast?.warning?.("נא להזין תיאור משימה.");
-
-    if (addTaskBtn) addTaskBtn.disabled = true;
-
-    const payload = {
-      case_serial: serial,
-      description,
-      created_at: window.utils.buildLocalTimestamp(),
-    };
-
-    const res = await window.API.postJson("/create_new_task", payload);
-
-    if (addTaskBtn) addTaskBtn.disabled = false;
-
-    if (!res?.success) {
-      const msg = res.message || res.error || "יצירת משימה נכשלה.";
-      return window.Toast?.warning?.(msg);
-    }
-
-    const newTaskSerial = res.data;
-
-    const upd = await window.API.apiRequest(`/update_case?serial=${serial}`, {
-      method: "PATCH",
-      body: {
-        _operator: "$addToSet",
-        tasks_serials: newTaskSerial
-      }
-    });
-    if (!upd?.success) {
-      return window.Toast?.warning?.(upd?.error || "עדכון התיק נכשל");
-    }
-
-    if (taskInput) taskInput.value = "";
-    window.Toast?.success?.("המשימה נוספה בהצלחה!");
-
-    try { await reloadCaseActivityMinimal(serial); } catch { }
-  }
-
   if (addTaskBtn) addTaskBtn.onclick = createTask;
 
   // ✅ שלב 1: העלאת קבצים מיידית (בלי טבלה/תצוגה)
@@ -109,6 +66,51 @@ window.init_view_case = async function () {
       }
     });
 };
+
+async function createTask() {
+
+  const taskInput = document.getElementById("task-description");
+  const addTaskBtn = document.getElementById("add-task");
+
+  const description = (taskInput?.value || "").trim();
+  if (!serial) return window.Toast?.warning?.("לא נמצא מספר תיק.");
+  if (!description) return window.Toast?.warning?.("נא להזין תיאור משימה.");
+
+  if (addTaskBtn) addTaskBtn.disabled = true;
+
+  const payload = {
+    case_serial: serial,
+    description,
+    created_at: window.utils.buildLocalTimestamp(),
+  };
+
+  const res = await window.API.postJson("/create_new_task", payload);
+
+  if (addTaskBtn) addTaskBtn.disabled = false;
+
+  if (!res?.success) {
+    const msg = res.message || res.error || "יצירת משימה נכשלה.";
+    return window.Toast?.warning?.(msg);
+  }
+
+  const newTaskSerial = res.data;
+
+  const upd = await window.API.apiRequest(`/update_case?serial=${serial}`, {
+    method: "PATCH",
+    body: {
+      _operator: "$addToSet",
+      tasks_serials: newTaskSerial
+    }
+  });
+  if (!upd?.success) {
+    return window.Toast?.warning?.(upd?.error || "עדכון התיק נכשל");
+  }
+
+  if (taskInput) taskInput.value = "";
+  window.Toast?.success?.("המשימה נוספה בהצלחה!");
+
+  try { await reloadCaseActivityMinimal(serial); } catch { }
+}
 
 function getFileIconHTML(filename) {
   const name = (filename || "").toLowerCase();
