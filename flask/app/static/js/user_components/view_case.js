@@ -3,6 +3,9 @@
 window.init_view_case = async function () {
   await window.utils.waitForDom();
 
+  const activityBox = document.getElementById("case-activity-list");
+  if (activityBox) lockScrollInside(activityBox);
+
   const queue = (window.Recents?.get('case') || []);
   const serial = queue[0];
 
@@ -441,4 +444,23 @@ async function appendFileSerialToCase(case_serial, file_serial) {
   if (!upd?.success) {
     throw new Error(upd?.error || "Failed to attach file to case");
   }
+}
+
+function lockScrollInside(el) {
+  el.addEventListener("wheel", function (e) {
+    const delta = e.deltaY;
+    const atTop = el.scrollTop === 0;
+    const atBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= 1;
+
+    // גלילה למעלה בראש הרשימה
+    if (delta < 0 && atTop) {
+      e.preventDefault();
+      return;
+    }
+    // גלילה למטה בתחתית הרשימה
+    if (delta > 0 && atBottom) {
+      e.preventDefault();
+      return;
+    }
+  }, { passive: false });
 }
