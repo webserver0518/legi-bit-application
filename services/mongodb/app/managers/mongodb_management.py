@@ -467,6 +467,7 @@ class MongoDBManager:
                     cls._expand_case_responsible(doc, db_name)
                     cls._expand_case_clients(doc, db_name)
                     cls._expand_case_files(doc, db_name)
+                    cls._expand_case_tasks(doc, db_name)
 
                 results.append(enriched)
 
@@ -652,6 +653,54 @@ class MongoDBManager:
                 case_doc["files"].append(file)
 
         current_app.logger.debug(f"returning from _expand_case_files()")
+
+    @classmethod
+    def _expand_case_tasks(cls, case_doc, office_serial):
+        current_app.logger.debug(f"inside _expand_case_tasks()")
+
+        task_serials = case_doc.pop("tasks_serials", None)
+
+        # תאימות אחורה: אם אין שדה/רשימה -> נחזיר רשימת משימות ריקה ולא נשבור את התיק
+        if not task_serials:
+            case_doc["tasks"] = []
+            current_app.logger.debug(
+                "no 'tasks_serials' in case_doc; set tasks=[] and return"
+            )
+            return
+
+        case_doc["tasks"] = []
+
+        for task_serial in task_serials:
+            current_app.logger.debug(
+                f"calling get_entity() from _expand_case_tasks() for task_serial={task_serial}"
+            )
+            task_res = cls.get_entity(
+                entity=MongoDBEntity.TASKS,
+                office_serial=office_serial,
+                filters={"serial": task_serial},
+                limit=1,
+                expand=False,
+            )
+
+            if not ResponseManager.is_success(response=task_res):
+                current_app.logger.debug(
+                    f"_expand_case_tasks(): get_entity failed for task_serial={task_serial} "
+                    f"error={ResponseManager.get_error(response=task_res)}"
+                )
+                continue
+
+            rows = ResponseManager.get_data(response=task_res) or []
+            if not rows:
+                current_app.logger.debug(
+                    f"_expand_case_tasks(): no rows for task_serial={task_serial}"
+                )
+                continue
+
+            # נשארים עקביים עם הקיים (כמו בקבצים): מוציאים את ה-doc מתוך ה-entity wrapper
+            task_entity = rows[0].get(MongoDBEntity.TASKS, {})
+            case_doc["tasks"].append(task_entity)
+
+        current_app.logger.debug("returning from _expand_case_tasks()")
 
     @classmethod
     def create_entity(cls, entity: str, office_serial: int, document: dict):
