@@ -15,7 +15,7 @@ window.init_view_case = async function () {
 
   window.API.getJson(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)
     .then(payload => {
-      if (!payload?.success || !payload?.data?.length) return;
+      if (!payload.success || !payload.data.length) return;
 
       const item = payload.data[0] ?? {};
       const caseObj = item.cases;
