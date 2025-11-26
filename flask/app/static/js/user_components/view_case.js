@@ -334,8 +334,8 @@ function initInstantCaseFileUploader(case_serial) {
         description: "",
       });
 
-      if (!created?.success || !created?.data) {
-        throw new Error(created?.error || "Failed to create file record");
+      if (!created.success || !created.data) {
+        throw new Error(created.error || "Failed to create file record");
       }
 
       file_serial = created.data;
@@ -350,9 +350,9 @@ function initInstantCaseFileUploader(case_serial) {
         key: uploadKey
       });
 
-      const presigned = presign?.data?.presigned;
-      if (!presign?.success || !presigned?.url || !presigned?.fields) {
-        throw new Error(presign?.error || "Failed to get presigned POST");
+      const presigned = presign.data.presigned;
+      if (!presign.success || !presigned.url || !presigned.fields) {
+        throw new Error(presign.error || "Failed to get presigned POST");
       }
 
       // 3) upload to S3/minio
