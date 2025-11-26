@@ -46,12 +46,15 @@ window.init_view_case = async function () {
 
     if (taskInput) taskInput.value = "";
     window.Toast?.success?.("המשימה נוספה בהצלחה!");
+
+    try { await reloadCaseActivityMinimal(serial); } catch { }
   }
 
   if (addTaskBtn) addTaskBtn.onclick = createTask;
 
   // ✅ שלב 1: העלאת קבצים מיידית (בלי טבלה/תצוגה)
   if (serial) initInstantCaseFileUploader(serial);
+  if (serial) { try { await reloadCaseActivityMinimal(serial); } catch { } }
 
   window.API.getJson(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)
     .then(payload => {
@@ -59,6 +62,8 @@ window.init_view_case = async function () {
 
       const item = payload.data[0] ?? {};
       const caseObj = item.cases;
+
+      console.log("Loaded case:", caseObj);
 
       const user = caseObj.user;
       const clients = caseObj.clients;
@@ -101,6 +106,104 @@ window.init_view_case = async function () {
       }
     });
 };
+
+function formatDateTimeShort(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = n => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function buildActivityModelFromCase(caseObj) {
+  const files = Array.isArray(caseObj?.files) ? caseObj.files : [];
+  const tasks = Array.isArray(caseObj?.tasks) ? caseObj.tasks : [];
+
+  const fileItems = files.map(f => ({
+    TYPE: "file",
+    CREATEDAT: f.created_at || f.uploaded_at || null,
+    META: {
+      serial: f.serial,
+      name: f.name || "ללא שם",
+      size: f.size,
+      uploaded_by: f.uploaded_by,
+    }
+  }));
+
+  const taskItems = tasks.map(t => ({
+    TYPE: "task",
+    CREATEDAT: t.created_at || null,
+    META: {
+      serial: t.serial,
+      description: t.description || "משימה",
+      status: t.status || "open",
+      created_by: t.created_by,
+    }
+  }));
+
+  const toTs = v => (v ? new Date(v).getTime() : -Infinity);
+  return [...fileItems, ...taskItems].sort((a, b) => toTs(b.CREATEDAT) - toTs(a.CREATEDAT)); // חדש למעלה
+}
+
+function renderActivityRow(item) {
+  const isFile = item.TYPE === "file";
+  const icon = isFile ? "📄" : "✏️";
+  const middleText = isFile
+    ? (item.META?.name || "קובץ")
+    : (item.META?.description || "משימה");
+  const when = formatDateTimeShort(item.CREATEDAT);
+  const attrs = isFile
+    ? ` class="activity-file-link text-decoration-none" data-file-serial="${String(item.META?.serial || "")}"`
+    : "";
+
+  return `
+    <div class="event-row ${isFile ? "file" : "task"} d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
+      <div class="event-icon fs-5">${icon}</div>
+      <div class="event-details text-center flex-grow-1">
+        <a${attrs}>${window.utils?.safeValue ? window.utils.safeValue(middleText) : middleText}</a>
+      </div>
+      <div class="event-time text-muted small">${when}</div>
+    </div>
+  `;
+}
+
+async function reloadCaseActivityMinimal(serial) {
+  const host = document.getElementById("case-activity-list");
+  if (!host) return;
+
+  host.innerHTML = `<div class="text-center text-muted py-3">טוען פעילות…</div>`;
+
+  const payload = await window.API.getJson(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`);
+  if (!payload?.success || !payload?.data?.length) {
+    host.innerHTML = `<div class="text-center text-danger py-3">${payload?.error || "שגיאה בטעינת פעילות"}</div>`;
+    return;
+  }
+
+  const caseObj = (payload.data[0] || {}).cases || {};
+  const items = buildActivityModelFromCase(caseObj);
+
+  if (!items.length) {
+    host.innerHTML = `<div class="text-center text-muted py-3">אין פעילות עדיין</div>`;
+    return;
+  }
+
+  host.innerHTML = items.map(renderActivityRow).join("");
+
+  // פתיחת קובץ בלחיצה
+  host.onclick = async (ev) => {
+    const a = ev.target.closest(".activity-file-link");
+    if (!a) return;
+    ev.preventDefault();
+    const fileSerial = a.getAttribute("data-file-serial");
+    if (!fileSerial) return;
+    const res = await window.API.getJson(`/get_file_url?serial=${fileSerial}`);
+    if (res?.success && res?.data?.url) {
+      window.open(res.data.url, "_blank");
+    } else {
+      window.Toast?.danger?.(res?.error || "שגיאה בפתיחת הקובץ");
+    }
+  };
+}
 
 function initInstantCaseFileUploader(case_serial) {
   const dropArea = document.getElementById("drop-area");
