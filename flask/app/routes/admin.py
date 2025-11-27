@@ -20,7 +20,7 @@ def base_admin_dashboard():
     return render_template("base_admin_dashboard.html")
 
 
-# ---------------- USER MANAGEMENT ---------------- #
+# ---------------- OFFICES MANAGEMENT ---------------- #
 
 
 @admin_bp.route("/get_offices", methods=["GET"])
