@@ -1253,99 +1253,72 @@ class MongoDBManager:
         return ResponseManager.not_found(error=f"Office '{office_serial}' not found")
 
     @classmethod
-    def get_or_create_office_serial(cls, office_name: str):
+    def get_offices(cls):
         """
-        Retrieve the existing office_serial for the given office_name.
-        If the office does not exist, create a new office entry with
-        a unique serial and initialize its own database.
+        Return all offices from the global offices registry.
+        NOTE: returns success([]) when there are no offices yet.
+        """
+        current_app.logger.debug("inside get_offices()")
 
-        Args:
-            office_name (str): The office name to look up or create.
+        res = cls._get_records(
+            db_name=cls.MONGO_OFFICES_DB_NAME,
+            collection_name=cls.offices_collection_name,
+            filters={},
+            projection={"_id": 0},
+            sort=("office_serial", 1),
+            limit=0,
+        )
+
+        # _get_records מחזיר not_found אם אין תוצאות; כאן אנחנו רוצים [].
+        if not ResponseManager.is_success(response=res):
+            err = (ResponseManager.get_error(response=res) or "").strip()
+            if err == "Not Found":
+                return ResponseManager.success(data=[])
+            return res
+
+        return res
+
+    @classmethod
+    def create_new_office(cls, office_name: str):
         """
-        current_app.logger.debug(f"inside get_or_create_office_serial()")
-        # debug inputs
+        Always creates a new office:
+        - gets new office_serial from global counter
+        - inserts into offices_db.offices_col
+        - initializes tenant DB with counters=0 and indexes
+        """
+        current_app.logger.debug("inside create_new_office()")
         current_app.logger.debug(f"office_name: {office_name}")
 
+        office_name = (office_name or "").strip()
         if not office_name:
-            # debug bad request
-            current_app.logger.debug(
-                f"returning bad_request: 'office_name' is required"
-            )
             return ResponseManager.bad_request(error="'office_name' is required")
 
         db_name = cls.MONGO_OFFICES_DB_NAME
         collection_name = cls.offices_collection_name
-
-        # Try to find existing office
         collection = cls._get_collection(db_name, collection_name)
-        existing = collection.find_one(
-            {"office_name": office_name}, {"_id": 0, "office_serial": 1}
-        )
 
-        if existing:
-            office_serial = existing["office_serial"]
-            # debug success
-            current_app.logger.info(
-                f"[DB@Col] [{db_name}@{collection_name}] Found existing office with office_name='{office_name}'"
-            )
-            current_app.logger.info(
-                f"returning success with office_serial: {office_serial}"
-            )
-            return ResponseManager.success(data={"office_serial": office_serial})
-
-        # Create new office if not found
+        # allocate new serial
         new_office_serial_res = cls.get_offices_counter()
-
         if not ResponseManager.is_success(response=new_office_serial_res):
-            # debug error
-            current_app.logger.debug(f"returning internal error: Failed to get counter")
             return ResponseManager.internal(error="Failed to get counter")
 
-        new_office_serial = ResponseManager.get_data(response=new_office_serial_res)
+        new_office_serial = int(
+            ResponseManager.get_data(response=new_office_serial_res)
+        )
 
-        if new_office_serial == -1:
-            # debug error
-            current_app.logger.debug(
-                f"returning internal error: Failed to generate office serial"
-            )
-            return ResponseManager.internal(error="Failed to generate office serial")
-
-        # Insert into global offices registry
+        # insert into global registry (office_serial is INT)
         collection.insert_one(
-            {"office_name": office_name, "office_serial": str(new_office_serial)}
-        )
-        # debug insertion
-        current_app.logger.info(
-            f"Added new office '{office_name}' with serial={new_office_serial}"
+            {"office_name": office_name, "office_serial": new_office_serial}
         )
 
-        # Create a dedicated database for this office
-        # debug func call
-        current_app.logger.info(
-            f"calling _create_office_database() from get_or_create_office_serial()"
-        )
+        # create tenant DB + counters=0
         create_res = cls._create_office_database(new_office_serial)
-
         if not ResponseManager.is_success(response=create_res):
-            # debug deletion
-            current_app.logger.debug(
-                f"delete the office name and serial from collection"
-            )
-            collection.delete_one({"office_name": office_name})
-            # debug error
-            current_app.logger.debug(
-                f"returning internal error: Failed to initialize office DB"
-            )
+            # rollback registry insert
+            collection.delete_one({"office_serial": new_office_serial})
             return ResponseManager.internal(error="Failed to initialize office DB")
 
-        # debug success
-        current_app.logger.info(
-            f"Created and initialized [DB] [{new_office_serial}] for '{office_name}'"
-        )
-        current_app.logger.info(
-            f"returning success with office_serial: {new_office_serial}"
-        )
-        return ResponseManager.success(data={"office_serial": new_office_serial})
+        return ResponseManager.success(data=new_office_serial)
 
     # ---------------------- Login ----------------------
 
