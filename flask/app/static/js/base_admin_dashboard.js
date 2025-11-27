@@ -1,5 +1,5 @@
 /*  base_user_dashboard.js  */
-const USER_DEFAULT = 'birds_view_cases';
+const USER_DEFAULT = 'search_office';
 
 const rolesData = document.getElementById('user-info')?.dataset.roles || '';
 const roles = rolesData.split(',').map(r => r.trim()).filter(Boolean);
@@ -31,63 +31,33 @@ function showSubMenu(type, force = false) {
   cont.dataset.type = type;
 
   let html = '';
-  if (type === 'office') {
+  if (type === 'offices') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_office">מבט על המשרד</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="office_details">פרטי המשרד</a>
-      <hr>`;
-  } else if (type === 'user') {
-    html = `
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_offices">מבט על משרדים</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="search_office">חיפוש משרד</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="new_office">משרד חדש</a>
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_user">מבט על משתמש</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="personal_details">פרטים אישיים</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="security_mfa">אימות דו-שלבי</a>
-      <hr>`;
-  } else if (type === 'offices') {
-    html = `
-      <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_cases">מבט על תיקים</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="search_case">חיפוש תיק</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="new_case">תיק חדש</a>
-      <hr>
-      <div class="sub-group" id="recent-cases">
-        <ul class="list-unstyled mb-0" id="recent-cases-list"></ul>
+      <div class="sub-group" id="recent-offices">
+        <ul class="list-unstyled mb-0" id="recent-offices-list"></ul>
       </div>
       <hr>`;
-  } else if (type === 'clients') {
+  } else if (type === 'users') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_clients">מבט על לקוחות</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="search_client">חיפוש לקוח</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="new_client">לקוח חדש</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_users">מבט על משתמשים</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="search_user">חיפוש משתמש</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="new_user">משתמש חדש</a>
+      <hr>
+      <div class="sub-group" id="recent-users">
+        <ul class="list-unstyled mb-0" id="recent-users-list"></ul>
+      </div>
+      <hr>`;
+  } else {
+    html = `
+      <hr>
       <hr>
       `;
-  } else if (type === 'files') {
-    html = `
-      <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="search_file">חיפוש קובץ</a>
-      <hr>
-      `;
-  } else if (type === 'attendance') {
-    html = `
-      <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_attendance">מבט על נוכחות</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clock_in_out">דיווח</a>
-      <hr>`;
-  } else if (type === 'support') {
-    html = `
-      <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="contact">צור קשר</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="faq">שאלות ותשובות</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="remote_control">שליטה מרחוק</a>
-      <hr>`;
-  } else if (type === 'regulations') {
-    html = `
-      <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="statement">הצהרה</a>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="accessibility_statement">הצהרת נגישות</a>
-      <hr>`;
   }
 
   cont.innerHTML = html;
@@ -126,7 +96,7 @@ window.addEventListener('DOMContentLoaded', () => {
   ensureSubmenuVisible(); // <- important
 
   const targetPage = Store.get('current_dashboard_content') || USER_DEFAULT;
-  window.UserLoader.navigate({ page: targetPage, force: true })
+  window.AdminLoader.navigate({ page: targetPage, force: true })
 
   // Highlight in main sidebar
   window.utils.qsa('.sidebar a').forEach(a => {
@@ -147,7 +117,7 @@ window.addEventListener('DOMContentLoaded', () => {
         showSubMenu(link.dataset.subSidebar);
         ensureSubmenuVisible(); // <- ensure visible after switching sections
 
-        window.UserLoader.navigate({ page: link.dataset.subSidebar, force: true });
+        window.AdminLoader.navigate({ page: link.dataset.subSidebar, force: true });
       }
     });
   }
@@ -160,7 +130,7 @@ window.addEventListener('DOMContentLoaded', () => {
       window.Nav.highlightInSidebar(link, 'sub-sidebar');
       // Ensure compatibility with loader.js
       link.dataset.type = 'user';
-      window.UserLoader.navigate({ linkEl: link, page: link.dataset.page, force: true });
+      window.AdminLoader.navigate({ linkEl: link, page: link.dataset.page, force: true });
     });
   }
 
