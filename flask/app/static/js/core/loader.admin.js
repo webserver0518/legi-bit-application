@@ -1,4 +1,4 @@
-/* loader.admin.js (IIFE, browser globals) */
+/* loader.Admin.js (IIFE, browser globals) */
 (function () {
     'use strict';
 
@@ -6,14 +6,13 @@
         throw new Error('AdminLoader: Core.storage must be loaded first');
     }
 
-    const Store = window.Core.storage.create('loader.admin');
-    const KEY = 'current_admin_content';
+    const Store = window.Core.storage.create('loader.Admin');
+    const KEY = 'current_dashboard_content';
 
     const runtime = { currentPage: null, currentStyle: null, currentScript: null };
 
     function container() {
         return (
-            document.getElementById('adminContent') ||
             document.getElementById('dashboardContent') ||
             document.getElementById('dynamicContent') ||
             document.getElementById('content') ||
@@ -21,7 +20,12 @@
         );
     }
 
+    const pageMap = {
+        offices: "search_office",
+    };
+
     function pathsFor(page) {
+        console.log('AdminLoader: pathsFor', page);
         return {
             fetchUrl: `/load_${page}`,
             cssPath: `/static/css/admin_components/${page}.css`,
@@ -58,12 +62,12 @@
 
     async function fetchHtml(url) {
         const resp = await fetch(`${url}?v=${Date.now()}`, { credentials: 'same-origin' });
-        if (!resp.ok) throw new Error(`AdminLoader HTML fetch failed: ${resp.status}`);
+        if (!resp.ok) throw new Error(`adminLoader HTML fetch failed: ${resp.status}`);
         return await resp.text();
     }
 
     async function loadInternal(page, force) {
-        if (typeof force !== 'boolean') throw new Error("AdminLoader.load: 'force' must be boolean");
+        if (typeof force !== 'boolean') throw new Error("adminLoader.load: 'force' must be boolean");
         const cont = container();
         if (!force && runtime.currentPage === page) return { page, changed: false };
 
@@ -87,16 +91,29 @@
     }
 
     async function navigate({ linkEl = null, page = null, force }) {
+        //console.log('AdminLoader: navigate', { linkEl, page, force });
+        page = pageMap[page] || page;
         if (typeof force !== 'boolean') throw new Error("AdminLoader.navigate: 'force' must be boolean");
         if (!page && linkEl) page = linkEl.dataset.page;
         if (!page) throw new Error('AdminLoader.navigate: missing page');
 
         const result = await loadInternal(page, force);
 
-        if (window.Nav?.highlightInSidebar && linkEl) {
-            window.Nav.highlightInSidebar(linkEl, 'sidebar');
+        if (window.Nav?.highlightInSidebar) {
+            if (linkEl) {
+                const cls = linkEl.closest('.sub-sidebar') ? 'sub-sidebar' : 'sidebar';
+                window.Nav.highlightInSidebar(linkEl, cls);
+            } else {
+                const subLink = document.querySelector(`.sub-sidebar a[data-page="${page}"]`);
+                const mainLink = document.querySelector(`.sidebar a[data-page="${page}"]`);
+                console.log(subLink, mainLink);
+                //console.log({ subLink, mainLink });
+                if (subLink) window.Nav.highlightInSidebar(subLink, 'sub-sidebar');
+                else if (mainLink) window.Nav.highlightInSidebar(mainLink, 'sidebar');
+
+            }
         }
-        if (window.Nav?.setLastPage) window.Nav.setLastPage(page, 'admin');
+        if (window.Nav?.setLastPage) window.Nav.setLastPage(page, 'Admin');
         return result;
     }
 
