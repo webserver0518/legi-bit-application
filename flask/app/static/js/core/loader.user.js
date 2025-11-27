@@ -32,7 +32,7 @@
     };
 
     function pathsFor(page) {
-        console.log('UserLoader: pathsFor', page);
+        //console.log('UserLoader: pathsFor', page);
         return {
             fetchUrl: `/load_${page}`,
             cssPath: `/static/css/user_components/${page}.css`,
@@ -98,7 +98,7 @@
     }
 
     async function navigate({ linkEl = null, page = null, force }) {
-        console.log('UserLoader: navigate', { linkEl, page, force });
+        //console.log('UserLoader: navigate', { linkEl, page, force });
         page = pageMap[page] || page;
         if (typeof force !== 'boolean') throw new Error("UserLoader.navigate: 'force' must be boolean");
         if (!page && linkEl) page = linkEl.dataset.page;
@@ -113,7 +113,7 @@
             } else {
                 const subLink = document.querySelector(`.sub-sidebar a[data-page="${page}"]`);
                 const mainLink = document.querySelector(`.sidebar a[data-page="${page}"]`);
-                console.log({ subLink, mainLink });
+                //console.log({ subLink, mainLink });
                 if (subLink) window.Nav.highlightInSidebar(subLink, 'sub-sidebar');
                 else if (mainLink) window.Nav.highlightInSidebar(mainLink, 'sidebar');
 

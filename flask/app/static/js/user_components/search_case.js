@@ -1,6 +1,6 @@
 // static/js/user_components/cases.js
 
-window.init_cases = async function () {
+window.init_search_case = async function () {
   try {
     await window.utils.waitForDom();
 

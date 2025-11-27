@@ -1,6 +1,6 @@
 // static/js/user_components/clients.js
 
-window.init_clients = async function () {
+window.init_search_client = async function () {
     try {
         await window.utils.waitForDom();
 

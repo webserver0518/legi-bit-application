@@ -1,6 +1,6 @@
 // static/js/user_components/files.js
 
-window.init_files = async function () {
+window.init_search_file = async function () {
     try {
         await window.utils.waitForDom();
 
