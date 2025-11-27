@@ -33,6 +33,14 @@
                 `/delete_profile?serial=${encodeURIComponent(serial)}`,
                 { method: "DELETE" }
             ),
+
+        setActive: (serial) => {
+            const s = parseInt(serial, 10);
+            return window.API.apiRequest('/set_active_profile', {
+                method: 'PATCH',
+                body: { serial: s }
+            });
+        },
     };
 
     let state = {
@@ -75,9 +83,9 @@
             const left = document.createElement("div");
             left.className = "d-flex flex-column";
             left.innerHTML = `
-                <strong>#${p.serial} — ${p.name || "(ללא שם)"}</strong>
+                <strong>#${p.serial} — ${p.name || "(ללא שם)"} ${p.is_active ? '<span class="badge text-bg-success ms-2">פעיל</span>' : ''}</strong>
                 <span class="text-muted small">${p.created_at || ""}</span>
-            `;
+                `;
 
             const right = document.createElement("div");
             right.className = "small text-muted";
@@ -90,6 +98,25 @@
 
             li.onclick = () => selectProfile(p);
             elProfilesList.appendChild(li);
+
+            const btnActive = document.createElement("button");
+            btnActive.type = "button";
+            btnActive.className = `btn btn-sm ${p.is_active ? "btn-success" : "btn-outline-secondary"} ms-2`;
+            btnActive.textContent = p.is_active ? "פעיל" : "הגדר פעיל";
+            btnActive.disabled = !!p.is_active;
+            btnActive.onclick = async (e) => {
+                e.stopPropagation();
+                try {
+                    const res = await api.setActive(p.serial);
+                    if (!res?.success) throw new Error(res?.error || "failed");
+                    toastOk("עודכן פרופיל פעיל");
+                    await loadProfiles();
+                } catch (err) {
+                    console.error(err);
+                    toastErr("כישלון בעדכון פרופיל פעיל");
+                }
+            };
+            right.appendChild(btnActive);
         });
     }
 
@@ -280,11 +307,11 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // --- Also handle dynamic HTML injection (if office_details loaded later) ---
-const __profilesObserver = new MutationObserver((mutations, obs) => {
+window.__profilesObserver = new MutationObserver((mutations, obs) => {
     const el = document.getElementById("office-profiles");
     if (el && typeof window.initOfficeProfiles === "function") {
         window.initOfficeProfiles();
         obs.disconnect();
     }
 });
-__profilesObserver.observe(document.body, { childList: true, subtree: true });
+window.__profilesObserver.observe(document.body, { childList: true, subtree: true });

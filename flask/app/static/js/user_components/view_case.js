@@ -18,7 +18,7 @@ function applyStatusDot(status) {
   const dot = document.getElementById("case-status-dot");
   if (!dot) return;
   dot.className = "status-dot"; // reset
-  if (status) dot.classList.add(status);
+  //if (status) dot.classList.add(status);
 }
 
 window.init_view_case = async function () {
@@ -34,28 +34,34 @@ window.init_view_case = async function () {
   initInstantCaseFileUploader(serial);
   await reloadCaseActivityMinimal(serial);
 
-  // ⬇️ נטען גם פרופילים (בשביל רשימת הסטטוסים לבוחר)
+  // ⬇️ נטען פרופילים ובוחרים את הפרופיל הפעיל בלבד
   const profilesPayload = await window.API.getJson("/get_office_profiles");
   const profileList = (profilesPayload?.data || []);
-  const profileStatuses = uniqueStrings(
-    profileList.flatMap(p => Array.isArray(p.case_statuses) ? p.case_statuses : [])
+
+  const activeProfile = profileList.find(p => p && p.is_active === true);
+
+  // סטטוסים רק מהפרופיל הפעיל
+  const activeStatuses = uniqueStrings(
+    Array.isArray(activeProfile?.case_statuses) ? activeProfile.case_statuses : []
   );
 
   // אפשר לשמר גם ברירות מחדל קיימות אם תרצה:
-  const defaults = []; // לדוגמה: ["active", "archived"]
-  const allStatuses = uniqueStrings([...defaults, ...profileStatuses]);
+  const defaults = [];
+  const allStatuses = uniqueStrings([...defaults, ...activeStatuses]);
 
   // נמלא את ה-select
   const selectEl = document.getElementById("case-status-select");
   const ensureSelect = (cur) => {
     if (!selectEl) return;
-    selectEl.innerHTML = allStatuses.length
-      ? allStatuses.map(s => `<option value="${window.utils.safeValue(s)}">${window.utils.safeValue(s)}</option>`).join("")
-      : `<option value="">(אין סטטוסים בפרופילים)</option>`;
-    // נבחר את הסטטוס הנוכחי של התיק (אם קיים ברשימה)
-    if (cur && allStatuses.includes(cur)) {
-      selectEl.value = cur;
-    }
+
+    // אם לתיק כבר יש סטטוס – מוסיפים אותו לרשימה (גם אם לא קיים בפרופיל הפעיל)
+    const opts = uniqueStrings(cur ? [cur, ...allStatuses] : allStatuses);
+
+    selectEl.innerHTML = opts.length
+      ? opts.map(s => `<option value="${window.utils.safeValue(s)}">${window.utils.safeValue(s)}</option>`).join("")
+      : `<option value="">(אין סטטוסים בפרופיל הפעיל)</option>`;
+
+    if (cur) selectEl.value = cur; // תמיד נשמור את הישן אם קיים
   };
 
   window.API.getJson(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)

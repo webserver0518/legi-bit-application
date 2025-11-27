@@ -139,6 +139,7 @@ def create_new_profile():
         "name": name or f"profile_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
         "created_at": datetime.utcnow().isoformat() + "Z",
         "created_by": user_serial,
+        "is_active": False,
     }
 
     return mongodb_service.create_entity(
@@ -304,6 +305,59 @@ def remove_profile_status():
         update_data={field: value},
         multiple=False,
         operator="$pull",
+    )
+
+
+@user_bp.route("/set_active_profile", methods=["PATCH"])
+def set_active_profile():
+    office_serial = AuthorizationManager.get_office_serial()
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+
+    serial = request.args.get("serial", type=int)
+
+    if serial is None:
+        data = request.get_json(silent=True) or {}
+        serial = data.get("serial")
+
+    try:
+        serial = int(serial)
+    except (TypeError, ValueError):
+        serial = None
+
+    if serial is None:
+        return ResponseManager.bad_request("serial is required")
+
+    # 1) מכבים רק את הפעיל (אם יש)
+    res_all_off = mongodb_service.update_entity(
+        entity=MongoDBEntity.PROFILES,
+        office_serial=office_serial,
+        filters={"is_active": True},
+        update_data={"is_active": False},
+        multiple=True,
+        operator="$set",
+    )
+
+    if not (
+        ResponseManager.is_success(res_all_off)
+        or ResponseManager.is_not_found(res_all_off)
+    ):
+        return res_all_off
+
+    # 2) מפעילים את הספציפי
+    res_set_one = mongodb_service.update_entity(
+        entity=MongoDBEntity.PROFILES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(serial)),
+        update_data={"is_active": True},
+        multiple=False,
+        operator="$set",
+    )
+    if not ResponseManager.is_success(res_set_one):
+        return res_set_one
+
+    return ResponseManager.success(
+        message="Active profile updated", data={"serial": serial}
     )
 
 
