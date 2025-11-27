@@ -5,6 +5,7 @@
 
     const keyFor = (kind) => `recent_${kind}s`; // 'case' -> 'recent_cases'
     const titlesKey = 'recent_case_titles';
+    const officeTitlesKey = 'recent_office_titles';
 
     function get(kind) {
         return store.get(keyFor(kind), []);
@@ -59,7 +60,41 @@
         await window.UserLoader.navigate({ page: 'view_case', force: true });
     }
 
-    window.Recents = { get, set, touch, openCase, setCaseTitle, getCaseTitle };
+    async function openOffice(serial) {
+        touch('office', serial);
+        window.renderRecentOffices();
+
+        const a = document.querySelector(`.sub-sidebar a.recent-office[data-office-serial="${serial}"]`);
+        if (a) window.Nav.highlightInSidebar(a, 'sub-sidebar');
+
+        await window.UserLoader.navigate({ page: 'view_office', force: true });
+    }
+
+    function getOfficeTitlesMap() {
+        return store.get(officeTitlesKey, {});
+    }
+    function setOfficeTitlesMap(map) {
+        store.set(officeTitlesKey, map || {});
+        return getOfficeTitlesMap();
+    }
+    function setOfficeTitle(serial, title) {
+        const s = String(serial ?? '');
+        const t = String(title ?? '').trim();
+        if (!s || !t) return;
+        const map = getOfficeTitlesMap();
+        map[s] = t;
+        setOfficeTitlesMap(map);
+    }
+    function getOfficeTitle(serial) {
+        const map = getOfficeTitlesMap();
+        return map[String(serial ?? '')] || '';
+    }
+
+    window.Recents = {
+        get, set, touch, openCase, openOffice,
+        setCaseTitle, getCaseTitle,
+        setOfficeTitle, getOfficeTitle
+    };
 })();
 
 
@@ -97,5 +132,41 @@ function bindRecentCasesEvents() {
         e.preventDefault();
         const serial = a.dataset.caseSerial;
         window.Recents.openCase(serial);
+    });
+}
+
+
+function renderRecentOffices() {
+    const ul = document.getElementById('recent-offices-list');
+    if (!ul) return;
+
+    const list = window.Recents.get('office');
+    ul.innerHTML = '';
+
+    const frag = document.createDocumentFragment();
+    list.forEach(serial => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <a href="#" class="sub-sidebar-link recent-office"
+               data-type="office"
+               data-office-serial="${serial}">
+              ${window.Recents.getOfficeTitle(serial)}
+            </a>`;
+        frag.appendChild(li);
+    });
+    ul.appendChild(frag);
+}
+
+
+function bindRecentOfficesEvents() {
+    const cont = document.getElementById('subMenu');
+    if (!cont) return;
+
+    cont.addEventListener('click', (e) => {
+        const a = e.target.closest('a.recent-office');
+        if (!a) return;
+        e.preventDefault();
+        const serial = a.dataset.officeSerial;
+        window.Recents.openOffice(serial);
     });
 }

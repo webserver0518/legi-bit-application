@@ -142,7 +142,7 @@ window.init_search_office = async function () {
 };
 
 function OpenNewTab(serial, title) {
-  window.Recents.openCase(serial);
+  window.Recents.openOffice(serial);
 
   window.Recents.touch('office', serial);
   if (title) window.Recents.setCaseTitle(serial, title);
