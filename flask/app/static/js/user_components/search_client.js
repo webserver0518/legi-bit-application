@@ -26,10 +26,11 @@ window.init_search_client = async function () {
                     }
                     const rows = Array.isArray(payload?.data) ? payload.data : [];
                     CURRENT_ROWS = rows;
+                    console.log(CURRENT_ROWS);
 
                     // Superstring for each
-                    rows.forEach(obj => {
-                        const client = obj.clients || obj;
+                    rows.forEach(client => {
+                        console.log(client);
                         client.__super = RowToSuperString(client);
                     });
 
@@ -101,8 +102,7 @@ window.init_search_client = async function () {
             }
 
             const htmlRows = list
-                .map(obj => {
-                    const client = obj.clients || {};
+                .map(client => {
 
                     const createdDate = client.created_at
                         ? new Date(u.created_at).toLocaleDateString("he-IL")
