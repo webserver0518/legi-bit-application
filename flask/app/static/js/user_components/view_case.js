@@ -128,7 +128,7 @@ window.init_view_case = async function () {
   }
 };
 
-async function createTask() {
+async function createTask(serial) {
 
   const taskInput = document.getElementById("task-description");
   const addTaskBtn = document.getElementById("add-task");
