@@ -1,6 +1,6 @@
 // static/js/user_components/cases.js
 
-window.init_search_case = async function () {
+window.init_search_office = async function () {
   try {
     await window.utils.waitForDom();
 
@@ -16,7 +16,7 @@ window.init_search_case = async function () {
       const filterBar = document.querySelector(".filter-bar");
       window.Tables.setFilterBarLoading(filterBar, true);
 
-      const url = `/get_office_cases?expand=true&status=active`;
+      const url = `/get_offices`;
 
       window.API.getJson(url)
         .then(payload => {
@@ -27,12 +27,10 @@ window.init_search_case = async function () {
 
           const rows = Array.isArray(payload?.data) ? payload.data : [];
           CURRENT_ROWS = rows;
-          buildStatusDropdown(CURRENT_ROWS);
 
           // Superstring for each case
-          rows.forEach(obj => {
-            const c = obj.cases || obj;
-            c.__super = RowToSuperString(c);
+          rows.forEach(office => {
+            office.__super = RowToSuperString(office);
           });
 
           applyFilters();
@@ -68,15 +66,9 @@ window.init_search_case = async function () {
       // 🔍 סינון לפי חיפוש
       if (search) {
         const tokens = search.split(/\s+/).filter(Boolean);
-        filtered = filtered.filter(obj => {
-          const text = obj.cases.__super || "";
-          return tokens.every(t => text.includes(t));
+        filtered = filtered.filter(office => {
+          return tokens.every(t => office.__super.includes(t));
         });
-      }
-
-      // 🏷️ סינון לפי סטטוס
-      if (status) {
-        filtered = filtered.filter(obj => obj.cases.status === status);
       }
 
       renderRows(filtered);
@@ -117,39 +109,17 @@ window.init_search_case = async function () {
       }
 
       const htmlRows = list
-        .map(obj => {
-          const c = obj.cases || {};
-          const responsible = c.responsible || {};
+        .map(office => {
 
-          let client = {};
-          if (Array.isArray(c.clients)) {
-            client =
-              c.clients.find(cl => cl.level === "main") ||
-              c.clients[0] ||
-              {};
-          }
-
-          const createdDate = c.created_at
-            ? new Date(c.created_at).toLocaleDateString("he-IL")
-            : "-";
-
-          const statusDot = c.status
-            ? `<span class="status-dot ${c.status}"></span>`
+          const createdDate = office.created_at
+            ? new Date(office.created_at).toLocaleDateString("he-IL")
             : "-";
 
           return `
-          <tr onclick="OpenNewTab('${c.serial}', '${c.title}')">
-            <td class="col-wide">${window.utils.safeValue(c.title)}</td>
-            <td>${c.serial}</td>
-            <td>${window.utils.safeValue(c.field ?? c.category)}</td>
-            <td>${statusDot}</td>
-            <td>${window.utils.safeValue(client.first_name)}</td>
-            <td>${window.utils.safeValue(client.last_name)}</td>
-            <td>${window.utils.safeValue(client.id_card_number)}</td>
-            <td>${window.utils.safeValue(client.phone)}</td>
-            <td>${window.utils.safeValue(responsible.username)}</td>
-            <td>${window.utils.safeValue(createdDate)}</td>
-            <td>${Array.isArray(c.files) ? c.files.length : "0"}</td>
+          <tr onclick="OpenNewTab('${office.office_serial}', '${office.office_name}')">
+            <td class="col-wide">${window.utils.safeValue(office.office_name)}</td>
+            <td>${window.utils.safeValue(office.office_serial)}</td>
+            <td>${createdDate}</td>
           </tr>
         `;
         })
@@ -166,42 +136,6 @@ window.init_search_case = async function () {
 
     loadRows();
 
-    document.getElementById("export-excel").addEventListener("click", () => {
-      if (!CURRENT_ROWS.length) {
-        window.toast?.show?.("אין רשומות לייצוא", "warning");
-        return;
-      }
-
-      const rows = CURRENT_ROWS.map(obj => {
-        const c = obj.cases || {};
-        const client = Array.isArray(c.clients)
-          ? (c.clients.find(cl => cl.level === "main") || c.clients[0] || {})
-          : {};
-        const responsible = c.responsible || {};
-        const createdDate = c.created_at
-          ? new Date(c.created_at).toLocaleDateString("he-IL")
-          : "-";
-
-        return {
-          "כותרת": c.title || "",
-          "מספר סידורי": c.serial || "",
-          "תחום": c.field || c.category || "",
-          "סטטוס": c.status || "",
-          "שם פרטי": client.first_name || "",
-          "שם משפחה": client.last_name || "",
-          "ת.ז": client.id_card_number || "",
-          "טלפון": client.phone || "",
-          "נוצר ע\"י": responsible.username || "",
-          "תאריך יצירה": createdDate,
-          "מספר קבצים": Array.isArray(c.files) ? c.files.length : 0,
-        };
-      });
-
-      const ws = XLSX.utils.json_to_sheet(rows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "תיקים");
-      XLSX.writeFile(wb, "cases.xlsx");
-    });
   } catch (e) {
     console.error("Error initializing cases component:", e);
   }
@@ -210,16 +144,16 @@ window.init_search_case = async function () {
 function OpenNewTab(serial, title) {
   window.Recents.openCase(serial);
 
-  window.Recents.touch('case', serial);
+  window.Recents.touch('office', serial);
   if (title) window.Recents.setCaseTitle(serial, title);
   window.renderRecentCases();
 
   // היילייט אם כבר יש לינק:
-  const a = document.querySelector(`.sub-sidebar a.recent-case[data-case-serial="${serial}"]`);
+  const a = document.querySelector(`.sub-sidebar a.recent-case[data-office-serial="${serial}"]`);
   window.Nav.highlightInSidebar(a, 'sub-sidebar');
 
   // ניווט רגיל:
-  window.UserLoader.navigate({ page: 'view_case', force: true });
+  window.AdminLoader.navigate({ page: 'view_office', force: true });
 
 }
 
@@ -264,27 +198,4 @@ function RowToSuperString(c) {
 
   walk(null, c);
   return parts.join("\n").toLowerCase();
-}
-
-function buildStatusDropdown(rows) {
-  const select = document.getElementById("status");
-  if (!select) return;
-
-  // איתור כל סוגי הסטטוסים הקיימים
-  const statuses = [...new Set(
-    rows.map(r => r?.cases?.status).filter(Boolean)
-  )].sort();
-
-  // מיפוי תצוגה בעברית
-  const statusLabels = {
-    active: "פתוח",
-    archived: "ארכיון"
-  };
-
-  // בניית התוכן הדינמי
-  select.innerHTML = `<option value="">כל הסטטוסים</option>` +
-    statuses.map(s => {
-      const label = statusLabels[s] || s;
-      return `<option value="${s}">${label}</option>`;
-    }).join("");
 }
