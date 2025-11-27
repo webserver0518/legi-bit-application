@@ -45,18 +45,15 @@
       <span id="current-time-text"></span>
     </a>
     <hr>
-    <a href="#" id="office-name" class="sidebar-link" data-type="client" data-sidebar="sidebar"
-      data-sub-sidebar="office"></a>
     <a href="#" id="username" class="sidebar-link" data-type="client" data-sidebar="sidebar"
       data-sub-sidebar="user"></a>
     <hr>
-    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="offices">תיקים</a>
-    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="clients">לקוחות</a>
-    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="files">קבצים</a>
-    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="attendance">נוכחות</a>
+    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="offices">משרדים</a>
+    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="clients">משתמשים</a>
+    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="files">הודעות</a>
+    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="attendance">בקרה</a>
     <hr>
-    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="support">תמיכה</a>
-    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="regulations">תקנון</a>
+    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="support">כספים</a>
     <hr>
     <a href="{{ url_for('site.logout') }}" onclick="clearStorageAndLogout(event)">התנתקות</a>
     <hr>
@@ -127,14 +124,14 @@
   <script src="/static/js/core/tables.js" defer></script>
   <script src="/static/js/core/nav.js" defer></script>
   <script src="/static/js/core/toast.js" defer></script>
-  <script src="/static/js/core/loader.user.js" defer></script>
+  <script src="/static/js/core/loader.admin.js" defer></script>
   <script src="/static/js/core/session_monitor.js" defer></script>
 
 
   <script src="/static/js/core/recentManager.js" defer></script>
 
   <!-- user dashboard -->
-  <script src="/static/js/base_user_dashboard.js" defer></script>
+  <script src="/static/js/base_admin_dashboard.js" defer></script>
 
 </body>
 
