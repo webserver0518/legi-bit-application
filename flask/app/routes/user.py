@@ -102,7 +102,12 @@ def get_office_users():
     Return all users (staff) for the current office
     for selection as 'responsible' in case creation.
     """
-    office_serial = AuthorizationManager.get_office_serial()
+    payload = request.get_json(silent=True) or {}
+    office_serial = payload.get("office_serial")
+
+    if not office_serial:
+        office_serial = AuthorizationManager.get_office_serial()
+
     if not office_serial:
         current_app.logger.debug("returning bad_request: 'office_serial' is required")
         return ResponseManager.error("Missing 'office_serial' in auth")
