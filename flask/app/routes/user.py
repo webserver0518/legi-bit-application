@@ -111,15 +111,30 @@ def get_office_users():
     Return all users (staff) for the current office
     for selection as 'responsible' in case creation.
     """
-    payload = request.get_json(silent=True) or {}
-    office_serial = payload.get("office_serial")
+    # Always require auth to be logged in
+    office_serial_from_session = AuthorizationManager.get_office_serial()
+    is_admin = AuthorizationManager.is_admin()
 
-    if not office_serial:
-        office_serial = AuthorizationManager.get_office_serial()
+    # If admin: allow override
+    if is_admin:
+        payload = request.get_json(silent=True) or {}
+        office_override = payload.get("office_serial")
 
+        if office_override is not None:
+            try:
+                office_serial = int(office_override)
+            except ValueError:
+                return ResponseManager.bad_request("Invalid office_serial")
+        else:
+            office_serial = office_serial_from_session
+
+    # If regular user: force session office
+    else:
+        office_serial = office_serial_from_session
+
+    # Still ensure we have an office context
     if not office_serial:
-        current_app.logger.debug("returning bad_request: 'office_serial' is required")
-        return ResponseManager.error("Missing 'office_serial' in auth")
+        return ResponseManager.forbidden("Missing office context")
 
     users_res = mongodb_service.get_entity(
         entity=MongoDBEntity.USERS, office_serial=office_serial
