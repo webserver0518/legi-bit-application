@@ -4,6 +4,7 @@ import requests
 from flask import current_app
 
 from ..managers.response_management import ResponseManager
+from .http_client import safe_service_request
 
 
 # ------------------------ Core ------------------------
@@ -25,31 +26,9 @@ def _ping_service():
 
 
 def _safe_request(method: str, path: str, **kwargs) -> tuple:
-    """Safely perform an HTTP request to the MongoDB service."""
-    url = f"{get_mongodb_url()}{path}"
-    start = time.perf_counter()
-
-    resp = requests.request(method, url, timeout=80, **kwargs)
-    elapsed = (time.perf_counter() - start) * 1000
-
-    status = resp.status_code
-
-    # Try to parse response JSON
-    payload = resp.json()
-
-    if not isinstance(payload, dict) or "success" not in payload:
-        raise ValueError(f"Unexpected response format from {path}: {payload}")
-
-    current_app.logger.debug(
-        f"⏱️ [{method}] {path} took {elapsed:.2f} ms (status {status})"
-    )
-
-    return ResponseManager._build(
-        success=payload.get("success"),
-        status=status,
-        message=payload.get("message"),
-        error=payload.get("error"),
-        data=payload.get("data"),
+    """Safely perform an HTTP request to the S3 service."""
+    return safe_service_request(
+        service_url=get_mongodb_url(), method=method, path=path, **kwargs
     )
 
 

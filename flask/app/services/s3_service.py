@@ -3,11 +3,13 @@ import requests
 from flask import current_app
 
 from ..managers.response_management import ResponseManager
+from .http_client import safe_service_request
 
 
 # ------------------------ Core ------------------------
 def get_s3_url():
     return current_app.config["S3_SERVICE_URL"]
+
 
 def _ping_service():
     """Check if the S3 service is reachable."""
@@ -15,28 +17,15 @@ def _ping_service():
     if resp.status_code == 200:
         return ResponseManager.success(message="S3 service reachable")
     else:
-        return ResponseManager.error(error=f"S3 service unhealthy (status {resp.status_code})")
-    
+        return ResponseManager.error(
+            error=f"S3 service unhealthy (status {resp.status_code})"
+        )
+
+
 def _safe_request(method: str, path: str, **kwargs) -> tuple:
     """Safely perform an HTTP request to the S3 service."""
-    url = f"{get_s3_url()}{path}"
-    resp = requests.request(method, url, timeout=8, **kwargs)
-    status = resp.status_code
-    current_app.logger.debug(f"S3 service {method} {path} returned status {status}")
-    
-    # Try to parse response JSON
-    payload = resp.json()
-
-    if not isinstance(payload, dict) or "success" not in payload:
-        raise ValueError(f"Unexpected response format from {path}: {payload}")
-
-    current_app.logger.debug(f"called S3 service {method} {path} with payload: {payload}")
-    return ResponseManager._build(
-        success=payload.get("success"),
-        status=status,
-        message=payload.get("message"),
-        error=payload.get("error"),
-        data=payload.get("data"),
+    return safe_service_request(
+        service_url=get_s3_url(), method=method, path=path, **kwargs
     )
 
 
@@ -47,12 +36,16 @@ def list_keys(prefix=""):
 
 # ------------------------ Generate Presigned POST -------------------------
 def generate_presigned_post(filename, filetype, filesize, key=None):
-    return _safe_request("POST", "/presign/post", json={
-        "file_name": filename,
-        "file_type": filetype,
-        "file_size": filesize,
-        "key": key
-    })
+    return _safe_request(
+        "POST",
+        "/presign/post",
+        json={
+            "file_name": filename,
+            "file_type": filetype,
+            "file_size": filesize,
+            "key": key,
+        },
+    )
 
 
 # ------------------------ Generate Presigned GET -------------------------
