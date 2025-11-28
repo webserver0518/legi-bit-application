@@ -196,13 +196,17 @@ async function uploadAllFilesToS3(files, office_serial, case_serial) {
       // 🗑️ ניקוי רשומה שבורה במונגו (אם נוצר serial)
       if (fileEntry.serial) {
         try {
-          await window.API.apiRequest(`/delete_file?serial=${Number(fileEntry.serial)}`, {
-            method: "DELETE"
+          const qs = new URLSearchParams({
+            case_serial: String(case_serial),
+            file_serial: String(fileEntry.serial),
+            file_name: file.name,
           });
-          console.info(`Deleted failed file record: ${fileEntry.serial}`);
-          fileEntry.serial = null; // אופציונלי, שלא נעשה עליו שימוש בהמשך
+
+          await window.API.apiRequest(`/delete_file?${qs.toString()}`, {
+            method: "DELETE",
+          });
         } catch (cleanupErr) {
-          console.error("Failed to delete failed file record", cleanupErr);
+          console.error("Failed to cleanup failed file record:", cleanupErr);
         }
       }
 

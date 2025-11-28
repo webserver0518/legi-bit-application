@@ -447,7 +447,15 @@ function initInstantCaseFileUploader(case_serial) {
       // cleanup mongo record (same approach as new_case)
       if (file_serial) {
         try {
-          await window.API.apiRequest(`/delete_file?serial=${Number(file_serial)}`, { method: "DELETE" });
+          const qs = new URLSearchParams({
+            case_serial: String(case_serial),
+            file_serial: String(file_serial),
+            file_name: file.name,
+          });
+
+          await window.API.apiRequest(`/delete_file?${qs.toString()}`, {
+            method: "DELETE",
+          });
         } catch (cleanupErr) {
           console.error("Failed to cleanup failed file record:", cleanupErr);
         }
