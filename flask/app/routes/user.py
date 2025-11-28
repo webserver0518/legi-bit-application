@@ -14,6 +14,7 @@ user_bp = Blueprint("user", __name__)
 
 
 @user_bp.route("/auth_debug")
+@AuthorizationManager.login_required
 def auth_debug():
     """Show all current auth variables for debugging."""
     return AuthorizationManager.get()
@@ -21,6 +22,7 @@ def auth_debug():
 
 # ---------------- HELPERS ---------------- #
 @user_bp.route("/presign/post", methods=["POST"])
+@AuthorizationManager.login_required
 def proxy_presign_post():
     """
     Proxy route – frontend -> backend -> S3 service
@@ -56,6 +58,7 @@ def base_user_dashboard():
 
 
 @user_bp.route("/get_office_name")
+@AuthorizationManager.login_required
 def get_office_name():
     """Return the current logged-in office name from auth"""
     office_name = AuthorizationManager.get_office_name()
@@ -67,6 +70,7 @@ def get_office_name():
 
 
 @user_bp.route("/get_office_serial", methods=["GET"])
+@AuthorizationManager.login_required
 def get_office_serial():
     office_serial = AuthorizationManager.get_office_serial()
     if not office_serial:
@@ -75,7 +79,10 @@ def get_office_serial():
 
 
 # ---------------- User MANAGEMENT ---------------- #
+
+
 @user_bp.route("/get_username")
+@AuthorizationManager.login_required
 def get_username():
     """Return the current logged-in office name from auth"""
     user_full_name = AuthorizationManager.get_username()
@@ -87,6 +94,7 @@ def get_username():
 
 
 @user_bp.route("/get_user_serial", methods=["GET"])
+@AuthorizationManager.login_required
 def get_user_serial():
     """Return the current logged-in user's serial."""
     user_serial = AuthorizationManager.get_user_serial()
@@ -97,6 +105,7 @@ def get_user_serial():
 
 
 @user_bp.route("/get_office_users", methods=["GET"])
+@AuthorizationManager.login_required
 def get_office_users():
     """
     Return all users (staff) for the current office
@@ -133,6 +142,7 @@ def get_office_users():
 
 
 @user_bp.route("/create_new_profile", methods=["POST"])
+@AuthorizationManager.login_required
 def create_new_profile():
     office_serial = AuthorizationManager.get_office_serial()
     user_serial = AuthorizationManager.get_user_serial()
@@ -155,6 +165,7 @@ def create_new_profile():
 
 
 @user_bp.route("/get_office_profiles", methods=["GET"])
+@AuthorizationManager.login_required
 def get_office_profiles():
     office_serial = AuthorizationManager.get_office_serial()
     res = mongodb_service.get_entity(
@@ -171,6 +182,7 @@ def get_office_profiles():
 
 
 @user_bp.route("/get_profile", methods=["GET"])
+@AuthorizationManager.login_required
 def get_profile():
     office_serial = AuthorizationManager.get_office_serial()
 
@@ -185,6 +197,7 @@ def get_profile():
 
 
 @user_bp.route("/update_profile_statuses", methods=["PATCH"])
+@AuthorizationManager.login_required
 def update_profile_statuses():
     office_serial = AuthorizationManager.get_office_serial()
     serial = request.args.get("serial", type=int)
@@ -227,6 +240,7 @@ def update_profile_statuses():
 
 
 @user_bp.route("/delete_profile", methods=["DELETE"])
+@AuthorizationManager.login_required
 def delete_profile():
     office_serial = AuthorizationManager.get_office_serial()
     serial = request.args.get("serial")
@@ -243,6 +257,7 @@ def delete_profile():
 
 
 @user_bp.route("/add_profile_status", methods=["PATCH"])
+@AuthorizationManager.login_required
 def add_profile_status():
     """
     Append a single status to case_statuses or task_statuses using $addToSet.
@@ -279,6 +294,7 @@ def add_profile_status():
 
 
 @user_bp.route("/remove_profile_status", methods=["PATCH"])
+@AuthorizationManager.login_required
 def remove_profile_status():
     """
     Remove a single status value from case_statuses or task_statuses using $pull.
@@ -314,6 +330,7 @@ def remove_profile_status():
 
 
 @user_bp.route("/set_active_profile", methods=["PATCH"])
+@AuthorizationManager.login_required
 def set_active_profile():
     office_serial = AuthorizationManager.get_office_serial()
     if not office_serial:
@@ -370,6 +387,7 @@ def set_active_profile():
 
 
 @user_bp.route("/create_new_file", methods=["POST"])
+@AuthorizationManager.login_required
 def create_new_file():
     current_app.logger.debug("inside create_new_file()")
 
@@ -413,6 +431,7 @@ def create_new_file():
 
 
 @user_bp.route("/update_file", methods=["PATCH"])
+@AuthorizationManager.login_required
 def update_file():
     office_serial = AuthorizationManager.get_office_serial()
     if not office_serial:
@@ -440,6 +459,7 @@ def update_file():
 
 
 @user_bp.route("/get_file_url", methods=["GET"])
+@AuthorizationManager.login_required
 def get_file_url():
     """
     Generate a temporary presigned GET URL for viewing a file from S3.
@@ -484,6 +504,7 @@ def get_file_url():
 
 
 @user_bp.route("/delete_file", methods=["DELETE"])
+@AuthorizationManager.login_required
 def delete_file():
     """
     Delete a file:
@@ -566,6 +587,7 @@ def delete_file():
 
 
 @user_bp.route("/get_office_files", methods=["GET"])
+@AuthorizationManager.login_required
 def get_office_files():
     """
     Return all files for the current office with full basic details
@@ -589,6 +611,7 @@ def get_office_files():
 
 
 @user_bp.route("/update_file_description", methods=["POST"])
+@AuthorizationManager.login_required
 def update_file_description():
     """
     Update only the 'description' field of a file by its serial.
@@ -628,6 +651,7 @@ def update_file_description():
 
 
 @user_bp.route("/get_case")
+@AuthorizationManager.login_required
 def get_case():
     office_serial = AuthorizationManager.get_office_serial()
     case_serial = request.args.get("serial")
@@ -664,6 +688,7 @@ def get_case():
 
 
 @user_bp.route("/get_office_cases")
+@AuthorizationManager.login_required
 def get_office_cases():
     """
     Return cases for a given office, supporting:
@@ -714,6 +739,7 @@ def get_office_cases():
 
 
 @user_bp.route("/create_new_case", methods=["POST"])
+@AuthorizationManager.login_required
 def create_new_case():
     current_app.logger.debug("inside create_new_case()")
 
@@ -800,6 +826,7 @@ def create_new_case():
 
 
 @user_bp.route("/delete_case", methods=["DELETE"])
+@AuthorizationManager.login_required
 def delete_case():
     office_serial = AuthorizationManager.get_office_serial()
     case_serial = request.args.get("serial")
@@ -833,6 +860,7 @@ def delete_case():
 
 
 @user_bp.route("/update_case", methods=["PATCH"])
+@AuthorizationManager.login_required
 def update_case():
     office_serial = AuthorizationManager.get_office_serial()
     case_serial = request.args.get("serial")
@@ -881,6 +909,7 @@ def update_case():
 
 
 @user_bp.route("/update_case_status", methods=["PATCH"])
+@AuthorizationManager.login_required
 def update_case_status():
     office_serial = AuthorizationManager.get_office_serial()
     case_serial = request.args.get("serial")
@@ -927,6 +956,7 @@ def update_case_status():
 
 
 @user_bp.route("/create_new_client", methods=["POST"])
+@AuthorizationManager.login_required
 def create_new_client():
     """
     Create a new client document in MongoDB for the current office.
@@ -989,6 +1019,7 @@ def create_new_client():
 
 
 @user_bp.route("/update_client", methods=["PATCH"])
+@AuthorizationManager.login_required
 def update_client():
     """
     Update an existing client in MongoDB (CLIENTS entity).
@@ -1032,6 +1063,7 @@ def update_client():
 
 
 @user_bp.route("/get_office_clients", methods=["GET"])
+@AuthorizationManager.login_required
 def get_office_clients():
     """
     Return all clients for the current office with full basic details
@@ -1059,6 +1091,7 @@ def get_office_clients():
 
 
 @user_bp.route("/create_new_task", methods=["POST"])
+@AuthorizationManager.login_required
 def create_new_task():
     current_app.logger.debug("inside create_new_task()")
 
@@ -1110,21 +1143,25 @@ def create_new_task():
 
 
 @user_bp.route("/load_birds_view_office")
+@AuthorizationManager.login_required
 def load_birds_view_office():
     return render_template("user_components/birds_view_office.html")
 
 
 @user_bp.route("/load_office_details")
+@AuthorizationManager.login_required
 def load_office_details():
     return render_template("user_components/office_details.html")
 
 
 @user_bp.route("/load_birds_view_user")
+@AuthorizationManager.login_required
 def load_birds_view_user():
     return render_template("user_components/birds_view_user.html")
 
 
 @user_bp.route("/load_personal_details")
+@AuthorizationManager.login_required
 def load_personal_details():
     return render_template("user_components/personal_details.html")
 
@@ -1136,81 +1173,97 @@ def load_security_mfa():
 
 
 @user_bp.route("/load_birds_view_cases")
+@AuthorizationManager.login_required
 def load_birds_view_cases():
     return render_template("user_components/birds_view_cases.html")
 
 
 @user_bp.route("/load_search_case")
+@AuthorizationManager.login_required
 def load_search_case():
     return render_template("user_components/search_case.html")
 
 
 @user_bp.route("/load_new_case")
+@AuthorizationManager.login_required
 def load_new_case():
     return render_template("user_components/new_case.html")
 
 
 @user_bp.route("/load_view_case")
+@AuthorizationManager.login_required
 def load_view_case():
     return render_template("user_components/view_case.html")
 
 
 @user_bp.route("/load_birds_view_clients")
+@AuthorizationManager.login_required
 def load_birds_view_clients():
     return render_template("user_components/birds_view_clients.html")
 
 
 @user_bp.route("/load_search_client")
+@AuthorizationManager.login_required
 def load_search_client():
     return render_template("user_components/search_client.html")
 
 
 @user_bp.route("/load_new_client")
+@AuthorizationManager.login_required
 def load_new_client():
     return render_template("user_components/new_client.html")
 
 
 @user_bp.route("/load_view_client")
+@AuthorizationManager.login_required
 def load_view_client():
     return render_template("user_components/view_client.html")
 
 
 @user_bp.route("/load_search_file")
+@AuthorizationManager.login_required
 def load_search_file():
     return render_template("user_components/search_file.html")
 
 
 @user_bp.route("/load_birds_view_attendance")
+@AuthorizationManager.login_required
 def load_birds_view_attendance():
     return render_template("user_components/birds_view_attendance.html")
 
 
 @user_bp.route("/load_clock_in_out")
+@AuthorizationManager.login_required
 def load_clock_in_out():
     return render_template("user_components/clock_in_out.html")
 
 
 @user_bp.route("/load_contact")
+@AuthorizationManager.login_required
 def load_contact():
     return render_template("user_components/contact.html")
 
 
 @user_bp.route("/load_faq")
+@AuthorizationManager.login_required
 def load_faq():
     return render_template("user_components/faq.html")
 
 
 @user_bp.route("/load_remote_control")
+@AuthorizationManager.login_required
 def load_remote_control():
     return render_template("user_components/remote_control.html")
 
 
 @user_bp.route("/load_statement")
+@AuthorizationManager.login_required
 def load_statement():
     return render_template("user_components/statement.html")
 
 
 @user_bp.route("/load_accessibility_statement")
+@AuthorizationManager.login_required
 def load_accessibility_statement():
     return render_template("user_components/accessibility_statement.html")
 
@@ -1219,6 +1272,7 @@ def load_accessibility_statement():
 
 
 @user_bp.route("/get_document_types")
+@AuthorizationManager.login_required
 def get_document_types():
     try:
         return JSONManager.jsonify("document_types.json")
@@ -1228,6 +1282,7 @@ def get_document_types():
 
 
 @user_bp.route("/get_case_categories")
+@AuthorizationManager.login_required
 def get_case_categories():
     try:
         return JSONManager.jsonify("case_categories.json")
@@ -1237,6 +1292,7 @@ def get_case_categories():
 
 
 @user_bp.route("/get_case_statuses")
+@AuthorizationManager.login_required
 def get_case_statuses():
     try:
         return JSONManager.jsonify("case_statuses.json")

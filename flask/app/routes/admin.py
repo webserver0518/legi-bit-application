@@ -16,6 +16,8 @@ admin_bp = Blueprint("admin", __name__)
 
 
 @admin_bp.route("/base_admin_dashboard")
+@AuthorizationManager.login_required
+@AuthorizationManager.admin_required
 def base_admin_dashboard():
     return render_template("base_admin_dashboard.html")
 
@@ -24,6 +26,8 @@ def base_admin_dashboard():
 
 
 @admin_bp.route("/get_offices", methods=["GET"])
+@AuthorizationManager.login_required
+@AuthorizationManager.admin_required
 def get_offices():
     current_app.logger.debug("🟦 [get_offices] Fetching all offices")
 
@@ -42,6 +46,8 @@ def get_offices():
 
 
 @admin_bp.route("/create_new_office", methods=["POST"])
+@AuthorizationManager.login_required
+@AuthorizationManager.admin_required
 def create_new_office():
     current_app.logger.debug("🟦 [new_offices] creating new office")
     payload = request.get_json(silent=True) or {}
@@ -65,21 +71,29 @@ def create_new_office():
 
 
 @admin_bp.route("/load_search_office")
+@AuthorizationManager.login_required
+@AuthorizationManager.admin_required
 def load_search_office():
     return render_template("admin_components/search_office.html")
 
 
 @admin_bp.route("/load_new_office")
+@AuthorizationManager.login_required
+@AuthorizationManager.admin_required
 def load_new_office():
     return render_template("admin_components/new_office.html")
 
 
 @admin_bp.route("/load_view_office")
+@AuthorizationManager.login_required
+@AuthorizationManager.admin_required
 def load_view_office():
     return render_template("admin_components/view_office.html")
 
 
 @admin_bp.route("/get_roles_list")
+@AuthorizationManager.login_required
+@AuthorizationManager.admin_required
 def get_roles_list():
 
     try:
