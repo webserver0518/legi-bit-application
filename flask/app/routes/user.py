@@ -9,6 +9,8 @@ from ..managers.json_management import JSONManager
 from ..managers.auth_management import AuthorizationManager
 from ..managers.mfa_manager import MFAManager
 from ..constants.constants_mongodb import MongoDBEntity, MongoDBFilters, MongoDBData
+from ..utils.file_utils import sanitize_filename
+
 
 user_bp = Blueprint("user", __name__)
 
@@ -28,7 +30,8 @@ def proxy_presign_post():
     Proxy route – frontend -> backend -> S3 service
     """
     data = request.get_json()
-    file_name = data.get("file_name")
+    raw_file_name = data.get("file_name")
+    file_name = sanitize_filename(raw_file_name)
     file_type = data.get("file_type")
     file_size = data.get("file_size")
     key = data.get("key")
@@ -425,7 +428,7 @@ def create_new_file():
         "user_serial": user_serial,
         "case_serial": data.get("case_serial"),
         "client_serial": data.get("client_serial"),
-        "name": data.get("name"),
+        "name": sanitize_filename(data.get("name")),
         "technical_type": data.get("technical_type"),
         "content_type": data.get("content_type"),
         "description": data.get("description"),
@@ -487,7 +490,8 @@ def get_file_url():
     office_serial = AuthorizationManager.get_office_serial()
     case_serial = request.args.get("case_serial")
     file_serial = request.args.get("file_serial")
-    file_name = request.args.get("file_name")
+    raw_file_name = request.args.get("file_name")
+    file_name = sanitize_filename(raw_file_name)
 
     if not office_serial:
         current_app.logger.error("Missing 'office_serial' in auth")
@@ -534,7 +538,8 @@ def delete_file():
 
     case_serial = request.args.get("case_serial")
     file_serial = request.args.get("file_serial")
-    file_name = request.args.get("file_name")
+    raw_file_name = request.args.get("file_name")
+    file_name = sanitize_filename(raw_file_name)
 
     if not case_serial:
         return ResponseManager.bad_request("Missing 'case_serial'")
