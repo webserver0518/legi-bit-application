@@ -1,24 +1,32 @@
-# app/utils/file_utils.py
-
 import re
 
 
-def sanitize_filename(filename: str) -> str:
-    """
-    Sanitize a user-provided filename to prevent traversal and unsafe characters.
-    Allows only: letters, numbers, dot, dash, underscore.
-    Strips any path components.
-    """
-    if not filename:
-        return "unnamed"
+def sanitize_filename(name: str) -> str:
+    if not name:
+        return ""
 
-    # Remove any path-like structures (/, \, ../ etc.)
-    filename = filename.split("/")[-1].split("\\")[-1]
+    # 1) strip whitespace
+    name = name.strip()
 
-    # Allow ONLY safe characters
-    filename = re.sub(r"[^A-Za-z0-9._-]", "_", filename)
+    # 2) remove path traversal and slashes
+    name = name.replace("\\", "/")
+    name = name.split("/")[-1]
 
-    # Prevent leading dots (".env" → "env")
-    filename = filename.lstrip(".")
+    # 3) allow only safe chars: letters, numbers, dot, dash, underscore, parentheses
+    name = re.sub(r"[^A-Za-z0-9._()\-]", "_", name)
 
-    return filename or "unnamed"
+    # 4) collapse multiple underscores
+    name = re.sub(r"_+", "_", name)
+
+    # 5) limit length
+    if len(name) > 255:
+        # keep extension if exists
+        parts = name.rsplit(".", 1)
+        if len(parts) == 2:
+            base, ext = parts
+            base = base[:240]  # 240 + '.' + extension <= 255
+            name = f"{base}.{ext}"
+        else:
+            name = name[:255]
+
+    return name
