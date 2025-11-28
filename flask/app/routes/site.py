@@ -17,7 +17,7 @@ import uuid
 from ..managers.response_management import ResponseManager
 from ..managers.mfa_manager import MFAManager
 from ..managers.auth_management import AuthenticationManager, AuthorizationManager
-
+from ..managers.rate_limiter import RateLimiter
 
 site_bp = Blueprint("site", __name__)
 
@@ -96,6 +96,7 @@ def load_home():
 
 @site_bp.route("/login", methods=["POST"])
 @AuthorizationManager.logout_required
+@RateLimiter.limit(limit=5, window_seconds=60)
 def login():
     """
     JSON-only login endpoint with inline MFA.
