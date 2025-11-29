@@ -102,6 +102,7 @@
 // --- Recent Cases UI helpers ---
 function renderRecentCases() {
     const ul = document.getElementById('recent-cases-list');
+    if (!ul) return;
 
     const list = window.Recents.get('case');
     ul.innerHTML = '';
@@ -113,6 +114,7 @@ function renderRecentCases() {
         li.innerHTML = `
             <a href="#" class="sub-sidebar-link recent-case"
                 data-type="user" data-sidebar="sub-sidebar"
+                data-page="view_case"
                 data-case-serial="${serial}">
                 ${window.Recents.getCaseTitle(serial)}
             </a>`;
