@@ -19,33 +19,7 @@ user_bp = Blueprint("user", __name__)
 @AuthorizationManager.login_required
 def auth_debug():
     """Show all current auth variables for debugging."""
-
-    office_serial = AuthorizationManager.get_office_serial()
-    expand = True
-    if not office_serial:
-        current_app.logger.error("Missing office_serial in auth")
-        return ResponseManager.error("Missing office_serial in auth")
-
-    # --- Fetch cases ---
-    cases_res = mongodb_service.get_entity(
-        entity=MongoDBEntity.CASES,
-        office_serial=office_serial,
-        expand=expand,
-    )
-
-    if ResponseManager.is_no_content(cases_res):
-        current_app.logger.debug("⚠️ No cases found, returning empty list")
-        return cases_res
-
-    if not ResponseManager.is_success(cases_res):
-        current_app.logger.error("❌ Error fetching cases from MongoDB service")
-        return cases_res
-
-    cases = ResponseManager.get_data(cases_res)
-    current_app.logger.debug(f"✅ Returning {len(cases)} cases")
-    return ResponseManager.success(data=cases)
-
-    # return AuthorizationManager.get()
+    return AuthorizationManager.get()
 
 
 # ---------------- HELPERS ---------------- #
