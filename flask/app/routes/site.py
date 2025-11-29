@@ -114,13 +114,14 @@ def login():
 
     # 1) Verify credentials
     valid_login_res = AuthenticationManager.authenticate_login(username, password)
-    if not ResponseManager.is_success(valid_login_res):
-        return ResponseManager.unauthorized(
-            ResponseManager.get_error(valid_login_res) or "Invalid credentials"
-        )
+    if not ResponseManager.is_success(response=valid_login_res):
+        return valid_login_res
 
-    login_context = ResponseManager.get_data(valid_login_res) or {}
-    user_doc = login_context.get("user") or {}
+    if ResponseManager.is_no_content(response=valid_login_res):
+        return valid_login_res
+
+    login_context = ResponseManager.get_data(valid_login_res)
+    user_doc = login_context.get("user")
     user_doc.pop("password_hash", None)
 
     # 2) MFA gate (TOTP)
