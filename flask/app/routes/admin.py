@@ -51,7 +51,7 @@ def get_offices():
 def create_new_office():
     current_app.logger.debug("🟦 [new_offices] creating new office")
     payload = request.get_json(silent=True) or {}
-    office_name = (payload.get("office_name") or "").strip()
+    office_name = payload.get("office_name").strip()
 
     create_res = mongodb_service.create_new_office(office_name)
 
