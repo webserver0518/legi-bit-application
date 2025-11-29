@@ -21,11 +21,9 @@ def healthz():
 
 @bp.route("/ensure_indexes", methods=["POST"])
 def ensure_indexes():
-    data = request.get_json(force=True)
-    db_name = data.get("db_name")
+    data = request.get_json(silent=True) or {}
 
-    if not db_name:
-        return ResponseManager.bad_request("Missing 'db_name'")
+    db_name = data.get("db_name")
 
     return MongoDBManager.ensure_indexes(db_name)
 
@@ -35,7 +33,7 @@ def ensure_indexes():
 
 @bp.route("/get_entity", methods=["POST"])
 def get_entity():
-    data = request.get_json(force=True)
+    data = request.get_json(silent=True) or {}
 
     entity = data.get("entity")
     office_serial = data.get("office_serial")
@@ -58,7 +56,7 @@ def get_entity():
 
 @bp.route("/create_entity", methods=["POST"])
 def create_entity():
-    data = request.get_json(force=True)
+    data = request.get_json(silent=True) or {}
 
     entity = data.get("entity")
     office_serial = data.get("office_serial")
@@ -71,7 +69,7 @@ def create_entity():
 
 @bp.route("/delete_entity", methods=["DELETE"])
 def delete_entity():
-    data = request.get_json(force=True)
+    data = request.get_json(silent=True) or {}
 
     entity = data.get("entity")
     office_serial = data.get("office_serial")
@@ -84,7 +82,7 @@ def delete_entity():
 
 @bp.route("/update_entity", methods=["PATCH"])
 def update_entity():
-    data = request.get_json(force=True)
+    data = request.get_json(silent=True) or {}
 
     entity = data.get("entity")
     office_serial = data.get("office_serial")
@@ -160,8 +158,10 @@ def get_offices():
 
 @bp.route("/create_new_office", methods=["POST"])
 def create_new_office():
-    data = request.get_json(force=True) or {}
+    data = request.get_json(silent=True) or {}
+
     office_name = data.get("office_name")
+
     return MongoDBManager.create_new_office(office_name=office_name)
 
 
@@ -178,6 +178,8 @@ def get_admin_passwords_hashes():
 
 @bp.route("/admin_login", methods=["POST"])
 def admin_login():
-    data = request.get_json(force=True)
+    data = request.get_json(silent=True) or {}
+
     password = data.get("password")
+
     return MongoDBManager.admin_login(password=password)
