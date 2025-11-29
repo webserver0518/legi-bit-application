@@ -81,6 +81,7 @@ window.init_search_client = async function () {
         document.getElementById("clear-filters").addEventListener("click", () => {
             // איפוס שדה חיפוש
             const searchInput = document.getElementById("search");
+            if (!searchInput) return;
             searchInput.value = "";
 
             // רנדר מחדש
