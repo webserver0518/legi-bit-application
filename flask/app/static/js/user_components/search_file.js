@@ -28,8 +28,7 @@ window.init_search_file = async function () {
                     window.CURRENT_ROWS = rows;
 
                     // Superstring for each
-                    rows.forEach(obj => {
-                        const file = obj.files || obj;
+                    rows.forEach(file => {
                         file.__super = RowToSuperString(file);
                     });
 
@@ -64,8 +63,8 @@ window.init_search_file = async function () {
             // 🔍 סינון לפי חיפוש
             if (search) {
                 const tokens = search.split(/\s+/).filter(Boolean);
-                filtered = filtered.filter(obj => {
-                    const text = obj.files.__super || "";
+                filtered = filtered.filter(f => {
+                    const text = f.__super || "";
                     return tokens.every(t => text.includes(t));
                 });
             }
@@ -80,6 +79,7 @@ window.init_search_file = async function () {
         document.getElementById("clear-filters").addEventListener("click", () => {
             // איפוס שדה חיפוש
             const searchInput = document.getElementById("search");
+            if (!searchInput) return;
             searchInput.value = "";
 
             // רנדר מחדש
@@ -101,8 +101,7 @@ window.init_search_file = async function () {
             }
 
             const htmlRows = list
-                .map(obj => {
-                    const file = obj.files || {};
+                .map(file => {
 
                     const createdDate = file.created_at
                         ? new Date(file.created_at).toLocaleDateString("he-IL")
@@ -144,8 +143,7 @@ window.init_search_file = async function () {
                 return;
             }
 
-            const rows = window.CURRENT_ROWS.map(obj => {
-                const file = obj.files || {};
+            const rows = window.CURRENT_ROWS.map(file => {
 
                 const createdDate = file.created_at
                     ? new Date(file.created_at).toLocaleDateString("he-IL")
@@ -166,9 +164,7 @@ window.init_search_file = async function () {
 
 function OpenNewTab(serial) {
     try {
-        // מצא את הרשומה (תומך גם במבנה {files: {...}})
         const rec = (window.CURRENT_ROWS || [])
-            .map(o => o.files || o)
             .find(f => String(f.serial) === String(serial));
 
         if (!rec) {
@@ -349,9 +345,9 @@ function getFileIconHTML(filename) {
 
                     // עדכן גם בזיכרון כדי לשמור סינכרון
                     const arr = (window.CURRENT_ROWS || []);
-                    const idx = arr.findIndex(o => String((o.files || o).serial) === String(fileSerial));
+                    const idx = arr.findIndex(o => String(o.serial) === String(fileSerial));
                     if (idx >= 0) {
-                        const f = (arr[idx].files || arr[idx]);
+                        const f = arr[idx];
                         f.description = newValue;
                     }
 
