@@ -18,11 +18,11 @@ def _ping_service():
     """Check if the MongoDB service is reachable."""
     resp = requests.get(f"{get_mongodb_url()}/healthz", timeout=3)
     if resp.status_code == 200:
-        return ResponseManager.success(message="MongoDB service reachable")
+        msg = "MongoDB service reachable"
+        return ResponseManager.success(message=msg)
     else:
-        return ResponseManager.error(
-            error=f"MongoDB service unhealthy (status {resp.status_code})"
-        )
+        msg = f"MongoDB service unhealthy (status {resp.status_code})"
+        return ResponseManager.error(message=msg)
 
 
 def _safe_request(method: str, path: str, **kwargs) -> tuple:
