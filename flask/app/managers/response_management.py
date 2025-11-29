@@ -3,18 +3,21 @@ from flask import jsonify, current_app
 from http import HTTPStatus
 import json
 
+
 class ResponseManager:
     """Unified JSON responses across the app."""
 
     # ---------------------- CORE BUILDER ----------------------
     @staticmethod
-    def _build(success: bool, status: HTTPStatus, message=None, error=None, data=None) -> tuple[dict, HTTPStatus]:
+    def _build(
+        success: bool, status: HTTPStatus, message=None, error=None, data=None
+    ) -> tuple[dict, HTTPStatus]:
         payload = {
             "success": success,
             "message": message,
             "error": error,
             "data": data,
-            "status": status
+            "status": status,
         }
 
         return jsonify(payload), status
@@ -25,9 +28,9 @@ class ResponseManager:
     def validate(response: tuple) -> bool:
         """Return True if response is a valid ResponseManager tuple."""
         return (
-                isinstance(response, tuple)
-                and len(response) == 2
-                and hasattr(response[0], "get_data")
+            isinstance(response, tuple)
+            and len(response) == 2
+            and hasattr(response[0], "get_data")
         )
 
     @staticmethod
@@ -94,6 +97,14 @@ class ResponseManager:
         return ResponseManager.get_success(response) is True
 
     @staticmethod
+    def is_created(response: tuple) -> bool:
+        return ResponseManager.get_status(response) == HTTPStatus.CREATED
+
+    @staticmethod
+    def is_no_content(response: tuple) -> bool:
+        return ResponseManager.get_status(response) == HTTPStatus.NO_CONTENT
+
+    @staticmethod
     def is_error(response: tuple) -> bool:
         return ResponseManager.get_success(response) is False
 
@@ -121,90 +132,75 @@ class ResponseManager:
     def is_internal(response: tuple) -> bool:
         return ResponseManager.get_status(response) == HTTPStatus.INTERNAL_SERVER_ERROR
 
-
     # ---------------------- SUCCESS RESPONSES ----------------------
 
     @staticmethod
     def success(data=None, message="OK", status: HTTPStatus = HTTPStatus.OK):
         """Return a standardized success JSON response."""
         return ResponseManager._build(
-            success=True,
-            status=status,
-            message=message,
-            data=data
+            success=True, status=status, message=message, data=data
         )
 
     @staticmethod
     def created(data=None, message="Created"):
         """Return a standardized 201 Created response."""
-        return ResponseManager._build(
-            success=True,
-            status=HTTPStatus.CREATED,
-            message=message,
-            data=data
+        return ResponseManager.success(
+            status=HTTPStatus.CREATED, message=message, data=data
         )
 
     @staticmethod
     def no_content(message="No content"):
         """Return a standardized 204 No Content response."""
         return ResponseManager.success(
-            status=HTTPStatus.NO_CONTENT,
-            message=message,
-            data=None
+            status=HTTPStatus.NO_CONTENT, message=message, data=None
         )
 
     # ---------------------- ERROR RESPONSES ----------------------
     @staticmethod
-    def error(error="Error", status: HTTPStatus = HTTPStatus.BAD_REQUEST):
+    def error(error="Error", message=None, status: HTTPStatus = HTTPStatus.BAD_REQUEST):
         """Return a standardized error JSON response."""
         return ResponseManager._build(
-            success=False,
-            status=status,
-            message=None,
-            error=error,
-            data=None
+            success=False, status=status, message=message, error=error, data=None
         )
 
     @staticmethod
-    def bad_request(error="Invalid request"):
+    def bad_request(error="Invalid request", message=None):
         return ResponseManager.error(
-            error=error,
-            status=HTTPStatus.BAD_REQUEST
+            error=error, message=message, status=HTTPStatus.BAD_REQUEST
         )
 
     @staticmethod
-    def unauthorized(error="Unauthorized"):
+    def unauthorized(error="Unauthorized", message=None):
         return ResponseManager.error(
-            error=error,
-            status=HTTPStatus.UNAUTHORIZED
+            error=error, message=message, status=HTTPStatus.UNAUTHORIZED
         )
 
     @staticmethod
-    def forbidden(error="Forbidden"):
+    def forbidden(error="Forbidden", message=None):
         return ResponseManager.error(
-            error=error,
-            status=HTTPStatus.FORBIDDEN
+            error=error, message=message, status=HTTPStatus.FORBIDDEN
         )
 
     @staticmethod
-    def not_found(error="Not found"):
+    def not_found(error="Not found", message=None):
         return ResponseManager.error(
-            error=error,
-            status=HTTPStatus.NOT_FOUND
+            error=error, message=message, status=HTTPStatus.NOT_FOUND
         )
 
     @staticmethod
-    def conflict(error="Conflict"):
+    def conflict(error="Conflict", message=None):
         return ResponseManager.error(
-            error=error,
-            status=HTTPStatus.CONFLICT
+            error=error, message=message, status=HTTPStatus.CONFLICT
         )
 
     @staticmethod
-    def internal(error="Internal server error"):
+    def internal(error="Internal server error", message=None):
         return ResponseManager.error(
-            error=error,
-            status=HTTPStatus.INTERNAL_SERVER_ERROR
+            error=error, message=message, status=HTTPStatus.INTERNAL_SERVER_ERROR
         )
 
-
+    @staticmethod
+    def bad_gateway(error="Bad Gateway", message=None):
+        return ResponseManager.error(
+            error=error, message=message, status=HTTPStatus.BAD_GATEWAY
+        )
