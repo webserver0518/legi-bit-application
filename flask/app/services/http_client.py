@@ -1,5 +1,5 @@
 # app/services/http_client.py
-
+import json
 import requests
 from flask import current_app
 
@@ -16,7 +16,8 @@ def safe_service_request(
 
     if not service_url:
         current_app.logger.error(f"❌ Missing service URL for call to {path}")
-        return ResponseManager.error("Service unavailable (invalid URL)", status=502)
+        msg = f"Service unavailable (invalid URL) - {path}"
+        return ResponseManager.bad_gateway(message=msg)
 
     url = f"{service_url}{path}"
 
@@ -27,13 +28,15 @@ def safe_service_request(
 
     except requests.RequestException as e:
         current_app.logger.error(f"❌ Network error calling {url}: {e}")
-        return ResponseManager.error("Service unavailable", status=502)
+        msg = f"Service unavailable (Network error) - {path}"
+        return ResponseManager.bad_gateway(message=msg)
 
     # Try JSON decode
     try:
+        current_app.logger.debug(resp)
         payload = resp.json()
     except ValueError:
-        current_app.logger.error(f"❌ Non-JSON response from {url}: {resp.text[:200]}")
+        current_app.logger.error(f"❌ Non-JSON response from {url}: {resp.text[:2000]}")
         return ResponseManager.error("Invalid response from service", status=502)
 
     # Validate JSON schema
@@ -42,7 +45,8 @@ def safe_service_request(
         return ResponseManager.error("Invalid service payload", status=502)
 
     current_app.logger.debug(
-        f"🔵 Service call {method} {path} returned {status} with payload: {payload}"
+        f"🔵 Service call {method} {path} returned {status} with payload:\n"
+        f"{json.dumps(payload, indent=2, ensure_ascii=False)}"
     )
 
     # Build unified Flask response
