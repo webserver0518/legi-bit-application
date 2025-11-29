@@ -290,6 +290,7 @@ async function initResponsibleAutocomplete() {
     if (res.success && Array.isArray(res.data)) {
       console.log(res.data)
       officeUsers = res.data;
+      console.log(officeUsers)
     }
   } catch (err) {
     console.error("❌ שגיאה בשליפת משתמשי משרד:", err);
@@ -623,6 +624,7 @@ function initCaseFormPreview() {
           throw new Error("Office serial not found");
         }
         office_serial = parsed.data.office_serial;
+        console.log(office_serial)
       } catch {
         submitBtn.disabled = false;
         submitBtn.textContent = "פתח תיק";
@@ -631,9 +633,8 @@ function initCaseFormPreview() {
 
       if (!window.filesList || window.filesList.length === 0) {
         window.Toast.warning("לא נבחרו קבצים, התיק ייווצר ללא מסמכים");
-        const nav = window.Core.storage.create("navigation");
-        nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
-        window.UserLoader.navigate({ page: "view_case", force: true });
+        window.Recents.setCaseTitle(case_serial, form_data.title);
+        await window.Recents.openCase(case_serial);
         return;
       }
 
@@ -667,9 +668,8 @@ function initCaseFormPreview() {
       }
 
       // בכל מקרה – עוברים לדף צפייה בתיק
-      const nav = window.Core.storage.create("navigation");
-      nav.set("lastViewedCase", { serial: case_serial, timestamp: Date.now() });
-      window.UserLoader.navigate({ page: "view_case", force: true });
+      window.Recents.setCaseTitle(case_serial, form_data.title);
+      await window.Recents.openCase(case_serial);
 
     } catch (error) {
       console.error(error);
@@ -842,7 +842,7 @@ async function initClientAutocomplete() {
     const res = await window.API.getJson("/get_office_clients");
     if (res.success && Array.isArray(res.data)) {
       officeClients = res.data;
-      //console.log("Loaded office clients for autocomplete:", officeClients);
+      console.log("Loaded office clients for autocomplete:", officeClients);
     }
   } catch (err) {
     console.error("❌ שגיאה בשליפת לקוחות מהמשרד:", err);
