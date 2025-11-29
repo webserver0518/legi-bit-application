@@ -19,7 +19,33 @@ user_bp = Blueprint("user", __name__)
 @AuthorizationManager.login_required
 def auth_debug():
     """Show all current auth variables for debugging."""
-    return AuthorizationManager.get()
+
+    office_serial = AuthorizationManager.get_office_serial()
+    expand = True
+    if not office_serial:
+        current_app.logger.error("Missing office_serial in auth")
+        return ResponseManager.error("Missing office_serial in auth")
+
+    # --- Fetch cases ---
+    cases_res = mongodb_service.get_entity(
+        entity=MongoDBEntity.CASES,
+        office_serial=office_serial,
+        expand=expand,
+    )
+
+    if ResponseManager.is_no_content(cases_res):
+        current_app.logger.debug("⚠️ No cases found, returning empty list")
+        return cases_res
+
+    if not ResponseManager.is_success(cases_res):
+        current_app.logger.error("❌ Error fetching cases from MongoDB service")
+        return cases_res
+
+    cases = ResponseManager.get_data(cases_res)
+    current_app.logger.debug(f"✅ Returning {len(cases)} cases")
+    return ResponseManager.success(data=cases)
+
+    # return AuthorizationManager.get()
 
 
 # ---------------- HELPERS ---------------- #
@@ -150,8 +176,7 @@ def get_office_users():
     if not ResponseManager.is_success(users_res):
         return ResponseManager.internal("Failed to fetch office users")
 
-    users_data = ResponseManager.get_data(users_res)
-    users = [u.get("users") for u in users_data]
+    users = ResponseManager.get_data(users_res)
     current_app.logger.debug(f"✅ Returning {len(users)} users")
     return ResponseManager.success(data=users)
 
@@ -1102,8 +1127,7 @@ def get_office_clients():
     if not ResponseManager.is_success(clients_res):
         return ResponseManager.internal("Failed to fetch clients")
 
-    clients_data = ResponseManager.get_data(clients_res)
-    clients = [c.get("clients") for c in clients_data]
+    clients = ResponseManager.get_data(clients_res)
     return ResponseManager.success(data=clients)
 
 
