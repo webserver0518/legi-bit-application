@@ -15,6 +15,8 @@ class AuthenticationManager:
         admin_password_hashes_res = mongodb_service.get_admin_passwords_hashes()
 
         if not ResponseManager.is_success(response=admin_password_hashes_res):
+            msg = f"failed to get admin password hashes"
+            current_app.logger.debug(msg)
             return admin_password_hashes_res
 
         admin_password_hashes = ResponseManager.get_data(
@@ -27,9 +29,9 @@ class AuthenticationManager:
             if hashed and check_password_hash(hashed, password):
                 return ResponseManager.success()
 
-        return ResponseManager.unauthorized(
-            f"Failed admin login attempt with password '{password}'"
-        )
+        msg = f"unauthorized admin attempt to with password '{password}'"
+        current_app.logger.debug(msg)
+        return ResponseManager.unauthorized(msg)
 
     @classmethod
     def _authenticate_user(cls, username, password):
@@ -39,20 +41,28 @@ class AuthenticationManager:
             filters=MongoDBFilters.User.by_username(username=username),
             limit=1,
         )
+
         if not ResponseManager.is_success(response=user_res):
+            msg = f"failed to get user"
+            current_app.logger.debug(msg)
+            return user_res
+
+        if ResponseManager.is_no_content(response=user_res):
+            msg = f"not content on get user= '{username}'"
+            current_app.logger.debug(msg)
             return user_res
 
         # extract user and office serial
-        data = ResponseManager.get_data(response=user_res)
-        data = data[0]  # limit = 1
-        user, office_serial = data[MongoDBEntity.USERS], data["office_serial"]
+        user = ResponseManager.get_data(response=user_res)
+        user = user[0]
+        office_serial = user.pop("office_serial", None)
 
         # validate creds
         stored_hash = user.get("password_hash")
         if not stored_hash or not check_password_hash(stored_hash, password):
-            return ResponseManager.unauthorized(
-                f"Failed user '{username}' login attempt to 'office {office_serial}' with password '{password}'"
-            )
+            msg = f"unauthorized '{username}' login attempt to 'office {office_serial}' with password '{password}'"
+            current_app.logger.debug(msg)
+            return ResponseManager.unauthorized(message=msg)
 
         # get office name
         office_name_res = mongodb_service.get_office_name(office_serial=office_serial)
@@ -60,12 +70,11 @@ class AuthenticationManager:
             return office_name_res
         office_name = ResponseManager.get_data(response=office_name_res)
 
-        data = {
+        result = {
             "user": user,
-            "office_serial": office_serial,
-            "office_name": office_name,
+            "office": {"serial": office_serial, "name": office_name},
         }
-        return ResponseManager.success(data=data)
+        return ResponseManager.success(data=result)
 
     @classmethod
     def authenticate_login(cls, username, password):
@@ -99,24 +108,30 @@ class AuthenticationManager:
             if not ResponseManager.is_success(response=valid_user_login_res):
                 return valid_user_login_res
 
+            if ResponseManager.is_no_content(response=valid_user_login_res):
+                return valid_user_login_res
+
             # extract user, office serial, office name
-            data = ResponseManager.get_data(response=valid_user_login_res)
-            user, office_serial, office_name = (
-                data["user"],
-                data["office_serial"],
-                data["office_name"],
-            )
+            valid_user_login = ResponseManager.get_data(response=valid_user_login_res)
 
             # update context
-            context = {
-                "user": user,
-                "office": {"serial": office_serial, "name": office_name},
-            }
+            context = valid_user_login
 
         return ResponseManager.success(data=context)
 
 
 class AuthorizationManager:
+
+    @classmethod
+    def regenerate_session():
+        """
+        Prevent session fixation by regenerating a fresh session ID.
+        Clears old session data safely and forces Flask to create a new session.
+        """
+        old_data = dict(session)
+        session.clear()
+        session.update(old_data)
+        session.modified = True
 
     @classmethod
     def get(cls):
