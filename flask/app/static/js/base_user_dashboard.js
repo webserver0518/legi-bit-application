@@ -1,5 +1,5 @@
 /*  base_user_dashboard.js  */
-const USER_DEFAULT = 'birds_view_cases';
+const USER_DEFAULT = 'search_case';
 
 const rolesData = document.getElementById('user-info')?.dataset.roles || '';
 const roles = rolesData.split(',').map(r => r.trim()).filter(Boolean);
@@ -40,14 +40,12 @@ function showSubMenu(type, force = false) {
   } else if (type === 'user') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_user">מבט על משתמש</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="personal_details">פרטים אישיים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="security_mfa">אימות דו-שלבי</a>
       <hr>`;
   } else if (type === 'cases') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_cases">מבט על תיקים</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="search_case">חיפוש תיק</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="new_case">תיק חדש</a>
       <hr>
@@ -58,7 +56,6 @@ function showSubMenu(type, force = false) {
   } else if (type === 'clients') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_clients">מבט על לקוחות</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="search_client">חיפוש לקוח</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="new_client">לקוח חדש</a>
       <hr>
@@ -72,7 +69,6 @@ function showSubMenu(type, force = false) {
   } else if (type === 'attendance') {
     html = `
       <hr>
-      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="birds_view_attendance">מבט על נוכחות</a>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clock_in_out">דיווח</a>
       <hr>`;
   } else if (type === 'support') {
