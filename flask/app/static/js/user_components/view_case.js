@@ -68,29 +68,28 @@ window.init_view_case = async function () {
     .then(payload => {
       if (!payload.success || !payload.data.length) return;
 
-      const item = payload.data[0] ?? {};
-      const caseObj = item.cases;
+      const c = payload.data[0];
 
-      console.log("Loaded case:", caseObj);
+      console.log("Loaded case:", c);
 
-      const user = caseObj.user;
-      const clients = caseObj.clients;
+      const user = c.user;
+      const clients = c.clients;
 
       const setText = (id, val) => {
         document.getElementById(id).textContent = window.utils.safeValue(val);
       };
 
-      setText("case-title", caseObj.title);
+      setText("case-title", c.title);
       setText("case-created-by", user.username);
-      setText("case-responsible", caseObj.responsible.username);
-      setText("case-field", caseObj.field);
+      setText("case-responsible", c.responsible?.username || "-");
+      setText("case-field", c.field);
 
-      setText("case-created-at", new Date(caseObj.created_at).toLocaleDateString("he-IL"));
+      setText("case-created-at", new Date(c.created_at).toLocaleDateString("he-IL"));
 
-      document.getElementById("case-facts-text").textContent = window.utils.safeValue(caseObj.facts || "");
+      document.getElementById("case-facts-text").textContent = window.utils.safeValue(c.facts || "");
 
-      applyStatusDot(caseObj.status || "unknown");
-      ensureSelect(caseObj.status);
+      applyStatusDot(c.status || "unknown");
+      ensureSelect(c.status);
 
       document.querySelector("#clientsTable tbody").innerHTML = clients.length
         ? clients.map(c => `
@@ -200,9 +199,9 @@ function formatDateTimeShort(iso) {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function buildActivityModelFromCase(caseObj) {
-  const files = Array.isArray(caseObj.files) ? caseObj.files : [];
-  const tasks = Array.isArray(caseObj.tasks) ? caseObj.tasks : [];
+function buildActivityModelFromCase(c) {
+  const files = Array.isArray(c.files) ? c.files : [];
+  const tasks = Array.isArray(c.tasks) ? c.tasks : [];
 
   const fileItems = files.map(f => ({
     TYPE: "file",
@@ -292,8 +291,8 @@ async function reloadCaseActivityMinimal(caseSerial) {
     return;
   }
 
-  const caseObj = payload.data[0].cases;
-  const items = buildActivityModelFromCase(caseObj);
+  const c = payload.data[0];
+  const items = buildActivityModelFromCase(c);
 
   if (!items.length) {
     host.innerHTML = `<div class="text-center text-muted py-3">אין פעילות עדיין</div>`;
@@ -490,8 +489,8 @@ async function appendFileSerialToCase(case_serial, file_serial) {
     throw new Error("Failed to load case for updating files_serials");
   }
 
-  const caseObj = payload.data[0].cases;
-  const current = Array.isArray(caseObj.files_serials) ? caseObj.files_serials : [];
+  const c = payload.data[0];
+  const current = Array.isArray(c.files_serials) ? c.files_serials : [];
 
   const next = Array.from(new Set([
     ...current.map(n => Number(n)).filter(Number.isFinite),
