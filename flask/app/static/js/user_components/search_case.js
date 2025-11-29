@@ -20,6 +20,7 @@ window.init_search_case = async function () {
 
       window.API.getJson(url)
         .then(payload => {
+          console.log(payload)
           if (dataTableInstance) {
             dataTableInstance.clear().destroy();
             dataTableInstance = null;
@@ -30,8 +31,7 @@ window.init_search_case = async function () {
           buildStatusDropdown(CURRENT_ROWS);
 
           // Superstring for each case
-          rows.forEach(obj => {
-            const c = obj.cases || obj;
+          rows.forEach(c => {
             c.__super = RowToSuperString(c);
           });
 
@@ -68,15 +68,15 @@ window.init_search_case = async function () {
       // 🔍 סינון לפי חיפוש
       if (search) {
         const tokens = search.split(/\s+/).filter(Boolean);
-        filtered = filtered.filter(obj => {
-          const text = obj.cases.__super || "";
+        filtered = filtered.filter(c => {
+          const text = c.__super || "";
           return tokens.every(t => text.includes(t));
         });
       }
 
       // 🏷️ סינון לפי סטטוס
       if (status) {
-        filtered = filtered.filter(obj => obj.cases.status === status);
+        filtered = filtered.filter(c => c.status === status);
       }
 
       renderRows(filtered);
@@ -93,6 +93,7 @@ window.init_search_case = async function () {
     document.getElementById("clear-filters").addEventListener("click", () => {
       // איפוס שדה חיפוש
       const searchInput = document.getElementById("search");
+      if (!searchInput) return;
       searchInput.value = "";
 
       // איפוס סטטוס
@@ -117,8 +118,7 @@ window.init_search_case = async function () {
       }
 
       const htmlRows = list
-        .map(obj => {
-          const c = obj.cases || {};
+        .map(c => {
           const responsible = c.responsible || {};
 
           let client = {};
@@ -172,8 +172,7 @@ window.init_search_case = async function () {
         return;
       }
 
-      const rows = CURRENT_ROWS.map(obj => {
-        const c = obj.cases || {};
+      const rows = CURRENT_ROWS.map(c => {
         const client = Array.isArray(c.clients)
           ? (c.clients.find(cl => cl.level === "main") || c.clients[0] || {})
           : {};
@@ -272,7 +271,7 @@ function buildStatusDropdown(rows) {
 
   // איתור כל סוגי הסטטוסים הקיימים
   const statuses = [...new Set(
-    rows.map(r => r?.cases?.status).filter(Boolean)
+    rows.map(r => r?.status).filter(Boolean)
   )].sort();
 
   // מיפוי תצוגה בעברית
