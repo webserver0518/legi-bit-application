@@ -1461,9 +1461,13 @@ def get_case_statuses():
 def user_mfa_enroll():
     office_serial = AuthorizationManager.get_office_serial()
     user_serial = AuthorizationManager.get_user_serial()
-    username = AuthorizationManager.get_username() or f"user-{user_serial}"
-    if not office_serial or not user_serial:
-        return ResponseManager.error("Missing auth context")
+    username = AuthorizationManager.get_username()
+
+    if not office_serial:
+        return ResponseManager.bad_request(error="Missing auth context")
+
+    if not user_serial:
+        return ResponseManager.bad_request(error="Missing auth context")
 
     # אם כבר מופעל – נחזיר שגיאה (אפשר לשנות למדיניות אחרת)
     user_res = mongodb_service.get_entity(
@@ -1472,11 +1476,13 @@ def user_mfa_enroll():
         filters=MongoDBFilters.by_serial(int(user_serial)),
         limit=1,
     )
-    if not ResponseManager.is_success(user_res):
+    if not ResponseManager.is_success(response=user_res):
         return user_res
-    docs = ResponseManager.get_data(user_res) or []
-    user_doc = (docs[0] or {}).get("users", {}) if docs else {}
-    if (user_doc.get("mfa") or {}).get("status") == "enabled":
+
+    user = ResponseManager.get_data(response=user_res)
+    user = user[0] or {}
+    mfa = user.get("mfa") or {}
+    if mfa.get("status") == "enabled":
         return ResponseManager.bad_request(
             "MFA already enabled. Reset first to re-enroll."
         )
@@ -1522,9 +1528,9 @@ def user_mfa_verify_enroll():
     office_serial = AuthorizationManager.get_office_serial()
     user_serial = AuthorizationManager.get_user_serial()
     if not office_serial or not user_serial:
-        return ResponseManager.error("Missing auth context")
+        return ResponseManager.bad_request(error="Missing auth context")
     if not (code.isdigit() and len(code) == 6):
-        return ResponseManager.bad_request("Invalid code format")
+        return ResponseManager.bad_request(error="Invalid code format")
 
     # שליפת secret מ-mfa.pending
     user_res = mongodb_service.get_entity(
@@ -1533,20 +1539,20 @@ def user_mfa_verify_enroll():
         filters=MongoDBFilters.by_serial(int(user_serial)),
         limit=1,
     )
-    if not ResponseManager.is_success(user_res):
+    if not ResponseManager.is_success(response=user_res):
         return user_res
-    docs = ResponseManager.get_data(user_res) or []
-    user_doc = (docs[0] or {}).get("users", {}) if docs else {}
-    mfa = user_doc.get("mfa") or {}
-    if mfa.get("status") != "pending" or not mfa.get("secret"):
-        return ResponseManager.bad_request("No pending MFA enrollment")
+
+    user = ResponseManager.get_data(response=user_res)
+    user = user[0] or {}
+    mfa = user.get("mfa") or {}
+    secret = mfa.get("secret")
+
+    if mfa.get("status") != "pending" or not secret:
+        return ResponseManager.bad_request(error="No pending MFA enrollment")
 
     # אימות TOTP
-    verify_res = MFAManager.verify_and_enable(
-        office_serial, user_serial, mfa["secret"], code
-    )
-    if not ResponseManager.is_success(verify_res):
-        return verify_res
+    if not MFAManager.verify_totp(secret, code):
+        return ResponseManager.unauthorized(error="Invalid TOTP code")
 
     # עדכון סטטוס ל-enabled ושמירת enabled_at
     final_res = mongodb_service.update_entity(
@@ -1557,7 +1563,7 @@ def user_mfa_verify_enroll():
             "mfa": {
                 "status": "enabled",
                 "method": "totp",
-                "secret": mfa["secret"],
+                "secret": secret,
                 "created_at": mfa.get("created_at"),
                 "enabled_at": datetime.now(timezone.utc).isoformat(),
             }
@@ -1565,7 +1571,7 @@ def user_mfa_verify_enroll():
         multiple=False,
         operator="$set",
     )
-    if not ResponseManager.is_success(final_res):
+    if not ResponseManager.is_success(response=final_res):
         return final_res
 
     return ResponseManager.success(message="MFA enabled")
@@ -1599,10 +1605,10 @@ def user_mfa_reset():
     if not ResponseManager.is_success(user_res):
         return user_res
 
-    docs = ResponseManager.get_data(user_res) or []
-    user_doc = (docs[0] or {}).get("users", {}) if docs else {}
+    user = ResponseManager.get_data(response=user_res)
+    user = user[0] or {}
 
-    password_hash = user_doc.get("password_hash")
+    password_hash = user.get("password_hash")
     if not password_hash:
         return ResponseManager.error("Missing password hash")
 
@@ -1634,6 +1640,8 @@ def user_mfa_status():
     )
     if not ResponseManager.is_success(user_res):
         return user_res
-    docs = ResponseManager.get_data(user_res) or []
-    user_doc = (docs[0] or {}).get("users", {}) if docs else {}
-    return ResponseManager.success(data={"mfa": user_doc.get("mfa")})
+
+    user = ResponseManager.get_data(response=user_res)
+    user = user[0] or {}
+
+    return ResponseManager.success(data={"mfa": user.get("mfa")})
