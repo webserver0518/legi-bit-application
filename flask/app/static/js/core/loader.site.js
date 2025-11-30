@@ -67,11 +67,10 @@
 
         const { fetchUrl, cssPath, jsPath } = pathsFor(page);
 
-        cont.classList.add('exiting');
-        const html = await fetchHtml(fetchUrl);
         await loadCss(cssPath);
-        cont.innerHTML = html;
-        cont.classList.remove('exiting');
+
+        cont.innerHTML = await fetchHtml(fetchUrl);
+
         await loadJs(jsPath);
 
         const initName = `init_${page}`;
