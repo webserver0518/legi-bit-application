@@ -1,130 +1,95 @@
-<div class="container-fluid">
+<div class="container-fluid view-case-container">
 
-  <!-- 🟦 Header (case title + status dot) -->
-  <div class="case-header position-relative text-center mb-4">
-    <!-- Status dot (left side). JS will add class by status (active/archived). -->
-    <div class="status-dot" id="case-status-dot"></div>
-    <h3 class="fw-bold mb-0">
-      <span id="case-title">---</span>
-    </h3>
-  </div>
-
-  <!-- app/templates/view_case.html -->
-  <div class="container-fluid mt-4 view-case-page">
-
-    <!-- 🟩 Case general info row -->
-    <div class="case-info-row d-flex flex-wrap justify-content-center gap-4 mb-4 text-center">
-
-      <!-- Created by -->
-      <div class="case-info-item shadow-sm rounded p-3 bg-light">
-        <span class="label d-block fw-semibold">נוצר ע"י</span>
-        <span id="case-created-by" class="value text-muted">-</span>
+  <div class="page">
+    <!-- Header -->
+    <div class="header-top">
+      <div class="header-top__right">
+        <div><strong>תאריך יצירה</strong> – <span id="created-date"></span></div>
+        <div><strong>נוצר ע"י</strong> – <span id="created-by"></span></div>
       </div>
-
-      <!-- Responsible -->
-      <div class="case-info-item shadow-sm rounded p-3 bg-light">
-        <span class="label d-block fw-semibold">אחראי</span>
-        <span id="case-responsible" class="value text-muted">-</span>
+      <div class="header-top__left">
+        <div><strong>מספר הליך</strong> – <span id="case-number"></span></div>
+        <div><strong>בטיפול</strong> – <span id="handler"></span></div>
+        <div><strong>סטטוס</strong> – <span id="status"></span></div>
       </div>
-
-      <!-- Field -->
-      <div class="case-info-item shadow-sm rounded p-3 bg-light">
-        <span class="label d-block fw-semibold">תחום</span>
-        <span id="case-field" class="value text-muted">-</span>
-      </div>
-
-      <!-- Created date (date only, no time) -->
-      <div class="case-info-item shadow-sm rounded p-3 bg-light">
-        <span class="label d-block fw-semibold">תאריך יצירה</span>
-        <!-- JS will format with toLocaleDateString('he-IL') -->
-        <span id="case-created-at" class="value text-muted">-</span>
-      </div>
-
-      <!-- Created date (date only, no time) -->
-      <div class="case-info-item shadow-sm rounded p-3 bg-light">
-        <span class="label d-block fw-semibold">סטטוס</span>
-        <!-- JS will format with toLocaleDateString('he-IL') -->
-        <select id="case-status-select" class="form-select form-select-sm w-auto">
-          <!-- options ימולאו מ-JS -->
-        </select>
-      </div>
-
-      <!-- 🟪 Case facts (full width under the info blocks) -->
-      <div class="case-facts case-info-item shadow-sm rounded p-3 bg-light">
-        <span class="label d-block fw-semibold">מה הסיפור?</span>
-        <div id="case-facts-text" class="value text-muted text-start" dir="rtl">-</div>
-      </div>
-
     </div>
 
-    <div id="case-add-data-section" class="mb-4">
+    <h1 id="case-title" class="case-title"></h1>
 
-      <div class="filter-bar">
-        <input id="task-description" class="filter-input" type="text" placeholder="הערה...">
-        <button id="add-task" class="filter-btn" type="button">הוסף</button>
-      </div>
-
-      <div class="accordion-body section-content">
-
-        <!-- Drap & Drop -->
-        <div id="drop-area">
-          גרור קבצים לכאן או לחץ לבחירה
-          <input type="file" id="fileElem" hidden multiple>
-        </div>
-
-        <!-- Table -->
-        <table class="table table-striped table-sm mt-3 d-none" id="fileTable">
-          <thead class="table-light">
-            <tr>
-              <th style="width: 30%;">שם קובץ</th>
-              <th style="width: 10%;">סוג תוכן</th>
-              <th style="width: 35%;">תיאור</th>
-              <th style="width: 15%;">שיוך ללקוח</th>
-              <th style="width: 10%;">התקדמות</th>
-              <th style="width: 5%;">פעולות</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-    </div>
-
-    <div id="case-activity-list" class="activity-list d-flex flex-column gap-2">
-    </div>
-
-  </div>
-
-
-
-  <!-- 🟧 Clients table -->
-  <div class="case-section mb-5">
-    <h5 class="section-title mb-3">
-      <i class="bi bi-people me-1"></i> לקוחות
-    </h5>
-
-    <div class="table-responsive shadow-sm rounded">
-      <table id="clientsTable" class="table table-hover align-middle text-center">
-        <thead class="table-light">
+    <!-- Applicant -->
+    <div class="party-label">המבקש - לקוח</div>
+    <div class="table-wrap">
+      <table class="party-table" role="table" aria-label="טבלת המבקש">
+        <thead>
           <tr>
             <th>שם פרטי</th>
             <th>שם משפחה</th>
-            <th>תובע/נתבע</th>
             <th>תעודת זהות</th>
+            <th>כתובת</th>
+            <th>כתובת דוא"ל</th>
             <th>טלפון</th>
-            <th>דוא"ל</th>
-            <th>ראשי/משני</th>
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td>
-          </tr>
-        </tbody>
+        <tbody id="applicant-tbody"></tbody>
       </table>
     </div>
-  </div>
 
-</div>
+    <div class="against">נגד</div>
+
+    <!-- Respondents -->
+    <div class="party-label">המשיב</div>
+    <div class="table-wrap">
+      <table class="party-table" role="table" aria-label="טבלת המשיבים">
+        <thead>
+          <tr>
+            <th>שם</th>
+            <th>ח"פ/ת"ז</th>
+            <th>טלפון</th>
+            <th>דוא"ל</th>
+            <th>כתובת</th>
+            <th>מיקוד</th>
+          </tr>
+        </thead>
+        <tbody id="respondents-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Facts -->
+    <div class="section-title">עובדות המקרה</div>
+    <div id="facts-body" class="section-body"></div>
+
+    <!-- Files / Notes -->
+    <div class="files-section">
+      <div class="bar">
+        <button id="addNoteBtn" class="plus" title="הוסף הערה">+</button>
+        <input id="noteInput" type="text" placeholder="הוסף הערה…" />
+      </div>
+
+      <div id="dropzone" class="drop" tabindex="0" role="button" aria-label="גרור או בחר מהמחשב להוספה">
+        גרור או בחר מהמחשב להוספה
+        <input id="filePicker" type="file" multiple />
+      </div>
+
+      <div class="title">אירועים + מסמכים</div>
+
+      <div class="list-head">
+        <button id="sortBtn" class="sort-btn" aria-label="מיון לפי תאריך ושעה">תאריך/שעה <span
+            id="sortArrow">▼</span></button>
+      </div>
+
+      <div id="list" class="list"></div>
+
+      <div id="reminder-pop" style="display:none"></div>
+      <div id="confirm-pop" style="display:none"></div>
+
+      <div id="merge-bar">
+        <div class="wrap">
+          <div class="chips" id="chips"></div>
+          <button id="mergeBtn" class="merge-btn" disabled>איחוד מסמכים (0)</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
 
 </div>

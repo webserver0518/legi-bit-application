@@ -1,530 +1,860 @@
-// static/js/user_components/view_case.js
+/* view_case.js — LEGIBIT view case (HTML+CSS שכבר מוכנים)
+   דרישות: api.js (window.API), utils.js (window.utils), toast.js (window.Toast),
+           recentManager.js (window.Recents)
+*/
+(() => {
+  'use strict';
 
-// helper: unique array of strings
-function uniqueStrings(arr) {
-  const out = [];
-  const seen = new Set();
-  for (const s of arr || []) {
-    const v = (s ?? "").toString().trim();
-    if (!v || seen.has(v)) continue;
-    seen.add(v);
-    out.push(v);
-  }
-  return out;
-}
+  // ---------- State ----------
+  let CASE = null;               // ה־case המלא שחזר מהשרת (expand=true)
+  let CASE_SERIAL = null;
+  let RECORDS = [];              // איחוד files + tasks לתצוגת "אירועים + מסמכים"
+  let SORT = 'desc';             // 'asc' | 'desc'
+  let SELECTED = [];             // _ids נבחרים לאיחוד (UI בלבד)
+  let USERS = [];                // לבחירת "בטיפול"
+  let STATUSES = [];             // לבחירת סטטוס
 
-// helper: update status dot class safely
-function applyStatusDot(status) {
-  const dot = document.getElementById("case-status-dot");
-  if (!dot) return;
-  dot.className = "status-dot"; // reset
-  //if (status) dot.classList.add(status);
-}
+  // DOM refs
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-window.init_view_case = async function () {
-  await window.utils.waitForDom();
-
-  lockScrollInside(document.getElementById("case-activity-list"));
-
-  const serial = window.Recents.get('case')[0];
-
-  document.getElementById("add-task").onclick = () => createTask(serial);
-
-  // ✅ שלב 1: העלאת קבצים מיידית (בלי טבלה/תצוגה)
-  initInstantCaseFileUploader(serial);
-  await reloadCaseActivityMinimal(serial);
-
-  // ⬇️ נטען פרופילים ובוחרים את הפרופיל הפעיל בלבד
-  const profilesPayload = await window.API.getJson("/get_office_profiles");
-  const profileList = (profilesPayload?.data || []);
-
-  const activeProfile = profileList.find(p => p && p.is_active === true);
-
-  // סטטוסים רק מהפרופיל הפעיל
-  const activeStatuses = uniqueStrings(
-    Array.isArray(activeProfile?.case_statuses) ? activeProfile.case_statuses : []
-  );
-
-  // אפשר לשמר גם ברירות מחדל קיימות אם תרצה:
-  const defaults = [];
-  const allStatuses = uniqueStrings([...defaults, ...activeStatuses]);
-
-  // נמלא את ה-select
-  const selectEl = document.getElementById("case-status-select");
-  const ensureSelect = (cur) => {
-    if (!selectEl) return;
-
-    // אם לתיק כבר יש סטטוס – מוסיפים אותו לרשימה (גם אם לא קיים בפרופיל הפעיל)
-    const opts = uniqueStrings(cur ? [cur, ...allStatuses] : allStatuses);
-
-    selectEl.innerHTML = opts.length
-      ? opts.map(s => `<option value="${window.utils.safeValue(s)}">${window.utils.safeValue(s)}</option>`).join("")
-      : `<option value="">(אין סטטוסים בפרופיל הפעיל)</option>`;
-
-    if (cur) selectEl.value = cur; // תמיד נשמור את הישן אם קיים
+  // ---------- Utils ----------
+  const fmtTime = (ts) => ts || ''; // מגיע כבר בפורמט שלך "YYYY-MM-DD HH:MM:SS"
+  const iconByMime = (mime, name = '') => {
+    if ((name || '').match(/\.(pdf)$/i)) return '📄';
+    if ((name || '').match(/\.(docx?|rtf)$/i)) return '📝';
+    if ((name || '').match(/\.(xlsx?|csv)$/i)) return '📊';
+    if ((name || '').match(/\.(png|jpe?g|gif|webp|bmp|svg)$/i)) return '🖼️';
+    if ((name || '').match(/\.(mp4|mov|avi|mkv|webm)$/i)) return '🎞️';
+    if ((name || '').match(/\.(mp3|wav|m4a|flac)$/i)) return '🎧';
+    return mime?.startsWith('text/') ? '📄' : '📦';
   };
+  const stripExt = (s = '') => s.replace(/\.[^.]+$/, '');
+  const cap = (s = '') => (s ? s[0].toUpperCase() + s.slice(1) : '');
 
-  window.API.getJson(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`)
-    .then(payload => {
-      if (!payload.success || !payload.data.length) return;
-
-      const c = payload.data[0];
-
-      console.log("Loaded case:", c);
-
-      const user = c.user;
-      const clients = c.clients;
-
-      const setText = (id, val) => {
-        document.getElementById(id).textContent = window.utils.safeValue(val);
-      };
-
-      setText("case-title", c.title);
-      setText("case-created-by", user.username);
-      setText("case-responsible", c.responsible?.username || "-");
-      setText("case-field", c.field);
-
-      setText("case-created-at", new Date(c.created_at).toLocaleDateString("he-IL"));
-
-      document.getElementById("case-facts-text").textContent = window.utils.safeValue(c.facts || "");
-
-      applyStatusDot(c.status || "unknown");
-      ensureSelect(c.status);
-
-      document.querySelector("#clientsTable tbody").innerHTML = clients.length
-        ? clients.map(c => `
-          <tr>
-            <td>${window.utils.safeValue(c.first_name)}</td>
-            <td>${window.utils.safeValue(c.last_name)}</td>
-            <td>${window.utils.safeValue(c.legal_role)}</td>
-            <td>${window.utils.safeValue(c.id_card_number)}</td>
-            <td>${window.utils.safeValue(c.phone)}</td>
-            <td>${window.utils.safeValue(c.email)}</td>
-            <td>${window.utils.safeValue(c.role)}</td>
-          </tr>
-        `).join("")
-        : `<tr><td colspan="100%" class="text-muted py-3">אין לקוחות להצגה</td></tr>`;
-    });
-
-  // שינוי סטטוס בלייב
-  if (selectEl) {
-    selectEl.onchange = async () => {
-      const newStatus = (selectEl.value || "").trim();
-      if (!newStatus) return;
-
-      const res = await window.API.apiRequest(`/update_case?serial=${encodeURIComponent(serial)}`, {
-        method: "PATCH",
-        body: { status: newStatus } // _operator ברירת מחדל $set בצד השרת
-      });
-
-      if (!res?.success) {
-        window.Toast?.danger?.(res?.error || "עדכון הסטטוס נכשל");
-        return;
-      }
-      applyStatusDot(newStatus);
-      window.Toast?.success?.("סטטוס התיק עודכן");
-    };
-  }
-};
-
-async function createTask(serial) {
-
-  const taskInput = document.getElementById("task-description");
-  const addTaskBtn = document.getElementById("add-task");
-
-  const description = (taskInput?.value || "").trim();
-  if (addTaskBtn) addTaskBtn.disabled = true;
-
-  const payload = {
-    case_serial: serial,
-    description,
-    created_at: window.utils.buildLocalTimestamp(),
-  };
-
-  const res = await window.API.postJson("/create_new_task", payload);
-
-  if (addTaskBtn) addTaskBtn.disabled = false;
-
-  if (!res.success) {
-    const msg = res.message || res.error || "יצירת משימה נכשלה.";
-    return window.Toast.warning(msg);
-  }
-
-  const newTaskSerial = res.data;
-
-  const upd = await window.API.apiRequest(`/update_case?serial=${serial}`, {
-    method: "PATCH",
-    body: {
-      _operator: "$addToSet",
-      tasks_serials: newTaskSerial
+  // ---------- Bootstrap ----------
+  async function init_view_case() {
+    // 1) זהה איזה תיק לפתוח
+    const recentCases = window.Recents?.get?.('case') || [];
+    CASE_SERIAL = Number(recentCases?.[0] || 0);
+    if (!CASE_SERIAL) {
+      window.Toast.danger('לא נמצא תיק להצגה (RECENTS ריק)');
+      return;
     }
-  });
-  if (!upd?.success) {
-    return window.Toast.warning(upd?.error || "עדכון התיק נכשל");
+
+    // 2) טען סטטוסים/משתמשים ברקע (ל־dropdownים)
+    await Promise.all([loadStatuses(), loadUsers()]).catch(() => { });
+
+    // 3) טען את התיק
+    await loadCase(CASE_SERIAL);
+
+    // 4) חבר מאזינים קבועים
+    bindNoteBar();
+    bindSorter();
+    bindUploaders(); // העלאה מיידית
+
+    // 5) רנדר ראשון
+    renderHeader();
+    renderParties();
+    renderFacts();
+    buildRecordsFromCase();
+    renderRecords();
   }
 
-  taskInput.value = "";
-  window.Toast.success("המשימה נוספה בהצלחה!");
-
-  try { await reloadCaseActivityMinimal(serial); } catch { }
-}
-
-function getFileIconHTML(filename) {
-  const name = (filename || "").toLowerCase();
-
-  const byExt = (exts, icon) => exts.some(ex => name.endsWith("." + ex)) && icon;
-
-  const icon =
-    byExt(["pdf"], "PDF") ||
-    byExt(["doc", "docx", "rtf"], "WORD") ||
-    byExt(["xls", "xlsx", "csv"], "EXCEL") ||
-    byExt(["jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg"], "IMAGE") ||
-    byExt(["mp4", "mov", "avi", "mkv", "webm", "m4v"], "VIDEO") ||
-    byExt(["mp3", "m4a", "wav", "ogg", "flac"], "AUDIO") ||
-    byExt(["zip", "rar", "7z", "tar", "gz", "bz2"], "ARCHIVE") ||
-    "GENERIC";
-
-  const src = `/static/images/icons/${icon}.svg`;
-  // סגנון קטן inline כדי לא לגעת ב-CSS
-  return `<img src="${src}" alt="" style="width:18px;height:18px;vertical-align:-3px;margin-inline-end:6px;">`;
-}
-
-// === Minimal Activity List (TYPE, CREATEDAT, META) ===
-
-function formatDateTimeShort(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = n => String(n).padStart(2, "0");
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function buildActivityModelFromCase(c) {
-  const files = Array.isArray(c.files) ? c.files : [];
-  const tasks = Array.isArray(c.tasks) ? c.tasks : [];
-
-  const fileItems = files.map(f => ({
-    TYPE: "file",
-    CREATEDAT: f.created_at || f.uploaded_at || null,
-    META: {
-      serial: f.serial,
-      name: f.name || "ללא שם",
-      description: f.description || "",
-      size: f.size,
-      uploaded_by: f.uploaded_by,
-    }
-  }));
-
-  const taskItems = tasks.map(t => ({
-    TYPE: "task",
-    CREATEDAT: t.created_at || null,
-    META: {
-      serial: t.serial,
-      description: t.description || "משימה",
-      status: t.status || "open",
-      created_by: t.created_by,
-    }
-  }));
-
-  const toTs = v => (v ? new Date(v).getTime() : -Infinity);
-  return [...fileItems, ...taskItems].sort((a, b) => toTs(b.CREATEDAT) - toTs(a.CREATEDAT)); // חדש למעלה
-}
-
-function renderActivityRow(item) {
-  const isFile = item.TYPE === "file";
-  const icon = isFile ? "📄" : "✏️";
-  const middleText = isFile
-    ? (item.META?.name || "קובץ")
-    : (item.META?.description || "משימה");
-  const when = formatDateTimeShort(item.CREATEDAT);
-  const attrs = isFile
-    ? ` class="activity-file-link text-decoration-none" data-file-serial="${String(item.META?.serial || "")}" data-file-name="${String(item.META?.name || "")}"`
-    : "";
-
-  if (isFile) {
-    const fileName = item.META?.name || "קובץ";
-    const fileDesc = item.META?.description || ""; // תיאור להצגה בלבד
-    const fileEmoji = getFileIconHTML(fileName);
-
-    return `
-      <div class="event-row file d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
-        <div class="event-icon fs-5" title="קובץ">${fileEmoji}</div>
-        <div class="event-details text-center flex-grow-1">
-          <div class="fw-semibold text-start">
-            <a${attrs}>${window.utils.safeValue(fileName)}</a>
-            - ${window.utils.safeValue(fileDesc)}
-          </div>
-        </div>
-        <div class="event-time text-muted small">${when}</div>
-      </div>
-    `;
-  } else {
-    const taskText = item.META?.description || "משימה";
-    return `
-      <div class="event-row task d-flex justify-content-between align-items-center p-3 rounded bg-orange-light">
-        <div class="event-icon fs-5" title="משימה">✏️</div>
-        <div class="event-details text-start flex-grow-1" dir="rtl">
-          <div>${window.utils.safeValue(taskText)}</div>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-
-          <!-- 🔔 אייקון הפעמון -->
-         <img src="/static/images/icons/BELL.svg" style="width:16px;height:16px;cursor:pointer;">
-
-          <!-- התאריך -->
-          <div class="event-time text-muted small">${when}</div>
-
-        </div>
-      </div>
-    `;
-  }
-}
-
-async function reloadCaseActivityMinimal(caseSerial) {
-  const host = document.getElementById("case-activity-list");
-
-  host.innerHTML = `<div class="text-center text-muted py-3">טוען פעילות…</div>`;
-
-  const payload = await window.API.getJson(`/get_case?serial=${encodeURIComponent(caseSerial)}&expand=true`);
-  if (!payload.success || !payload.data.length) {
-    host.innerHTML = `<div class="text-center text-danger py-3">${payload.error || "שגיאה בטעינת פעילות"}</div>`;
-    return;
-  }
-
-  const c = payload.data[0];
-  const items = buildActivityModelFromCase(c);
-
-  if (!items.length) {
-    host.innerHTML = `<div class="text-center text-muted py-3">אין פעילות עדיין</div>`;
-    return;
-  }
-
-  host.innerHTML = items.map(renderActivityRow).join("");
-
-  // פתיחת קובץ בלחיצה – שולחים את שלושת הפרמטרים שה-API דורש
-  host.onclick = async (ev) => {
-    const a = ev.target.closest(".activity-file-link");
-    if (!a) return;
-    ev.preventDefault();
-    const fileSerial = a.getAttribute("data-file-serial");
-    const fileName = a.getAttribute("data-file-name");
-    if (!fileSerial || !fileName) {
-      return window.Toast.danger("חסר מידע על הקובץ (serial/name)");
-    }
-    const url = `/get_file_url?case_serial=${encodeURIComponent(caseSerial)}&file_serial=${encodeURIComponent(fileSerial)}&file_name=${encodeURIComponent(fileName)}`;
-    const res = await window.API.getJson(url);
-    console.log("Get file URL response:", res);
-    if (res.success && res.data) {
-      window.open(res.data, "_blank");
-    } else {
-      window.Toast.danger(res.error || "שגיאה בפתיחת הקובץ");
-    }
-  };
-}
-
-
-function initInstantCaseFileUploader(case_serial) {
-  const dropArea = document.getElementById("drop-area");
-  const pickInput = document.getElementById("fileElem");
-  if (!dropArea || !pickInput) return;
-
-  // prevent duplicate listeners on reloads
-  if (dropArea.dataset.uploadReady) return;
-  dropArea.dataset.uploadReady = "1";
-
-  // we do NOT use the table at all (it stays d-none in HTML)
-  let uploadChain = Promise.resolve();
-  let officeSerialPromise = null;
-
-  const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
-
-  ["dragenter", "dragover", "dragleave", "drop"].forEach(ev => {
-    dropArea.addEventListener(ev, stop, false);
-  });
-
-  dropArea.addEventListener("click", () => pickInput.click());
-  dropArea.addEventListener("dragover", () => dropArea.classList.add("highlight"));
-  dropArea.addEventListener("dragleave", () => dropArea.classList.remove("highlight"));
-
-  dropArea.addEventListener("drop", (e) => {
-    dropArea.classList.remove("highlight");
-    const files = e.dataTransfer?.files;
-    if (files?.length) enqueueFiles(files);
-  });
-
-  pickInput.addEventListener("change", () => {
-    const files = pickInput.files;
-    if (files?.length) enqueueFiles(files);
-    pickInput.value = ""; // allow re-select same file
-  });
-
-  function enqueueFiles(fileList) {
-    [...fileList].forEach(file => {
-      uploadChain = uploadChain
-        .then(() => uploadSingleFileFlow(file))
-        .catch(err => {
-          // keep chain alive for next files
-          console.error("Upload chain error:", err);
-        });
-    });
-  }
-
-  async function getOfficeSerial() {
-    if (!officeSerialPromise) {
-      officeSerialPromise = window.API.getJson("/get_office_serial").then(res => {
-        const officeSerial = res.data.office_serial;
-        if (!res.success || !officeSerial) throw new Error("Office serial not found");
-        return officeSerial;
-      });
-    }
-    return officeSerialPromise;
-  }
-
-  async function uploadSingleFileFlow(file) {
-    if (!file || !file.name) return;
-
-    const office_serial = await getOfficeSerial();
-    const timestamp = window.utils.buildLocalTimestamp();
-    const caseSerialNum = Number(case_serial);
-
-    window.Toast.info(`מעלה "${file.name}"...`);
-
-    let file_serial = null;
-
+  async function loadStatuses() {
+    // ניסוי ראשון: פרופילים של המשרד (אם קיים route כזה), אחרת נשתמש בקובץ הסטטי
     try {
-      // 1) create file record
-      const created = await window.API.postJson("/create_new_file", {
-        created_at: timestamp,
-        case_serial: isNaN(caseSerialNum) ? case_serial : caseSerialNum,
-        client_serial: "",
-        name: file.name,
-        technical_type: file.type || null,
-        content_type: null,
-        description: "",
-      });
+      const p1 = await window.API.getJson('/get_office_profiles');
+      if (p1?.success && Array.isArray(p1.data)) {
+        // חפש פרופיל סטטוסים, או הפק רשימה מכל פרופילי status
+        STATUSES = uniqueStrings(
+          p1.data.flatMap(pr => Array.isArray(pr?.case_statuses) ? pr.case_statuses : [])
+        );
+        if (STATUSES.length) return;
+      }
+    } catch (e) { }
+    try {
+      const p2 = await window.API.getJson('/get_case_statuses');
+      if (p2?.success && Array.isArray(p2.data)) STATUSES = p2.data;
+    } catch (e) { }
+    if (!STATUSES.length) STATUSES = ['active', 'archived', 'pending', 'on-hold'];
+  }
+  async function loadUsers() {
+    try {
+      const res = await window.API.getJson('/get_office_users');
+      if (res?.success && Array.isArray(res.data)) USERS = res.data;
+    } catch (e) { }
+  }
+  function uniqueStrings(arr) { return Array.from(new Set((arr || []).filter(Boolean))); }
 
-      if (!created.success || !created.data) {
-        throw new Error(created.error || "Failed to create file record");
+  async function loadCase(serial) {
+    const res = await window.API.getJson(`/get_case?serial=${encodeURIComponent(serial)}&expand=true`);
+    if (!res?.success || !Array.isArray(res.data) || !res.data[0]) {
+      return window.Toast.danger(res?.error || 'שגיאה בטעינת התיק');
+    }
+    CASE = res.data[0]; // case מורחב
+    console.log('Loaded case:', CASE);
+  }
+
+  // ---------- Render: Header ----------
+  function renderHeader() {
+    // סטטי
+    $('#created-date').textContent = fmtTime(CASE.created_at || '');
+    $('#created-by').textContent = CASE?.user?.username || CASE?.user_serial || '';
+    $('#case-number').textContent = CASE.serial || '';
+    console.log('Rendering header for case:', CASE.serial);
+    console.log('created_at:', CASE.created_at, 'created_by:', CASE.user, 'case_number:', CASE.serial);
+
+    // כותרת — inline input (Enter לשמירה)
+    const title = document.createElement('span');
+    title.className = 'editable editable-case';
+    title.dataset.field = 'title';
+    title.textContent = CASE.title || '—';
+    $('#case-title').replaceChildren(title);
+
+    // סטטוס — span קליק שהופך ל-select
+    const statusWrap = document.createElement('span');
+    statusWrap.className = 'status-edit';
+    const dot = document.createElement('span');
+    dot.className = 'status-dot';
+    dot.textContent = CASE.status || '—';
+    applyStatusDot(dot, CASE.status);
+    statusWrap.appendChild(dot);
+    statusWrap.addEventListener('click', () => openStatusSelect(statusWrap));
+    $('#status').replaceChildren(statusWrap);
+
+    // בטיפול — span קליק שהופך ל-select משתמשים
+    const handler = document.createElement('span');
+    handler.className = 'handler-edit';
+    handler.textContent = CASE?.responsible?.username || '—';
+    handler.addEventListener('click', () => openHandlerSelect(handler));
+    $('#handler').replaceChildren(handler);
+
+    attachCaseEditors();
+  }
+
+  function applyStatusDot(el, status) {
+    el.classList.remove('status-active', 'status-archived', 'status-pending', 'status-on-hold');
+    const cls = `status-${(status || '').toLowerCase()}`;
+    el.classList.add(cls);
+    el.textContent = status || '—';
+  }
+
+  function openStatusSelect(container) {
+    if (!STATUSES.length) return;
+    if (container.querySelector('select')) return;
+
+    const sel = document.createElement('select');
+    STATUSES.forEach(s => {
+      const o = document.createElement('option'); o.value = s; o.textContent = s;
+      if ((CASE.status || '').toLowerCase() === s.toLowerCase()) o.selected = true;
+      sel.appendChild(o);
+    });
+    const commit = async () => {
+      const value = sel.value;
+      if (!value || value === CASE.status) return rollback();
+      const res = await window.API.patchJson(`/update_case?serial=${CASE.serial}`, { status: value });
+      if (!res?.success) { window.Toast.danger(res?.error || 'שגיאה בעדכון סטטוס'); return rollback(); }
+      CASE.status = value;
+      container.replaceChildren();
+      const dot = document.createElement('span');
+      dot.className = 'status-dot'; applyStatusDot(dot, value);
+      container.appendChild(dot);
+      window.Toast.success('סטטוס עודכן');
+    };
+    const rollback = () => {
+      container.replaceChildren();
+      const dot = document.createElement('span');
+      dot.className = 'status-dot'; applyStatusDot(dot, CASE.status);
+      container.appendChild(dot);
+    };
+    sel.addEventListener('change', commit);
+    sel.addEventListener('blur', rollback);
+    container.replaceChildren(sel);
+    sel.focus();
+  }
+
+  function openHandlerSelect(container) {
+    if (!USERS.length) return;
+    if (container.querySelector('select')) return;
+    const sel = document.createElement('select');
+    USERS.forEach(u => {
+      const o = document.createElement('option'); o.value = String(u.serial);
+      o.textContent = u.username || `User ${u.serial}`;
+      if (Number(CASE?.responsible?.serial) === Number(u.serial) ||
+        Number(CASE?.responsible_serial) === Number(u.serial)) o.selected = true;
+      sel.appendChild(o);
+    });
+    const commit = async () => {
+      const value = Number(sel.value);
+      const prev = Number(CASE?.responsible_serial);
+      if (!value || value === prev) return rollback();
+      const res = await window.API.patchJson(`/update_case?serial=${CASE.serial}`, { responsible_serial: value });
+      if (!res?.success) { window.Toast.danger(res?.error || 'שגיאה בעדכון מטפל'); return rollback(); }
+      CASE.responsible_serial = value;
+      const picked = USERS.find(u => Number(u.serial) === value);
+      CASE.responsible = picked ? { serial: picked.serial, username: picked.username } : null;
+      container.textContent = CASE?.responsible?.username || '—';
+      window.Toast.success('מטפל עודכן');
+    };
+    const rollback = () => { container.textContent = CASE?.responsible?.username || '—'; };
+    sel.addEventListener('change', commit);
+    sel.addEventListener('blur', rollback);
+    container.replaceChildren(sel);
+    sel.focus();
+  }
+
+  function attachCaseEditors() {
+    // כותרת
+    attachInlineEditor($('.editable-case'), async (value) => {
+      const res = await window.API.patchJson(`/update_case?serial=${CASE.serial}`, { title: value });
+      if (!res?.success) throw new Error(res?.error || 'עדכון כותרת נכשל');
+      CASE.title = value;
+      window.Toast.success('הכותרת עודכנה');
+    });
+  }
+
+  // ---------- Render: Parties ----------
+  function renderParties() {
+    // Applicants (clients)
+    const tbA = $('#applicant-tbody');
+    tbA.innerHTML = '';
+    (CASE.clients || []).forEach(cl => {
+      const tr = document.createElement('tr');
+      tr.dataset.clientSerial = String(cl.serial);
+
+      tr.appendChild(tdEditable('first_name', cl.first_name));
+      tr.appendChild(tdEditable('last_name', cl.last_name));
+      tr.appendChild(tdEditable('id_card_number', cl.id_card_number));
+      // כתובת – מפצלים לשני שדות: עיר + רחוב (אם יש), עדיין באותה תא תצוגה
+      const addr = document.createElement('td');
+      const citySpan = edSpan('city', cl.city);
+      const glue = document.createElement('span'); glue.textContent = ' ';
+      const streetSpan = edSpan('street', cl.street || cl.address || '');
+      addr.appendChild(citySpan); addr.appendChild(glue); addr.appendChild(streetSpan);
+      tr.appendChild(addr);
+
+      tr.appendChild(tdEditable('email', cl.email));
+      tr.appendChild(tdEditable('phone', cl.phone || cl.home_number || cl.mobile_number));
+
+      tbA.appendChild(tr);
+      // מחברים editors עבור כל הספאנים של הלקוח
+      $$('span.editable-client', tr).forEach(sp => {
+        attachInlineEditor(sp, async (value) => {
+          const cs = tr.dataset.clientSerial;
+          const field = sp.dataset.field;
+          const body = {}; body[field] = value;
+          const res = await window.API.patchJson(`/update_client?serial=${cs}`, body);
+          if (!res?.success) throw new Error(res?.error || 'עדכון לקוח נכשל');
+          window.Toast.success('פרטי לקוח עודכנו');
+        });
+      });
+    });
+
+    // Respondents (against)
+    const tbR = $('#respondents-tbody');
+    tbR.innerHTML = '';
+    const tr = document.createElement('tr');
+    tr.appendChild(tdEditableCase('against', CASE.against || ''));
+    tr.appendChild(tdEditableCase('against_type', CASE.against_type || ''));
+    tr.appendChild(tdText('—')); // phone
+    tr.appendChild(tdText('—')); // email
+    tr.appendChild(tdText('—')); // address
+    tr.appendChild(tdText('—')); // zip
+    tbR.appendChild(tr);
+
+    // חבר editors לשדות case (נגד/סוג)
+    $$('#respondents-tbody span.editable-case-field').forEach(sp => {
+      attachInlineEditor(sp, async (value) => {
+        const body = {}; body[sp.dataset.field] = value;
+        const res = await window.API.patchJson(`/update_case?serial=${CASE.serial}`, body);
+        if (!res?.success) throw new Error(res?.error || 'עדכון פרטי "נגד" נכשל');
+        CASE[sp.dataset.field] = value;
+        window.Toast.success('פרטי "נגד" עודכנו');
+      });
+    });
+  }
+
+  function tdEditable(field, val) {
+    const td = document.createElement('td');
+    td.appendChild(edSpan(field, val));
+    return td;
+  }
+  function tdEditableCase(field, val) {
+    const td = document.createElement('td');
+    const s = document.createElement('span');
+    s.className = 'editable editable-case-field';
+    s.dataset.field = field;
+    s.textContent = (val ?? '') || '—';
+    td.appendChild(s);
+    return td;
+  }
+  function tdText(val) {
+    const td = document.createElement('td'); td.textContent = val ?? ''; return td;
+  }
+  function edSpan(field, text) {
+    const s = document.createElement('span');
+    s.className = 'editable editable-client';
+    s.dataset.field = field;
+    s.textContent = (text ?? '') || '—';
+    return s;
+  }
+
+  // ---------- Facts ----------
+  function renderFacts() {
+    const holder = $('#facts-body');
+    const span = document.createElement('span');
+    span.className = 'editable editable-facts';
+    span.dataset.multiline = '1';
+    span.textContent = CASE.facts || '—';
+    holder.replaceChildren(span);
+
+    attachInlineEditor(span, async (value) => {
+      const res = await window.API.patchJson(`/update_case?serial=${CASE.serial}`, { facts: value });
+      if (!res?.success) throw new Error(res?.error || 'עדכון עובדות נכשל');
+      CASE.facts = value;
+      window.Toast.success('עובדות עודכנו');
+    }, { multiline: true });
+  }
+
+  // ---------- Records (files + tasks) ----------
+  function buildRecordsFromCase() {
+    RECORDS = [];
+    const who = (u) => u?.username || (typeof u === 'string' ? u : '');
+    // tasks
+    (CASE.tasks || []).forEach(t => {
+      RECORDS.push({
+        _id: `t-${t.serial}`,
+        kind: 'task',
+        serial: t.serial,
+        created_at: t.created_at || '',
+        user_name: who(t.user) || who(CASE?.user),
+        case_serial: CASE.serial,
+        name: null,
+        technical_type: 'text/note',
+        description: t.description || '',
+        reminder: t.reminder ?? false,
+      });
+    });
+    // files
+    (CASE.files || []).forEach(f => {
+      RECORDS.push({
+        _id: `f-${f.serial}`,
+        kind: 'file',
+        serial: f.serial,
+        created_at: f.created_at || '',
+        user_name: who(f.user) || who(CASE?.user),
+        case_serial: CASE.serial,
+        name: f.name || '',
+        technical_type: f.technical_type || '',
+        description: f.description || '',
+        file_name: f.name || '',
+      });
+    });
+
+    // מיון לפי תאריך
+    RECORDS.sort((a, b) => {
+      const ta = (a.created_at || ''), tb = (b.created_at || '');
+      return SORT === 'desc' ? (tb.localeCompare(ta)) : (ta.localeCompare(tb));
+    });
+  }
+
+  function bindSorter() {
+    const btn = $('#sortBtn'), arrow = $('#sortArrow');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      SORT = (SORT === 'desc' ? 'asc' : 'desc');
+      buildRecordsFromCase();
+      renderRecords();
+      arrow.textContent = SORT === 'desc' ? '▼' : '▲';
+    });
+  }
+
+  function renderRecords() {
+    const listEl = $('#list');
+    const chipsEl = $('#chips');
+    const mergeBar = $('#merge-bar');
+    const mergeBtn = $('#mergeBtn');
+    listEl.innerHTML = '';
+
+    RECORDS.forEach((rec, idx) => {
+      rec.__i = idx;
+
+      const item = document.createElement('div');
+      item.className = 'item';
+      item.dataset.id = rec._id;
+
+      // Row 1: icon + name/desc | time + (bell for notes) + select button
+      const line1 = document.createElement('div');
+      line1.className = 'line';
+
+      const right1 = document.createElement('div');
+      right1.className = 'right';
+
+      // item badge/index + icon + name
+      const icon = document.createElement('span');
+      icon.className = 'icon';
+      icon.textContent = rec.kind === 'task' ? '🗒️' : iconByMime(rec.technical_type, rec.name);
+
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'title';
+      titleSpan.textContent = rec.kind === 'task' ? (stripExt(rec.description).slice(0, 40) || 'הערה') : (rec.name || 'קובץ');
+
+      right1.appendChild(icon);
+      right1.appendChild(titleSpan);
+
+      const left1 = document.createElement('div');
+      left1.className = 'left';
+
+      // time + bell (for notes) + select
+      const timeWrap = document.createElement('span');
+      timeWrap.className = 'time-wrap';
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'time';
+      timeSpan.textContent = fmtTime(rec.created_at);
+      timeWrap.appendChild(timeSpan);
+
+      if (rec.kind === 'task') {
+        const bell = document.createElement('button');
+        bell.className = 'bell-btn' + (rec.reminder ? ' active' : '');
+        bell.title = 'תזכורת';
+        bell.textContent = '🔔';
+        bell.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openReminderPopup(rec, bell);
+        });
+        timeWrap.appendChild(bell);
       }
 
-      file_serial = created.data;
-
-      // 2) presign post
-      const uploadKey = `uploads/${office_serial}/${case_serial}/${file_serial}/${file.name}`;
-
-      const presign = await window.API.postJson("/presign/post", {
-        file_name: file.name,
-        file_type: file.type || "application/octet-stream",
-        file_size: file.size,
-        key: uploadKey
+      const selectBtn = document.createElement('button');
+      selectBtn.className = 'sel-btn';
+      selectBtn.title = 'בחר/בטל לבחירה';
+      selectBtn.textContent = selectedIndexBadge(rec._id) || '◻';
+      selectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSelect(rec._id);
       });
 
-      const presigned = presign.data.presigned;
-      if (!presign.success || !presigned.url || !presigned.fields) {
-        throw new Error(presign.error || "Failed to get presigned POST");
+      left1.appendChild(timeWrap);
+      left1.appendChild(selectBtn);
+
+      line1.appendChild(right1);
+      line1.appendChild(left1);
+      item.appendChild(line1);
+
+      // Row 2: (file description inline-edit or empty) | uploader
+      const line2 = document.createElement('div');
+      line2.className = 'line';
+
+      const right2 = document.createElement('div');
+      right2.className = 'right';
+
+      if (rec.kind === 'file') {
+        const d = document.createElement('span');
+        d.className = 'editable file-desc';
+        d.dataset.kind = 'file';
+        d.dataset.fileSerial = String(rec.serial);
+        d.textContent = rec.description || '—';
+        right2.appendChild(d);
+
+        // עריכת תיאור קובץ
+        attachInlineEditor(d, async (value) => {
+          const body = { file_serial: rec.serial, description: value };
+          const res = await window.API.postJson('/update_file_description', body);
+          if (!res?.success) throw new Error(res?.error || 'עדכון תיאור קובץ נכשל');
+          rec.description = value;
+          window.Toast.success('תיאור הקובץ עודכן');
+        });
+      } else {
+        right2.appendChild(document.createElement('span'));
       }
 
-      // 3) upload to S3/minio
-      await uploadViaPresignedPost(presigned, file);
+      const left2 = document.createElement('div');
+      left2.className = 'left';
+      const upl = document.createElement('span');
+      upl.className = 'uploader';
+      upl.textContent = `מעלה: ${rec.user_name || ''}`;
+      left2.appendChild(upl);
+
+      line2.appendChild(right2);
+      line2.appendChild(left2);
+      item.appendChild(line2);
+
+      // Actions (open/delete) — על כל ה-item
+      item.addEventListener('click', () => {
+        if (rec.kind === 'file') {
+          openFile(rec).catch(err => window.Toast.danger(err?.message || 'שגיאה בפתיחת קובץ'));
+        }
+      });
+
+      // לחצן מחיקה (בפינה)
+      const del = document.createElement('button');
+      del.className = 'del-btn';
+      del.title = rec.kind === 'task' ? 'מחק הערה' : 'מחק קובץ';
+      del.textContent = '🗑';
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        confirmDelete(rec);
+      });
+      item.appendChild(del);
+
+      listEl.appendChild(item);
+    });
+
+    // עדכון merge bar
+    const chipsEl2 = $('#chips');
+    const mergeBar2 = $('#merge-bar');
+    const mergeBtn2 = $('#mergeBtn');
+
+    chipsEl2.innerHTML = '';
+    SELECTED.forEach((id, i) => {
+      const rec = RECORDS.find(r => r._id === id);
+      const chip = document.createElement('span'); chip.className = 'chip';
+      chip.innerHTML = `<strong>${i + 1}</strong> ${stripExt(rec?.name || rec?.description || '')}
+                        <span class="x" title="הסר">×</span>`;
+      chip.querySelector('.x').onclick = () => { toggleSelect(id); };
+      chipsEl2.appendChild(chip);
+    });
+    if (SELECTED.length >= 2) {
+      mergeBar2.style.display = 'block';
+      mergeBtn2.disabled = false;
+      mergeBtn2.textContent = `איחוד מסמכים (${SELECTED.length})`;
+    } else if (SELECTED.length === 1) {
+      mergeBar2.style.display = 'block';
+      mergeBtn2.disabled = true;
+      mergeBtn2.textContent = `איחוד מסמכים (1)`;
+    } else {
+      mergeBar2.style.display = 'none';
+    }
+  }
+
+  function selectedIndexBadge(id) {
+    const idx = SELECTED.indexOf(id);
+    return idx >= 0 ? String(idx + 1) : '';
+  }
+  function toggleSelect(id) {
+    const i = SELECTED.indexOf(id);
+    if (i >= 0) SELECTED.splice(i, 1);
+    else SELECTED.push(id);
+    renderRecords();
+  }
+
+  async function openFile(rec) {
+    const fileSerial = rec.serial;
+    const fileName = rec.file_name || rec.name;
+    const url = `/get_file_url?case_serial=${encodeURIComponent(CASE.serial)}&file_serial=${encodeURIComponent(fileSerial)}&file_name=${encodeURIComponent(fileName)}`;
+    const res = await window.API.getJson(url);
+    if (!res?.success || !res.data) throw new Error(res?.error || 'לא ניתן לפתוח את הקובץ');
+    window.open(res.data, '_blank');
+  }
+
+  function confirmDelete(rec) {
+    // אפשר לבנות פופ-אפ משלך ב-#confirm-pop; כרגע פשוט window.confirm
+    const isTask = rec.kind === 'task';
+    const msg = isTask ? 'למחוק הערה?' : 'למחוק קובץ?';
+    if (!window.confirm(msg)) return;
+
+    if (isTask) {
+      deleteTask(rec).catch(err => window.Toast.danger(err?.message || 'מחיקת המשימה נכשלה'));
+    } else {
+      deleteFile(rec).catch(err => window.Toast.danger(err?.message || 'מחיקת הקובץ נכשלה'));
+    }
+  }
+
+  async function deleteTask(rec) {
+    // מעביר גם case_serial כדי שהשרת יוכל לבצע $pull מהתיק (tasks_serials)
+    const url = `/delete_task?serial=${encodeURIComponent(rec.serial)}&case_serial=${encodeURIComponent(CASE.serial)}`;
+    const res = await window.API.delete(url);
+    if (!res?.success) throw new Error(res?.error || 'מחיקת משימה נכשלה');
+    // עדכון לוקאלי:
+    CASE.tasks = (CASE.tasks || []).filter(t => Number(t.serial) !== Number(rec.serial));
+    buildRecordsFromCase();
+    renderRecords();
+    window.Toast.success('המשימה נמחקה');
+  }
+
+  async function deleteFile(rec) {
+    const url = `/delete_file?case_serial=${encodeURIComponent(CASE.serial)}&file_serial=${encodeURIComponent(rec.serial)}&file_name=${encodeURIComponent(rec.file_name || rec.name || '')}`;
+    const res = await window.API.delete(url);
+    if (!res?.success) throw new Error(res?.error || 'מחיקת קובץ נכשלה');
+    CASE.files = (CASE.files || []).filter(f => Number(f.serial) !== Number(rec.serial));
+    buildRecordsFromCase();
+    renderRecords();
+    window.Toast.success('הקובץ נמחק');
+  }
+
+  function openReminderPopup(rec, anchor) {
+    const pop = $('#reminder-pop');
+    pop.innerHTML = '';
+    pop.style.display = 'block';
+    // UI קטן: בעוד X ימים / בתאריך
+    const wrap = document.createElement('div');
+    wrap.className = 'reminder-popup';
+    wrap.innerHTML = `
+      <div style="display:flex; gap:8px; align-items:center;">
+        <label>בעוד</label>
+        <input type="number" min="1" max="365" value="3" style="width:60px" id="rem-in-days"/>
+        <span>ימים</span>
+        <button type="button" id="rem-apply-in">הפעל</button>
+      </div>
+      <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+        <label>בתאריך</label>
+        <input type="date" id="rem-on-date"/>
+        <button type="button" id="rem-apply-on">הפעל</button>
+      </div>
+      <div style="margin-top:8px;">
+        <button type="button" id="rem-clear">נקה תזכורת</button>
+        <button type="button" id="rem-close" style="float:inline-end">סגור</button>
+      </div>
+    `;
+    pop.appendChild(wrap);
+    positionPopup(pop, anchor);
+
+    const close = () => { pop.style.display = 'none'; pop.innerHTML = ''; };
+
+    $('#rem-apply-in').onclick = async () => {
+      const days = Number($('#rem-in-days').value || 0);
+      if (!days) return;
+      await patchTaskReminder(rec.serial, { inDays: days });
+      rec.reminder = { inDays: days };
+      renderRecords();
+      close();
+    };
+    $('#rem-apply-on').onclick = async () => {
+      const dt = $('#rem-on-date').value;
+      if (!dt) return;
+      await patchTaskReminder(rec.serial, { onDate: dt });
+      rec.reminder = { onDate: dt };
+      renderRecords();
+      close();
+    };
+    $('#rem-clear').onclick = async () => {
+      await patchTaskReminder(rec.serial, null);
+      rec.reminder = false;
+      renderRecords();
+      close();
+    };
+    $('#rem-close').onclick = close;
+  }
+
+  function positionPopup(pop, anchor) {
+    const r = anchor.getBoundingClientRect();
+    pop.style.position = 'fixed';
+    pop.style.top = `${r.bottom + 6}px`;
+    pop.style.left = `${r.left}px`;
+    pop.style.zIndex = 9999;
+  }
+
+  async function patchTaskReminder(taskSerial, reminder) {
+    const res = await window.API.patchJson(`/update_task?serial=${encodeURIComponent(taskSerial)}`, { reminder });
+    if (!res?.success) throw new Error(res?.error || 'עדכון תזכורת נכשל');
+    window.Toast.success('התזכורת עודכנה');
+  }
+
+  // ---------- Note bar (Create task) ----------
+  function bindNoteBar() {
+    const btn = $('#addNoteBtn');
+    const input = $('#noteInput');
+    if (!btn || !input) return;
+
+    const submit = async () => {
+      const text = input.value.trim();
+      if (!text) return;
+      const payload = {
+        case_serial: CASE.serial,
+        description: text,
+        created_at: window.utils?.buildLocalTimestamp?.() || ''
+      };
+      const res = await window.API.postJson('/create_new_task', payload);
+      if (!res?.success) return window.Toast.danger(res?.error || 'יצירת הערה נכשלה');
+      // צפה שה־API מחזיר serial חדש
+      const newSerial = res.data?.serial || res.data || null;
+      CASE.tasks = CASE.tasks || [];
+      CASE.tasks.unshift({
+        serial: newSerial, description: text, created_at: payload.created_at,
+        user: CASE.user, reminder: false
+      });
+      input.value = '';
+      buildRecordsFromCase();
+      renderRecords();
+      window.Toast.success('הערה נוספה');
+    };
+
+    btn.addEventListener('click', submit);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); submit(); }
+    });
+  }
+
+  // ---------- Upload (immediate) ----------
+  function bindUploaders() {
+    const drop = $('#dropzone');
+    const pick = $('#filePicker');
+    if (!drop || !pick) return;
+
+    if (drop.dataset.uploadReady) return; // למניעת רישום כפול
+    drop.dataset.uploadReady = '1';
+
+    const on = (el, ev, fn) => el.addEventListener(ev, fn);
+
+    // Drag UI
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => {
+      on(drop, ev, (e) => { e.preventDefault(); e.stopPropagation(); });
+    });
+    on(drop, 'dragover', () => drop.classList.add('dragover'));
+    on(drop, 'dragleave', () => drop.classList.remove('dragover'));
+    on(drop, 'drop', (e) => {
+      drop.classList.remove('dragover');
+      const files = e.dataTransfer?.files;
+      if (files?.length) enqueueFiles(files);
+    });
+
+    // Click to pick
+    on(drop, 'click', () => pick.click());
+    on(pick, 'change', () => {
+      const files = pick.files;
+      if (files?.length) enqueueFiles(files);
+      pick.value = '';
+    });
+
+    let chain = Promise.resolve();
+    function enqueueFiles(fileList) {
+      Array.from(fileList).forEach(file => {
+        chain = chain
+          .then(() => uploadSingle(file))
+          .catch(err => console.error('upload chain error', err));
+      });
+    }
+
+    async function getOfficeSerial() {
+      const res = await window.API.getJson('/get_office_serial');
+      if (!res?.success || !res.data?.office_serial) throw new Error('office_serial לא נמצא');
+      return res.data.office_serial;
+    }
+
+    async function uploadSingle(file) {
+      if (!file?.name) return;
+      const office_serial = await getOfficeSerial();
+      const ts = window.utils?.buildLocalTimestamp?.() || '';
+
+      window.Toast.info(`מעלה "${file.name}" ...`);
+
+      // 1) create file record (Mongo)
+      const created = await window.API.postJson('/create_new_file', {
+        created_at: ts, case_serial: CASE.serial, client_serial: "",
+        name: file.name, technical_type: file.type || 'application/octet-stream',
+        content_type: null, description: ""
+      });
+      if (!created?.success) { window.Toast.danger(created?.error || 'יצירת רשומת קובץ נכשלה'); return; }
+      const file_serial = created.data?.serial || created.data;
+      if (!file_serial) { window.Toast.danger('חסר file_serial מהשרת'); return; }
+
+      // 2) presign POST
+      const key = `uploads/${office_serial}/${CASE.serial}/${file_serial}/${file.name}`;
+      const ps = await window.API.postJson('/presign/post', { key, content_type: file.type || 'application/octet-stream' });
+      if (!ps?.success || !ps.data?.url || !ps.data?.fields) {
+        window.Toast.danger(ps?.error || 'קבלת presign POST נכשלה'); return;
+      }
+
+      // 3) upload to S3
+      await uploadViaPresignedPost(ps.data.url, ps.data.fields, file);
 
       // 4) mark file available
-      await window.API.apiRequest(`/update_file?serial=${Number(file_serial)}`, {
-        method: "PATCH",
-        body: { status: "available" }
+      await window.API.patchJson(`/update_file?serial=${file_serial}`, { status: 'available' }).catch(() => { });
+
+      // 5) add to case.files
+      await window.API.patchJson(`/update_case?serial=${CASE.serial}`, { _operator: '$addToSet', files_serials: Number(file_serial) }).catch(() => { });
+
+      // 6) עדכון מקומי + רענון רשימה
+      CASE.files = CASE.files || [];
+      CASE.files.unshift({
+        serial: Number(file_serial),
+        name: file.name,
+        created_at: ts,
+        technical_type: file.type || 'application/octet-stream',
+        user: CASE.user,
+        description: ""
+      });
+      buildRecordsFromCase();
+      renderRecords();
+      window.Toast.success(`"${file.name}" הועלה`);
+    }
+
+    async function uploadViaPresignedPost(url, fields, file) {
+      const form = new FormData();
+      Object.entries(fields).forEach(([k, v]) => form.append(k, v));
+      form.append('file', file);
+      const resp = await fetch(url, { method: 'POST', body: form });
+      if (!resp.ok) throw new Error(`S3 upload failed: ${resp.status}`);
+    }
+  }
+
+  // ---------- Inline editor infra ----------
+  function attachInlineEditor(span, onCommit, { multiline = false } = {}) {
+    if (!span) return;
+
+    const startEdit = () => {
+      if (span.dataset.editing) return;
+
+      span.dataset.editing = '1';
+      span.classList.add('editing');
+
+      const old = span.textContent === '—' ? '' : span.textContent;
+      const input = multiline ? document.createElement('textarea') : document.createElement('input');
+      input.value = old;
+      input.className = 'inline-input';
+
+      const updateWidth = () => {
+        input.style.width = (input.value.length + 1) + "ch";
+      };
+      updateWidth();
+      input.addEventListener("input", updateWidth);
+
+      span.replaceChildren(input);
+      input.focus();
+
+
+
+      const commit = async () => {
+        const val = input.value.trim();
+        if (val === old) return cancel();
+        try {
+          await onCommit(val);
+          span.textContent = val || '—';
+        } catch (e) {
+          window.Toast.danger(e?.message || 'שמירה נכשלה');
+          span.textContent = old || '—';
+        } finally {
+          delete span.dataset.editing;
+          span.classList.remove('editing');
+        }
+      };
+
+      const cancel = () => {
+        span.textContent = old || '—';
+        delete span.dataset.editing;
+        span.classList.remove('editing');
+      };
+
+      input.addEventListener('keydown', (e) => {
+        if (!multiline && e.key === 'Enter') { e.preventDefault(); commit(); }
+        if (e.key === 'Escape') { e.preventDefault(); cancel(); }
       });
 
-      // 5) attach to case (fetch latest -> set full array)
-      await appendFileSerialToCase(case_serial, file_serial);
-
-      window.Toast.success(`הקובץ "${file.name}" הועלה בהצלחה`);
-      await reloadCaseActivityMinimal(case_serial);
-
-    } catch (err) {
-      console.error("Upload failed:", file.name, err);
-      window.Toast.danger(`העלאת "${file.name}" נכשלה`);
-
-      // cleanup mongo record (same approach as new_case)
-      if (file_serial) {
-        try {
-          const qs = new URLSearchParams({
-            case_serial: String(case_serial),
-            file_serial: String(file_serial),
-            file_name: file.name,
-          });
-
-          await window.API.apiRequest(`/delete_file?${qs.toString()}`, {
-            method: "DELETE",
-          });
-        } catch (cleanupErr) {
-          console.error("Failed to cleanup failed file record:", cleanupErr);
-        }
+      input.addEventListener('blur', () => { if (!multiline) cancel(); });
+      if (multiline) {
+        // במולטיליין – נשמור ב־blur
+        input.addEventListener('blur', commit);
       }
-    }
-  }
-}
-
-function uploadViaPresignedPost(presigned, file) {
-  return new Promise((resolve, reject) => {
-    const formData = new FormData();
-    Object.entries(presigned.fields || {}).forEach(([k, v]) => formData.append(k, v));
-    formData.append("file", file);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", presigned.url, true);
-
-    xhr.onload = () => {
-      // AWS S3 often returns 204; some providers may return 201/200
-      if ([200, 201, 204].includes(xhr.status)) return resolve();
-      reject(new Error(`Upload failed with status ${xhr.status}`));
     };
 
-    xhr.onerror = () => reject(new Error("Network error during upload"));
-    xhr.send(formData);
-  });
-}
-
-async function appendFileSerialToCase(case_serial, file_serial) {
-  const payload = await window.API.getJson(`/get_case?serial=${encodeURIComponent(case_serial)}&expand=false`);
-  if (!payload?.success || !payload?.data?.length) {
-    throw new Error("Failed to load case for updating files_serials");
+    span.addEventListener('click', startEdit);
   }
 
-  const c = payload.data[0];
-  const current = Array.isArray(c.files_serials) ? c.files_serials : [];
+  // ---------- Helpers ----------
+  // (אין merge אמיתי כרגע; רק UI)
+  // (confirm-pop מותאם כרגע ל-window.confirm כדי לרוץ מהר)
 
-  const next = Array.from(new Set([
-    ...current.map(n => Number(n)).filter(Number.isFinite),
-    Number(file_serial)
-  ]));
-
-  const upd = await window.API.apiRequest(`/update_case?serial=${encodeURIComponent(case_serial)}`, {
-    method: "PATCH",
-    body: {
-      _operator: "$addToSet",
-      files_serials: Number(file_serial)
-    }
-  });
-
-  if (!upd.success) {
-    throw new Error(upd?.error || "Failed to attach file to case");
-  }
-}
-
-function lockScrollInside(el) {
-  el.addEventListener("wheel", function (e) {
-    const delta = e.deltaY;
-    const atTop = el.scrollTop === 0;
-    const atBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= 1;
-
-    // גלילה למעלה בראש הרשימה
-    if (delta < 0 && atTop) {
-      e.preventDefault();
-      return;
-    }
-    // גלילה למטה בתחתית הרשימה
-    if (delta > 0 && atBottom) {
-      e.preventDefault();
-      return;
-    }
-  }, { passive: false });
-}
+  // ---------- Public ----------
+  window.init_view_case = init_view_case;
+})();
