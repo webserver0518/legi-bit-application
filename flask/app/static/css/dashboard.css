@@ -300,3 +300,348 @@ body.sidebar-collapsed .main-content {
   opacity: 1;
   transform: translateY(0);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 🔵 כלי נגישות – כפתור קבוע + תפריט שנפתח מתחתיו */
+
+/* הקונטיינר צמוד לפינה השמאלית־תחתונה */
+.accessibility-root {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 10000;
+
+  display: flex;
+  flex-direction: column;
+  /* כפתור למעלה, פאנל מתחתיו */
+  align-items: flex-end;
+
+  pointer-events: none;
+  /* שלא יחסום את הדף מתחת */
+}
+
+/* נאפשר קליקים רק על הכפתור והפאנל עצמם */
+.accessibility-toggle,
+.accessibility-panel {
+  pointer-events: auto;
+}
+
+/* כפתור הנגישות */
+.accessibility-toggle {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  border: none;
+  padding: 0;
+
+  background: linear-gradient(135deg, var(--c1), var(--accent));
+  color: #ffffff;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+
+  /* בשביל האנימציה כשהפאנל נפתח */
+  transform: translateY(0);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.accessibility-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.accessibility-toggle:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+.accessibility-toggle:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+}
+
+/* כשהפאנל פתוח – הכפתור "עולה" יחד עם התפריט שמתחתיו */
+body.accessibility-open .accessibility-toggle {
+  transform: translateY(-4px);
+}
+
+/* הפאנל הלבן של כלי הנגישות – נפתח מתחת לכפתור */
+.accessibility-panel {
+  width: 260px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  direction: rtl;
+  font-size: 0.9rem;
+
+  /* מצב סגור – קורס בגובה, לא תופס מקום */
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+
+  transition:
+    max-height 0.22s ease,
+    opacity 0.22s ease,
+    transform 0.22s ease,
+    margin-top 0.22s ease;
+}
+
+/* מצב פתוח – הפאנל נפתח מתחת לכפתור */
+body.accessibility-open .accessibility-panel {
+  max-height: 400px;
+  /* מספיק גדול לכל התוכן */
+  opacity: 1;
+  margin-top: 8px;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* כותרת הפאנל */
+.accessibility-panel-header {
+  background: #ffffff;
+  padding: 10px 16px;
+  font-weight: 700;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+/* רשימת הפעולות */
+.accessibility-panel-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.accessibility-panel-item button {
+  width: 100%;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #f1f1f1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: right;
+  font: inherit;
+}
+
+.accessibility-panel-item:last-child button {
+  border-bottom: none;
+}
+
+.accessibility-panel-item button:hover {
+  background: #f7f8fc;
+}
+
+.accessibility-panel-item button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.accessibility-icon {
+  opacity: 0.7;
+  font-size: 0.95em;
+}
+
+/* מצב "פעיל" שנשתמש בו אחר כך */
+.accessibility-panel-item.is-active button {
+  border-right: 3px solid #ff7a00;
+  background: #fff7ec;
+}
+
+/* מובייל – קצת יותר קטן */
+@media (max-width: 576px) {
+  .accessibility-root {
+    bottom: 12px;
+    left: 10px;
+  }
+
+  .accessibility-toggle {
+    width: 46px;
+    height: 46px;
+    font-size: 22px;
+  }
+
+  .accessibility-panel {
+    width: 230px;
+  }
+}
+
+
+
+
+
+
+/* פאנל הנגישות – יוצא מימין לכפתור */
+.accessibility-panel {
+  min-width: 230px;
+  max-width: 280px;
+  background: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  direction: rtl;
+  font-size: 0.9rem;
+
+  transform-origin: bottom left;
+  transform: translateY(10px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* 🔓 מצב פתוח – נפתח כשנוסיף body.accessibility-open ב־JS */
+body.accessibility-open .accessibility-panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* כותרת הפאנל */
+.accessibility-panel-header {
+  background: #ffffff;
+  padding: 10px 16px;
+  font-weight: 700;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+/* רשימת הפעולות */
+.accessibility-panel-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.accessibility-panel-item button {
+  width: 100%;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #f1f1f1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: right;
+  font: inherit;
+}
+
+.accessibility-panel-item:last-child button {
+  border-bottom: none;
+}
+
+.accessibility-panel-item button:hover {
+  background: #f7f8fc;
+}
+
+.accessibility-panel-item button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.accessibility-icon {
+  opacity: 0.7;
+  font-size: 0.95em;
+}
+
+/* פריט פעיל לדוגמה – נשתמש בזה כשנרצה להראות מצב ON */
+.accessibility-panel-item.is-active button {
+  border-right: 3px solid #ff7a00;
+  background: #fff7ec;
+}
+
+/* התאמות למובייל */
+@media (max-width: 576px) {
+  .accessibility-root {
+    bottom: 16px;
+    left: 12px;
+    gap: 8px;
+  }
+
+  .accessibility-toggle {
+    width: 46px;
+    height: 46px;
+    font-size: 22px;
+  }
+
+  .accessibility-panel {
+    max-width: 240px;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 🔵 אפקטים גלובליים של הנגישות */
+
+/* גווני אפור */
+body.acc-gray .navbar,
+body.acc-gray #dynamicContent {
+  filter: grayscale(1);
+}
+
+/* ניגודיות גבוהה */
+body.acc-contrast-high .navbar,
+body.acc-contrast-high #dynamicContent {
+  filter: contrast(1.35) brightness(1.05);
+}
+
+/* ניגודיות הפוכה */
+body.acc-contrast-invert .navbar,
+body.acc-contrast-invert #dynamicContent {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* רקע בהיר */
+body.acc-bg-light {
+  background: #ffffff !important;
+}
+
+body.acc-bg-light #dynamicContent {
+  background: #ffffff !important;
+}
+
+/* הדגשת קישורים */
+body.acc-links-highlight a {
+  outline: 2px solid #ffbf00;
+  outline-offset: 2px;
+  text-decoration: underline !important;
+}
+
+/* פונט קריא */
+body.acc-readable-font {
+  font-family: Arial, Helvetica, sans-serif !important;
+}

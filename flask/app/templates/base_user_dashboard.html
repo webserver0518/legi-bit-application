@@ -103,6 +103,81 @@
   </script>
   {% endwith %}
 
+  <!-- 🔵 כלי נגישות -->
+  <div class="accessibility-root" aria-label="כלי נגישות">
+
+    <!-- כפתור ♿ קבוע בתחתית שמאל -->
+    <button id="accessibility-toggle" class="accessibility-toggle" type="button" aria-haspopup="true"
+      aria-expanded="false" aria-controls="accessibility-panel">
+      ♿
+    </button>
+
+    <!-- פאנל הנגישות – תמיד *מתחת* לכפתור מבחינת מיקום -->
+    <section id="accessibility-panel" class="accessibility-panel" aria-hidden="true">
+      <header class="accessibility-panel-header">
+        כלי נגישות
+      </header>
+
+      <ul class="accessibility-panel-list">
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="font-up">
+            <span>הגדל טקסט</span>
+            <span class="accessibility-icon">🔎+</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="font-down">
+            <span>הקטן טקסט</span>
+            <span class="accessibility-icon">🔍−</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="gray">
+            <span>גווני אפור</span>
+            <span class="accessibility-icon">▤</span>
+          </button>
+        </li>
+
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="contrast-high">
+            <span>ניגודיות גבוהה</span>
+            <span class="accessibility-icon">◑</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="contrast-invert">
+            <span>ניגודיות הפוכה</span>
+            <span class="accessibility-icon">👁️</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="bg-light">
+            <span>רקע בהיר</span>
+            <span class="accessibility-icon">💡</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="links">
+            <span>הדגשת קישורים</span>
+            <span class="accessibility-icon">🔗</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="font-readable">
+            <span>פונט קריא</span>
+            <span class="accessibility-icon">A</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="reset">
+            <span>איפוס</span>
+            <span class="accessibility-icon">↺</span>
+          </button>
+        </li>
+      </ul>
+    </section>
+  </div>
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://npmcdn.com/flatpickr/dist/l10n/he.js"></script>
