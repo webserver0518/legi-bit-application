@@ -40,3 +40,116 @@
     </div>
   </div>
 </div>
+
+
+<!-- 🔐 מודאל איפוס סיסמא -->
+<div id="recovery-modal" class="recovery-backdrop" hidden>
+  <div class="recovery-dialog">
+
+    <button type="button" class="recovery-close" id="recovery-close" aria-label="סגירה">
+      ×
+    </button>
+
+    <h4 id="recovery-title" class="mb-2">איפוס סיסמא</h4>
+    <p class="recovery-subtitle mb-3">
+      נזהה אותך לפי קוד המשרד ושם המשתמש, נשלח אליך קוד אימות למייל ואז תוכל לבחור סיסמא חדשה.
+    </p>
+
+    <form id="recovery-form" novalidate>
+
+      <!-- 🔹 שלב 1: זיהוי משתמש -->
+      <div class="row g-2 mb-3">
+        <div class="col-5">
+          <label for="recovery-office" class="form-label">קוד משרד</label>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" id="recovery-office" name="office_code"
+            class="form-control text-center" maxlength="6" autocomplete="off" placeholder="******">
+        </div>
+        <div class="col-7">
+          <label for="recovery-username" class="form-label">שם משתמש</label>
+          <input type="text" id="recovery-username" name="username" class="form-control" autocomplete="off"
+            placeholder="שם משתמש במערכת">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <button type="button" class="btn btn-light w-100" id="recovery-verify-user">
+          אימות פרטים
+        </button>
+      </div>
+
+      <!-- 🔹 שלב 2: שליחת קוד למייל ואימות -->
+      <div class="mb-3">
+        <div class="recovery-code-wrapper w-100">
+          <button type="button" class="btn btn-outline-light w-100 mb-2" id="recovery-send-code" disabled>
+            שלח קוד למייל
+          </button>
+          <input type="text" id="recovery-code" name="code" class="form-control text-center recovery-code-input"
+            inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="******" disabled>
+        </div>
+      </div>
+
+      <!-- 🔹 שלב 3: בחירת סיסמא חדשה -->
+      <div class="mb-3">
+        <label for="recovery-new-password" class="form-label">סיסמא חדשה</label>
+        <div class="pw-wrap">
+          <input type="password" id="recovery-new-password" name="new_password" class="form-control"
+            placeholder="הקלד סיסמא חדשה" autocomplete="off" disabled>
+
+          <button type="button" class="pw-toggle" id="recovery-toggle-password" aria-label="הצג/הסתר סיסמא"
+            aria-pressed="false" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" fill="none" stroke="currentColor"
+                stroke-width="2" />
+              <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="mb-1">
+        <button type="submit" class="btn btn-primary w-100" id="recovery-submit" disabled>
+          אפס סיסמא
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+<!-- 👤 מודאל שחזור שם משתמש -->
+<div id="username-recovery-modal" class="recovery-backdrop" hidden>
+  <div class="recovery-dialog">
+
+    <button type="button" class="recovery-close" id="username-recovery-close" aria-label="סגירה">
+      ×
+    </button>
+
+    <h4 class="mb-2">שחזור שם משתמש</h4>
+    <p class="recovery-subtitle mb-3">
+      רשום את קוד המשרד והאימייל כפי שמופיע במערכת, ונשלח אליך את שם המשתמש.
+    </p>
+
+    <form id="username-recovery-form" novalidate>
+      <div class="row g-2 mb-3">
+        <div class="col-5">
+          <label for="username-recovery-office" class="form-label">קוד משרד</label>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" id="username-recovery-office" name="office_code"
+            class="form-control text-center" maxlength="6" autocomplete="off" placeholder="******">
+        </div>
+        <div class="col-7">
+          <label for="username-recovery-email" class="form-label">אימייל</label>
+          <input type="email" id="username-recovery-email" name="email" class="form-control" autocomplete="off"
+            placeholder="you@example.com">
+        </div>
+      </div>
+
+      <div class="mb-1">
+        <button type="submit" class="btn btn-primary w-100" id="username-recovery-submit">
+          שלח שם משתמש למייל הקיים במערכת
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
