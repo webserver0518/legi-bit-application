@@ -34,8 +34,17 @@
 
     async function fetchStatus() {
         const res = await window.API.getJson("/user/mfa/status");
-        if (!res?.success) return { hasMfa: false };
-        return { hasMfa: !!res.data?.mfa };
+        if (!res?.success) {
+            return { status: null, hasMfa: false, isPending: false };
+        }
+
+        const mfa = res.data?.mfa || null;
+        const status = mfa?.status || null;
+
+        const isPending = status === "pending";
+        const hasMfa = status === "enabled";
+
+        return { status, hasMfa, isPending };
     }
 
     function applyVisibility(hasMfa) {
