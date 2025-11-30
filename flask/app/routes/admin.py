@@ -51,8 +51,13 @@ def get_offices():
 @AuthorizationManager.admin_required
 def create_new_office():
     current_app.logger.debug("🟦 [new_offices] creating new office")
+
     payload = request.get_json(silent=True) or {}
-    office_name = payload.get("office_name").strip()
+    office_name = (payload.get("office_name") or "").strip()
+
+    if not office_name:
+        current_app.logger.debug("⚠️ [new_offices] missing office_name in payload")
+        return ResponseManager.bad_request(error="office_name is required")
 
     create_res = mongodb_service.create_new_office(office_name)
 
