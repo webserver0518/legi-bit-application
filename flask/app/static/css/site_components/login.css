@@ -59,3 +59,193 @@
 .justify-content-center {
   justify-content: center !important;
 }
+
+
+
+
+
+/* ---------------------------
+   forgot password / recovery
+---------------------------- */
+
+.login-forgot-links {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+/* שכבת רקע של המודאל */
+.recovery-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  /* מעל login-card */
+}
+
+/* כשיש hidden – לא להציג */
+.recovery-backdrop[hidden] {
+  display: none !important;
+}
+
+/* הקופסה עצמה */
+.recovery-dialog {
+  position: relative;
+  width: min(420px, 90vw);
+  background: linear-gradient(to left, var(--c2), var(--c1));
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 24px 22px 18px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* כפתור X */
+.recovery-close {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* טקסטים */
+.recovery-dialog h4 {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.recovery-subtitle {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* אינפוטים */
+.recovery-dialog .form-control {
+  background-color: #ffffff;
+  color: #000;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+/* שורת קוד + כפתור שלח קוד */
+.recovery-code-input {
+  max-width: 140px;
+  text-align: center;
+  letter-spacing: 2px;
+  font-weight: 600;
+}
+
+.recovery-dialog .btn-light.btn-sm {
+  font-size: 0.8rem;
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+
+/* כפתור האיפוס */
+#recovery-submit {
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+/* קישור ביטול */
+#recovery-cancel {
+  font-size: 0.85rem;
+}
+
+/* קצת שיפור למובייל */
+@media (max-width: 576px) {
+  .recovery-dialog {
+    padding: 20px 16px 14px;
+  }
+
+  .recovery-dialog h4 {
+    font-size: 1.1rem;
+  }
+
+  .recovery-subtitle {
+    font-size: 0.8rem;
+  }
+}
+
+/* שדות נעולים עד אימות הקוד */
+.recovery-dialog .form-control:disabled {
+  background-color: #e9ecef;
+  opacity: 0.85;
+  cursor: not-allowed;
+}
+
+/* גם הכפתור */
+#recovery-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* שורה אנכית: כפתור "שלח קוד" מעל קלט הקוד */
+.recovery-code-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* אם תרצה שיהיה במרכז: center */
+  gap: 8px;
+}
+
+
+
+
+/* circle toggle at the START of the input (RTL: right side) */
+.pw-wrap {
+  position: relative;
+  display: block;
+}
+
+#recovery-new-password {
+  padding-inline-start: 54px;
+  /* מקום לעיגול בתחילת השורה */
+}
+
+#recovery-toggle-password {
+  position: absolute;
+  inset-inline-start: 10px;
+  /* START (RTL=ימין, LTR=שמאל) */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(0, 0, 0, .15);
+  background: rgba(255, 255, 255, .75);
+  backdrop-filter: blur(4px);
+
+  display: grid;
+  place-items: center;
+  padding: 0;
+  line-height: 0;
+  color: rgba(0, 0, 0, .65);
+  cursor: pointer;
+  z-index: 2;
+}
+
+#recovery-toggle-password svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+#recovery-toggle-password.is-on {
+  color: #0d6efd;
+}
+
+#recovery-toggle-password:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
