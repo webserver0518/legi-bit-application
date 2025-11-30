@@ -5,14 +5,14 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'README.md'
-      - 'LICENCE'
+      - "README.md"
+      - "LICENCE"
   pull_request:
     branches:
       - main
     paths-ignore:
-      - 'README.md'
-      - 'LICENCE'
+      - "README.md"
+      - "LICENCE"
 
 jobs:
   build-and-push:
@@ -40,6 +40,11 @@ jobs:
             context: services/s3
             dockerfile: services/s3/Dockerfile
             image: legi-bit-s3
+
+          - name: ses
+            context: services/ses
+            dockerfile: services/ses/Dockerfile
+            image: legi-bit-ses
 
     steps:
       - name: Checkout code
