@@ -91,7 +91,9 @@ window.addEventListener('DOMContentLoaded', () => {
     })
     .catch(() => { });
 
-  if (!Store.get('current_sub_sidebar')) Store.set('current_sub_sidebar', 'cases');
+  if (!Store.get('current_sub_sidebar')) {
+    Store.set('current_sub_sidebar', 'offices');
+  }
   showSubMenu(Store.get('current_sub_sidebar'), true);
   ensureSubmenuVisible(); // <- important
 
