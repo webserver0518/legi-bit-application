@@ -56,5 +56,9 @@
     API.postJson = (url, body) => request(url, { method: 'POST', body });
     API.apiRequest = (url, opts = {}) => request(url, opts);
 
+    API.patchJson = (url, body) => request(url, { method: 'PATCH', body });
+    API.putJson = (url, body) => request(url, { method: 'PUT', body });
+    API.delete = (url) => request(url, { method: 'DELETE' });
+
     window.API = API;
 })();
