@@ -68,6 +68,13 @@ function showSubMenu(type, force = false) {
   if (type === 'cases') {
     renderRecentCases();
     bindRecentCasesEvents();
+  } else if (type === 'offices') {
+    if (typeof renderRecentOffices === 'function') {
+      renderRecentOffices();
+    }
+    if (typeof bindRecentOfficesEvents === 'function') {
+      bindRecentOfficesEvents();
+    }
   }
 }
 
