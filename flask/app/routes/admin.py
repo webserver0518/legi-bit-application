@@ -19,7 +19,8 @@ admin_bp = Blueprint("admin", __name__)
 @AuthorizationManager.login_required
 @AuthorizationManager.admin_required
 def base_admin_dashboard():
-    return render_template("base_admin_dashboard.html")
+    roles = AuthorizationManager.get_roles()
+    return render_template("base_admin_dashboard.html", roles=roles)
 
 
 # ---------------- OFFICES MANAGEMENT ---------------- #
