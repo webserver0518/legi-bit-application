@@ -3,6 +3,7 @@ import os
 from redis import Redis
 from datetime import timedelta
 
+
 class Config:
     # Core
     SECRET_KEY = os.getenv("SECRET_KEY")  # fail fast in prod if missing
@@ -17,19 +18,20 @@ class Config:
 
     # Services
     MONGODB_SERVICE_URL = os.getenv("MONGODB_SERVICE_URL")
-    S3_SERVICE_URL      = os.getenv("S3_SERVICE_URL")
+    S3_SERVICE_URL = os.getenv("S3_SERVICE_URL")
+    SES_SERVICE_URL = os.getenv("SES_SERVICE_URL")
 
     @staticmethod
     def init_app(app):
         app.config["SESSION_REDIS"] = Redis(
-            host=Config.REDIS_HOST,
-            port=Config.REDIS_PORT,
-            db=Config.REDIS_DB
+            host=Config.REDIS_HOST, port=Config.REDIS_PORT, db=Config.REDIS_DB
         )
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
     FLASK_ENV = "development"
+
 
 class ProductionConfig(Config):
     DEBUG = False
