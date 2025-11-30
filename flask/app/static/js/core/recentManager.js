@@ -67,7 +67,7 @@
         const a = document.querySelector(`.sub-sidebar a.recent-office[data-office-serial="${serial}"]`);
         if (a) window.Nav.highlightInSidebar(a, 'sub-sidebar');
 
-        await window.UserLoader.navigate({ page: 'view_office', force: true });
+        await window.AdminLoader.navigate({ page: 'view_office', force: true });
     }
 
     function getOfficeTitlesMap() {
