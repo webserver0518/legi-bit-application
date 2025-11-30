@@ -40,7 +40,7 @@ def get_offices():
 
     data = ResponseManager.get_data(response=get_res)
     if not data:
-        return ResponseManager.not_found(error="Case not found")
+        return ResponseManager.not_found(error="No offices found")
 
     current_app.logger.debug(f"Returning success with data={data}")
     return ResponseManager.success(data=data)
