@@ -44,10 +44,10 @@ def safe_service_request(
         current_app.logger.error(f"❌ Bad response format from {url}: {payload}")
         return ResponseManager.error("Invalid service payload", status=502)
 
-    current_app.logger.debug(
-        f"🔵 Service call {method} {path} returned {status} with payload:\n"
-        f"{json.dumps(payload, indent=2, ensure_ascii=False)}"
-    )
+    # current_app.logger.debug(
+    #    f"🔵 Service call {method} {path} returned {status} with payload:\n"
+    #    f"{json.dumps(payload, indent=2, ensure_ascii=False)}"
+    # )
 
     # Build unified Flask response
     return ResponseManager._build(
