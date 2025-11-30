@@ -1111,6 +1111,10 @@ def get_office_clients():
 @user_bp.route("/create_new_task", methods=["POST"])
 @AuthorizationManager.login_required
 def create_new_task():
+    """
+    Create a new task (note) on a case and attach its serial
+    to the parent CASE.tasks_serials.
+    """
     current_app.logger.debug("inside create_new_task()")
 
     office_serial = AuthorizationManager.get_office_serial()
@@ -1135,13 +1139,17 @@ def create_new_task():
     if not description:
         return ResponseManager.bad_request("Missing 'description'")
 
+    # Normalize
+    case_serial = int(case_serial)
+
     new_task_doc = {
         "created_at": data.get("created_at"),
         "user_serial": user_serial,
-        "case_serial": int(case_serial),
+        "case_serial": case_serial,
         "description": description,
     }
 
+    # 1) Create the TASK document
     new_task_res = mongodb_service.create_entity(
         entity=MongoDBEntity.TASKS,
         office_serial=office_serial,
@@ -1153,8 +1161,134 @@ def create_new_task():
         return ResponseManager.internal("Failed to create task")
 
     new_task_serial = ResponseManager.get_data(new_task_res)
-    current_app.logger.debug(f"Created new task with serial={new_task_serial}")
+    current_app.logger.debug(
+        f"Created new task with serial={new_task_serial} (case={case_serial}, office={office_serial})"
+    )
+
+    # 2) Attach to CASE.tasks_serials (best-effort, כמו בקבצים)
+    case_update_res = mongodb_service.update_entity(
+        entity=MongoDBEntity.CASES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(case_serial),
+        operator="$addToSet",
+        update_data={"tasks_serials": int(new_task_serial)},
+    )
+
+    if not ResponseManager.is_success(case_update_res):
+        current_app.logger.error(
+            f"❌ [create_new_task] Failed to push task_serial={new_task_serial} into case={case_serial}"
+        )
+
     return ResponseManager.success(data=new_task_serial)
+
+
+@user_bp.route("/update_task", methods=["PATCH"])
+@AuthorizationManager.login_required
+def update_task():
+    """
+    Update an existing task (TASKS entity) in MongoDB.
+
+    Expected:
+      - Query param: ?serial=<task_serial>
+      - JSON body: fields to update, e.g.
+          { "description": "...", "reminder": { "inDays": 3 } }
+    """
+    office_serial = AuthorizationManager.get_office_serial()
+    if not office_serial:
+        return ResponseManager.bad_request("Missing 'office_serial' in auth")
+
+    task_serial = request.args.get("serial", type=int)
+    if task_serial is None:
+        return ResponseManager.bad_request("serial is required")
+
+    update_data = request.get_json(force=True) or {}
+    if not update_data:
+        return ResponseManager.bad_request("Missing 'update_data' in request body")
+
+    current_app.logger.debug(
+        f"PATCH /update_task | office={office_serial}, task={task_serial}, update={update_data}"
+    )
+
+    update_res = mongodb_service.update_entity(
+        entity=MongoDBEntity.TASKS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(task_serial),
+        update_data=update_data,
+        multiple=False,
+    )
+
+    if not ResponseManager.is_success(response=update_res):
+        error = ResponseManager.get_error(response=update_res)
+        current_app.logger.error(f"❌ Failed to update task {task_serial}: {error}")
+        return update_res
+
+    current_app.logger.info(f"🟢 Task {task_serial} updated successfully")
+    return ResponseManager.success(
+        message=f"Task {task_serial} updated successfully",
+        data=ResponseManager.get_data(update_res),
+    )
+
+
+@user_bp.route("/delete_task", methods=["DELETE"])
+@AuthorizationManager.login_required
+def delete_task():
+    """
+    Delete a task from MongoDB (TASKS entity) and detach it from the parent CASE.
+
+    Expected query params:
+      ?case_serial=<case_serial>&task_serial=<task_serial>
+    """
+    office_serial = AuthorizationManager.get_office_serial()
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+
+    case_serial = request.args.get("case_serial")
+    task_serial = request.args.get("task_serial") or request.args.get("serial")
+
+    if not case_serial:
+        return ResponseManager.bad_request("Missing 'case_serial'")
+    if not task_serial:
+        return ResponseManager.bad_request("Missing 'task_serial'")
+
+    case_serial = int(case_serial)
+    task_serial = int(task_serial)
+
+    current_app.logger.debug(
+        f"🟥 [delete_task] office={office_serial}, case={case_serial}, task={task_serial}"
+    )
+
+    # 1) Delete from TASKS collection
+    delete_res = mongodb_service.delete_entity(
+        entity=MongoDBEntity.TASKS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(task_serial),
+    )
+
+    if not ResponseManager.is_success(delete_res):
+        error = ResponseManager.get_error(response=delete_res)
+        current_app.logger.error(
+            f"❌ [delete_task] Failed to delete task {task_serial}: {error}"
+        )
+        return delete_res
+
+    # 2) Pull from CASE.tasks_serials (best-effort, כמו delete_file)
+    case_update_res = mongodb_service.update_entity(
+        entity=MongoDBEntity.CASES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(case_serial),
+        operator="$pull",
+        update_data={"tasks_serials": task_serial},
+    )
+
+    if not ResponseManager.is_success(case_update_res):
+        current_app.logger.error(
+            f"❌ [delete_task] Failed to pull task_serial={task_serial} from case={case_serial}"
+        )
+
+    current_app.logger.info(
+        f"🟢 [delete_task] Task serial={task_serial} deleted successfully from case={case_serial}"
+    )
+    return ResponseManager.success(message="Task deleted")
 
 
 # ---------------- LOADERS ---------------- #
