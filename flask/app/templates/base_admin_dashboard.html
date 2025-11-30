@@ -31,7 +31,7 @@
 <body class="dashboard-base">
 
   <!-- User info (for JavaScript use) -->
-  <div id="user-info" data-roles="{{ ','.join(session.get('roles', [])) }}"></div>
+  <div id="user-info" data-roles="{{ ','.join(roles or []) }}"></div>
 
   <!-- ✅ Sidebar -->
   <div class="sidebar">
