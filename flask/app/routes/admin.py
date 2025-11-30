@@ -76,6 +76,13 @@ def create_new_office():
 # ---------------- LOADERS ---------------- #
 
 
+@admin_bp.route("/load_birds_view_offices")
+@AuthorizationManager.login_required
+@AuthorizationManager.admin_required
+def load_birds_view_offices():
+    return render_template("admin_components/birds_view_offices.html")
+
+
 @admin_bp.route("/load_search_office")
 @AuthorizationManager.login_required
 @AuthorizationManager.admin_required
