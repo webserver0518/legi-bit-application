@@ -4,96 +4,168 @@
 <html lang="he" dir="rtl">
 
 <head>
-    <meta charset="UTF-8">
-    <title>LegiBit</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" type="image/webp" href="{{ url_for('static', filename='images/circle_legibit.webp') }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>LegiBit</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/webp" href="{{ url_for('static', filename='images/circle_legibit.webp') }}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Alef:wght@400;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base_site.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base_site.css') }}">
 </head>
 
 <body>
 
-    <div id="user-info" data-roles="{{ ','.join(session.get('roles', [])) }}"></div>
+  <div id="user-info" data-roles="{{ ','.join(session.get('roles', [])) }}"></div>
 
-    <nav class="navbar navbar-expand-lg fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <img src="{{ url_for('static', filename='images/circle_legibit.webp') }}" alt="Logo"
-                    style="max-height: 40px;">
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+  <nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand">
+        <img src="{{ url_for('static', filename='images/circle_legibit.webp') }}" alt="Logo" style="max-height: 40px;">
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-            <div class="collapse navbar-collapse justify-content-end" id="navbarContent">
-                <ul class="navbar-nav flex-row-reverse gap-2">
-                    <a class="nav-link" data-type="site" data-page="home" href="#">🏠 דף הבית</a>
-                    <a class="nav-link" data-type="site" data-page="about" href="#">ℹ️ אודות</a>
-                    <a class="nav-link" data-type="site" data-page="login" href="#">🔐 התחברות</a>
-                </ul>
-            </div>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarContent">
+        <ul class="navbar-nav flex-row-reverse gap-2">
+          <a class="nav-link" data-type="site" data-page="home" href="#">🏠 דף הבית</a>
+          <a class="nav-link" data-type="site" data-page="about" href="#">ℹ️ אודות</a>
+          <a class="nav-link" data-type="site" data-page="login" href="#">🔐 התחברות</a>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div id="dynamicContent" class="w-100 text-center pt-5 px-0 pb-0 m-0">
+    <p></p>
+    <h2>טוען...</h2>
+  </div>
+
+  <!-- ✅ Toast notifications -->
+  <div id="toasts">
+
+    <!-- טוסטים רגילים (success/info) -->
+    <div class="toast-container toast-normal">
+      <template data-prototype>
+        <div class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body text-center w-100"></div>
+          </div>
         </div>
-    </nav>
-
-    <div id="dynamicContent" class="w-100 text-center pt-5 px-0 pb-0 m-0">
-        <p></p>
-        <h2>טוען...</h2>
+      </template>
     </div>
 
-    <!-- ✅ Toast notifications -->
-    <div id="toasts">
-
-        <!-- טוסטים רגילים (success/info) -->
-        <div class="toast-container toast-normal">
-            <template data-prototype>
-                <div class="toast align-items-center text-white border-0" role="alert" aria-live="assertive"
-                    aria-atomic="true">
-                    <div class="d-flex">
-                        <div class="toast-body text-center w-100"></div>
-                    </div>
-                </div>
-            </template>
+    <!-- טוסטים sticky (warning/danger) -->
+    <div class="toast-container toast-sticky">
+      <template data-prototype>
+        <div class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body text-center w-100"></div>
+          </div>
         </div>
-
-        <!-- טוסטים sticky (warning/danger) -->
-        <div class="toast-container toast-sticky">
-            <template data-prototype>
-                <div class="toast align-items-center text-white border-0" role="alert" aria-live="assertive"
-                    aria-atomic="true">
-                    <div class="d-flex">
-                        <div class="toast-body text-center w-100"></div>
-                    </div>
-                </div>
-            </template>
-        </div>
-
+      </template>
     </div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    <script>
-        window.__flash_messages = {{ messages | tojson }};
-    </script>
-    {% endwith %}
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  <script>
+    window.__flash_messages = {{ messages | tojson }};
+  </script>
+  {% endwith %}
+
+  <!-- 🔵 כלי נגישות -->
+  <div class="accessibility-root" aria-label="כלי נגישות">
+
+    <!-- כפתור ♿ קבוע בתחתית שמאל -->
+    <button id="accessibility-toggle" class="accessibility-toggle" type="button" aria-haspopup="true"
+      aria-expanded="false" aria-controls="accessibility-panel">
+      ♿
+    </button>
+
+    <!-- פאנל הנגישות – תמיד *מתחת* לכפתור מבחינת מיקום -->
+    <section id="accessibility-panel" class="accessibility-panel" aria-hidden="true">
+      <header class="accessibility-panel-header">
+        כלי נגישות
+      </header>
+
+      <ul class="accessibility-panel-list">
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="font-up">
+            <span>הגדל טקסט</span>
+            <span class="accessibility-icon">🔎+</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="font-down">
+            <span>הקטן טקסט</span>
+            <span class="accessibility-icon">🔍−</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="gray">
+            <span>גווני אפור</span>
+            <span class="accessibility-icon">▤</span>
+          </button>
+        </li>
+
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="contrast-high">
+            <span>ניגודיות גבוהה</span>
+            <span class="accessibility-icon">◑</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="contrast-invert">
+            <span>ניגודיות הפוכה</span>
+            <span class="accessibility-icon">👁️</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="bg-light">
+            <span>רקע בהיר</span>
+            <span class="accessibility-icon">💡</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="links">
+            <span>הדגשת קישורים</span>
+            <span class="accessibility-icon">🔗</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="font-readable">
+            <span>פונט קריא</span>
+            <span class="accessibility-icon">A</span>
+          </button>
+        </li>
+        <li class="accessibility-panel-item">
+          <button type="button" data-action="reset">
+            <span>איפוס</span>
+            <span class="accessibility-icon">↺</span>
+          </button>
+        </li>
+      </ul>
+    </section>
+  </div>
 
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- core modules -->
-    <script src="/static/js/core/storage.js" defer></script>
-    <script src="/static/js/core/utils.js" defer></script>
-    <script src="/static/js/core/api.js" defer></script>
-    <script src="/static/js/core/tables.js" defer></script>
-    <script src="/static/js/core/nav.js" defer></script>
-    <script src="/static/js/core/toast.js" defer></script>
-    <script src="/static/js/core/loader.site.js" defer></script>
+  <!-- core modules -->
+  <script src="/static/js/core/storage.js" defer></script>
+  <script src="/static/js/core/utils.js" defer></script>
+  <script src="/static/js/core/api.js" defer></script>
+  <script src="/static/js/core/tables.js" defer></script>
+  <script src="/static/js/core/nav.js" defer></script>
+  <script src="/static/js/core/toast.js" defer></script>
+  <script src="/static/js/core/loader.site.js" defer></script>
 
-    <!-- site dashboard -->
-    <script src="/static/js/base_site.js" defer></script>
-    <script src="/static/js/site_components/login.js" defer></script>
+  <!-- site dashboard -->
+  <script src="/static/js/base_site.js" defer></script>
+  <script src="/static/js/site_components/login.js" defer></script>
 
 </body>
 
