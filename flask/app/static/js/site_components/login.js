@@ -29,6 +29,14 @@ window.init_login = function () {
 
         const fd = new FormData(form);
 
+        const token = await getRecaptchaToken(withMfa ? "mfa" : "login");
+        if (!token) {
+            window.Toast?.danger?.("reCAPTCHA לא נטען. רענן את הדף ונסה שוב.");
+            setBusy(withMfa ? mfaBtn : loginBtn, false);
+            return;
+        }
+        fd.set("recaptcha_token", token);
+
         if (withMfa) {
             const code = (mfaInput?.value || '').trim();
             if (!/^\d{6}$/.test(code)) {
@@ -89,19 +97,27 @@ window.init_login = function () {
     }
 
     // Stage 1: username+password
-    form?.addEventListener('submit', (e) => {
+    form?.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!userInput?.value || !passInput?.value) {
             window.Toast?.warning?.('נא למלא שם משתמש וסיסמה.');
             return;
         }
+
+        const token = await getRecaptchaToken("login");
+        document.getElementById("recaptcha_token").value = token;
+
         postLogin(false);
     }, { capture: true });
 
     // Stage 2: MFA verify
-    mfaInput?.addEventListener('input', () => {
+    mfaInput?.addEventListener('input', async () => {
         const val = mfaInput.value.trim();
         if (/^\d{6}$/.test(val)) {
+
+            const token = await getRecaptchaToken("mfa");
+            document.getElementById("recaptcha_token").value = token;
+
             postLogin(true);
         }
     });
@@ -242,6 +258,9 @@ window.init_login = function () {
         if (!validateIdentityFields()) return;
         if (!recoveryVerifyBtn) return;
 
+        const token = await getRecaptchaToken("recovery");
+        document.getElementById("recaptcha_token").value = token;
+
         const payload = getRecoveryPayload();
 
         try {
@@ -282,6 +301,9 @@ window.init_login = function () {
 
     // שלב 1 – שליחת קוד למייל
     const handleSendCode = async () => {
+        const token = await getRecaptchaToken("recovery");
+        document.getElementById("recaptcha_token").value = token;
+
         if (!recoveryIdentityVerified) {
             window.Toast?.warning?.('קודם יש לאמת את קוד המשרד ושם המשתמש.');
             return;
@@ -480,6 +502,9 @@ window.init_login = function () {
     const handleUsernameRecoverySubmit = async (e) => {
         e?.preventDefault?.();
 
+        const token = await getRecaptchaToken("username_recovery");
+        document.getElementById("recaptcha_token").value = token;
+
         const officeCode = (usernameRecoveryOfficeInput?.value || '').trim();
         const email = (usernameRecoveryEmailInput?.value || '').trim();
 
@@ -533,3 +558,28 @@ window.init_login = function () {
 
     usernameRecoveryForm?.addEventListener('submit', handleUsernameRecoverySubmit);
 };
+
+
+function getRecaptchaSiteKey() {
+    return window.__RECAPTCHA_SITE_KEY || "";
+}
+
+async function waitForGrecaptcha(timeoutMs = 4000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+        if (window.grecaptcha?.execute && window.grecaptcha?.ready) return true;
+        await new Promise(r => setTimeout(r, 50));
+    }
+    return false;
+}
+
+async function getRecaptchaToken(action = "login") {
+    const siteKey = getRecaptchaSiteKey();
+    if (!siteKey) return "";
+
+    const ok = await waitForGrecaptcha();
+    if (!ok) return "";
+
+    await new Promise(resolve => grecaptcha.ready(resolve));
+    return await grecaptcha.execute(siteKey, { action });
+}
