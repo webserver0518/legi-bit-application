@@ -75,7 +75,8 @@
 
         await loadCss(cssPath);
 
-        cont.innerHTML = await fetchHtml(fetchUrl);
+        const html = await fetchHtml(fetchUrl);
+        cont.innerHTML = html;
 
         await loadJs(jsPath);
 
