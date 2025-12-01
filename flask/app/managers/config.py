@@ -21,6 +21,10 @@ class Config:
     S3_SERVICE_URL = os.getenv("S3_SERVICE_URL")
     SES_SERVICE_URL = os.getenv("SES_SERVICE_URL")
 
+    # reCAPTCHA v3
+    RECAPTCHA_SITE_KEY = os.getenv("RECAPTCHA_SITE_KEY")
+    RECAPTCHA_SECRET = os.getenv("RECAPTCHA_SECRET")
+
     @staticmethod
     def init_app(app):
         app.config["SESSION_REDIS"] = Redis(
