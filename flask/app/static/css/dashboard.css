@@ -491,6 +491,17 @@ body.accessibility-open .accessibility-panel {
 
 
 
+/* הפוך את התמונה לרקע מלא של הכפתור */
+.accessibility-toggle img.accessibility-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* תמלא את כל הכפתור בצורה יפה */
+  border-radius: 12px;
+  /* יישר קצוות לפי הכפתור */
+  pointer-events: none;
+}
+
 
 
 
