@@ -95,7 +95,7 @@ def send_email():
 @site_bp.route("/about")
 @AuthorizationManager.logout_required
 def home():
-    current_app.logger.debug("Home Page rendering")
+    #current_app.logger.debug("Home Page rendering")
     return render_template("base_site.html")
 
 
