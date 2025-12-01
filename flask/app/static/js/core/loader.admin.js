@@ -73,11 +73,9 @@
 
         const { fetchUrl, cssPath, jsPath } = pathsFor(page);
 
+        cont.innerHTML = "";
         await loadCss(cssPath);
-
-        const html = await fetchHtml(fetchUrl);
-        cont.innerHTML = html;
-
+        cont.innerHTML = await fetchHtml(fetchUrl);;
         await loadJs(jsPath);
 
         const initName = `init_${page}`;
