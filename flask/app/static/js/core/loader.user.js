@@ -83,11 +83,7 @@
         await loadCss(cssPath);
 
         const html = await fetchHtml(fetchUrl);
-
-        cont.classList.add('exiting');
-
         cont.innerHTML = html;
-        cont.classList.remove('exiting');
 
         await loadJs(jsPath);
 
