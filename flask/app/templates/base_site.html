@@ -16,6 +16,14 @@
 
 <body>
 
+  <!-- reCAPTCHA v3 -->
+  <script id="recaptcha-script" src="https://www.google.com/recaptcha/api.js?render={{ config['RECAPTCHA_SITE_KEY'] }}"
+    async defer></script>
+
+  <script>
+    window.__RECAPTCHA_SITE_KEY = "{{ config['RECAPTCHA_SITE_KEY'] }}";
+  </script>
+
   <div id="user-info" data-roles="{{ ','.join(session.get('roles', [])) }}"></div>
 
   <nav class="navbar navbar-expand-lg fixed-top">
@@ -163,12 +171,6 @@
   <!-- site dashboard -->
   <script src="/static/js/base_site.js" defer></script>
   <script src="/static/js/site_components/login.js" defer></script>
-
-  <!-- reCAPTCHA v3 -->
-  <script>
-    window.__RECAPTCHA_SITE_KEY = "{{ config['RECAPTCHA_SITE_KEY'] }}";
-  </script>
-  <script src="https://www.google.com/recaptcha/api.js?render={{ config['RECAPTCHA_SITE_KEY'] }}" async defer></script>
 
 </body>
 
