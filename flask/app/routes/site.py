@@ -138,6 +138,38 @@ def login():
     password = (request.form.get("password") or "").strip()
     mfa_code = (request.form.get("mfa_code") or "").strip()
 
+    recaptcha_token = request.form.get("recaptcha_token", "").strip()
+    if not recaptcha_token:
+        return ResponseManager.bad_request("Missing reCAPTCHA token")
+
+    import requests
+    verify_url = "https://www.google.com/recaptcha/api/siteverify"
+
+    secret = current_app.config.get("RECAPTCHA_SECRET")
+    site_key = current_app.config.get("RECAPTCHA_SITE_KEY")
+    current_app.logger.debug(f"Verifying reCAPTCHA for user '{username}'")
+    current_app.logger.debug(f"reCAPTCHA token: {recaptcha_token}")
+    current_app.logger.debug(f"reCAPTCHA secret: {secret}")
+    current_app.logger.debug(f"reCAPTCHA site key: {site_key}")
+    current_app.logger.debug(f"reCAPTCHA verify URL: {verify_url}")
+    resp = requests.post(verify_url, data={
+        "secret": secret,
+        "response": recaptcha_token
+    }).json()
+
+    if not resp.get("success"):
+        current_app.logger.warning(
+            f"reCAPTCHA failed for user '{username}' - error_codes: {resp.get('error-codes')} - hostname: {resp.get('hostname')}"
+        )
+        return ResponseManager.unauthorized("reCAPTCHA verification failed")
+
+    score = resp.get("score")  # קיים רק ב-v3
+    if score is not None and score < 0.3:
+        current_app.logger.warning(
+            f"reCAPTCHA blocked login for user '{username}' - score: {score} - action: {resp.get('action')}"
+        )
+        return ResponseManager.unauthorized("reCAPTCHA verification failed")
+
     if not username or not password:
         return ResponseManager.bad_request("Missing username or password")
 
