@@ -31,8 +31,8 @@ def ensure_indexes():
 # ---------------------- Entity Helpers ----------------------
 
 
-@bp.route("/get_entity", methods=["POST"])
-def get_entity():
+@bp.route("/entities/search", methods=["POST"])
+def search_entities():
     data = request.get_json(silent=True) or {}
 
     entity = data.get("entity")
@@ -43,7 +43,7 @@ def get_entity():
     limit = data.get("limit", 0)
     expand = data.get("expand", False)
 
-    return MongoDBManager.get_entity(
+    return MongoDBManager.search_entities(
         entity=entity,
         office_serial=office_serial,
         filters=filters,
@@ -54,7 +54,7 @@ def get_entity():
     )
 
 
-@bp.route("/create_entity", methods=["POST"])
+@bp.route("/entities", methods=["POST"])
 def create_entity():
     data = request.get_json(silent=True) or {}
 
@@ -67,21 +67,21 @@ def create_entity():
     )
 
 
-@bp.route("/delete_entity", methods=["DELETE"])
-def delete_entity():
+@bp.route("/entities/delete", methods=["DELETE"])
+def delete_entities():
     data = request.get_json(silent=True) or {}
 
     entity = data.get("entity")
     office_serial = data.get("office_serial")
     filters = data.get("filters")
 
-    return MongoDBManager.delete_entity(
+    return MongoDBManager.delete_entities(
         entity=entity, office_serial=office_serial, filters=filters
     )
 
 
-@bp.route("/update_entity", methods=["PATCH"])
-def update_entity():
+@bp.route("/entities/update", methods=["PATCH"])
+def update_entities():
     data = request.get_json(silent=True) or {}
 
     entity = data.get("entity")
@@ -91,7 +91,7 @@ def update_entity():
     multiple = data.get("multiple", False)
     operator = data.get("operator", "$set")
 
-    return MongoDBManager.update_entity(
+    return MongoDBManager.update_entities(
         entity=entity,
         office_serial=office_serial,
         filters=filters,
@@ -105,32 +105,32 @@ def update_entity():
 
 
 # ---------- Tenant ----------
-@bp.route("/get_user_counter", methods=["GET"])
+@bp.route("/counters/users", methods=["GET"])
 def get_user_counter():
     db_name = request.args.get("db_name")
     return MongoDBManager.get_user_counter(db_name=db_name)
 
 
-@bp.route("/get_case_counter", methods=["GET"])
+@bp.route("/counters/cases", methods=["GET"])
 def get_case_counter():
     db_name = request.args.get("db_name")
     return MongoDBManager.get_case_counter(db_name=db_name)
 
 
-@bp.route("/get_client_counter", methods=["GET"])
+@bp.route("/counters/clients", methods=["GET"])
 def get_client_counter():
     db_name = request.args.get("db_name")
     return MongoDBManager.get_client_counter(db_name=db_name)
 
 
-@bp.route("/get_file_counter", methods=["GET"])
+@bp.route("/counters/files", methods=["GET"])
 def get_file_counter():
     db_name = request.args.get("db_name")
     return MongoDBManager.get_file_counter(db_name=db_name)
 
 
 # ---------- Global ----------
-@bp.route("/get_offices_counter", methods=["GET"])
+@bp.route("/counters/offices", methods=["GET"])
 def get_offices_counter():
     return MongoDBManager.get_offices_counter()
 
@@ -139,30 +139,36 @@ def get_offices_counter():
 
 
 # ---------- Tenant ----------
-@bp.route("/get_office_serial", methods=["GET"])
-def get_office_serial():
-    office_name = request.args.get("office_name")
-    return MongoDBManager.get_office_serial(office_name=office_name)
 
-
-@bp.route("/get_office_name", methods=["GET"])
-def get_office_name():
-    office_serial = request.args.get("office_serial")
-    return MongoDBManager.get_office_name(office_serial=int(office_serial))
-
-
-@bp.route("/get_offices", methods=["GET"])
-def get_offices():
-    return MongoDBManager.get_offices()
-
-
-@bp.route("/create_new_office", methods=["POST"])
-def create_new_office():
+@bp.route("/offices/search", methods=["POST"])
+def search_offices():
     data = request.get_json(silent=True) or {}
 
-    office_name = data.get("office_name")
+    filters = data.get("filters")
+    projection = data.get("projection")
+    sort = data.get("sort")
+    limit = data.get("limit", 0)
 
-    return MongoDBManager.create_new_office(office_name=office_name)
+    return MongoDBManager.search_offices(
+        filters=filters,
+        projection=projection,
+        sort=tuple(sort) if sort else None,
+        limit=int(limit) if limit else 0
+    )
+
+
+@bp.route("/offices", methods=["POST"])
+def create_office():
+    data = request.get_json(silent=True) or {}
+
+    name = data.get("name")
+
+    return MongoDBManager.create_office(name=name)
+
+
+@bp.route("/offices/<serial>", methods=["DELETE"])
+def delete_office(serial):
+    return MongoDBManager.delete_office(serial=serial)
 
 
 # ---------------------- Login ----------------------
@@ -171,12 +177,12 @@ def create_new_office():
 # ---------- Admin ----------
 
 
-@bp.route("/get_admin_passwords_hashes", methods=["GET"])
-def get_admin_passwords_hashes():
-    return MongoDBManager.get_admin_passwords_hashes()
+@bp.route("/admin/passwords", methods=["GET"])
+def get_admin_passwords():
+    return MongoDBManager.get_admin_passwords()
 
 
-@bp.route("/admin_login", methods=["POST"])
+@bp.route("/admin/login", methods=["POST"])
 def admin_login():
     data = request.get_json(silent=True) or {}
 
