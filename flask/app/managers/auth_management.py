@@ -8,67 +8,71 @@ from ..constants.constants_mongodb import MongoDBEntity, MongoDBFilters
 
 
 class AuthenticationManager:
-
     @classmethod
     def _authenticate_admin(cls, password):
         # get password hashes
-        admin_password_hashes_res = mongodb_service.get_admin_passwords_hashes()
+        admin_passwords_res = mongodb_service.get_admin_passwords()
 
-        if not ResponseManager.is_success(response=admin_password_hashes_res):
-            msg = f"failed to get admin password hashes"
-            current_app.logger.debug(msg)
-            return admin_password_hashes_res
-
-        admin_password_hashes = ResponseManager.get_data(
-            response=admin_password_hashes_res
-        )
-
+        if not ResponseManager.is_success(response=admin_passwords_res):
+            current_app.logger.debug("failed to get admin password hashes")
+            return admin_passwords_res
+        
+        if ResponseManager.is_no_content(response=admin_passwords_res):
+            current_app.logger.debug("no admin passwords configured")
+            return ResponseManager.unauthorized("No admin passwords configured")
+    
         # validate creds
-        for admin_password_hash in admin_password_hashes:
-            hashed = admin_password_hash.get("password_hash")
+        admin_passwords_hashes = ResponseManager.get_data(response=admin_passwords_res)
+        for row in admin_passwords_hashes:
+            hashed = row.get("password_hash")
             if hashed and check_password_hash(hashed, password):
                 return ResponseManager.success()
 
-        msg = f"unauthorized admin attempt to with password '{password}'"
-        current_app.logger.debug(msg)
-        return ResponseManager.unauthorized(msg)
+        current_app.logger.debug("unauthorized admin attempt")
+        return ResponseManager.unauthorized("Invalid admin password")
 
     @classmethod
     def _authenticate_user(cls, username, password):
-        # get user
-        user_res = mongodb_service.get_entity(
+        # get user by username (cross-tenant search; result includes office_serial)
+        user_res = mongodb_service.search_entities(
             entity=MongoDBEntity.USERS,
             filters=MongoDBFilters.User.by_username(username=username),
             limit=1,
         )
 
         if not ResponseManager.is_success(response=user_res):
-            msg = f"failed to get user"
-            current_app.logger.debug(msg)
+            current_app.logger.debug("failed to get user")
             return user_res
-
+        
         if ResponseManager.is_no_content(response=user_res):
-            msg = f"not content on get user= '{username}'"
-            current_app.logger.debug(msg)
-            return user_res
+            current_app.logger.debug(f"no content on get user='{username}'")
+            return ResponseManager.no_content("User not found")
 
         # extract user and office serial
-        user = ResponseManager.get_data(response=user_res)
-        user = user[0]
+        users = ResponseManager.get_data(response=user_res)
+        user = users[0]
         office_serial = user.pop("office_serial", None)
 
         # validate creds
         stored_hash = user.get("password_hash")
         if not stored_hash or not check_password_hash(stored_hash, password):
-            msg = f"unauthorized '{username}' login attempt to 'office {office_serial}' with password '{password}'"
-            current_app.logger.debug(msg)
-            return ResponseManager.unauthorized(message=msg)
+            current_app.logger.debug(
+                f"unauthorized '{username}' login attempt to office {office_serial}"
+            )
+            return ResponseManager.unauthorized(message="Invalid credentials")
 
-        # get office name
-        office_name_res = mongodb_service.get_office_name(office_serial=office_serial)
-        if not ResponseManager.is_success(response=office_name_res):
-            return office_name_res
-        office_name = ResponseManager.get_data(response=office_name_res)
+        # fetch office name via offices registry
+        office_name = None
+        if office_serial is not None:
+            office_res = mongodb_service.search_offices(
+                filters={"serial": int(office_serial)},
+                projection={"_id": 0, "name": 1},
+                limit=1,
+            )
+            if ResponseManager.is_success(office_res):
+                offices = ResponseManager.get_data(office_res) or []
+                if offices:
+                    office_name = offices[0].get("name")
 
         result = {
             "user": user,
@@ -78,52 +82,33 @@ class AuthenticationManager:
 
     @classmethod
     def authenticate_login(cls, username, password):
-        context = {}
-
         # ---------- Admin login ----------
         if username == "admin":
             valid_admin_login_res = cls._authenticate_admin(password=password)
-
             if not ResponseManager.is_success(response=valid_admin_login_res):
                 return valid_admin_login_res
 
-            # update context
-            context = {
-                "user": {
-                    "username": "admin",
-                    "roles": ["admin"],
-                },
-                "office": {
-                    "serial": None,
-                    "name": None,
-                },
+            ctx = {
+                "user": {"username": "admin", "roles": ["admin"]},
+                "office": {"serial": None, "name": None},
             }
+            return ResponseManager.success(data=ctx)
 
         # ---------- User login ----------
-        else:
-            valid_user_login_res = cls._authenticate_user(
-                username=username, password=password
-            )
+        valid_user_login_res = cls._authenticate_user(
+            username=username, password=password
+        )
+        if not ResponseManager.is_success(response=valid_user_login_res):
+            return valid_user_login_res
+        if ResponseManager.is_no_content(response=valid_user_login_res):
+            return valid_user_login_res
 
-            if not ResponseManager.is_success(response=valid_user_login_res):
-                return valid_user_login_res
-
-            if ResponseManager.is_no_content(response=valid_user_login_res):
-                return valid_user_login_res
-
-            # extract user, office serial, office name
-            valid_user_login = ResponseManager.get_data(response=valid_user_login_res)
-
-            # update context
-            context = valid_user_login
-
-        return ResponseManager.success(data=context)
+        return valid_user_login_res
 
 
 class AuthorizationManager:
-
     @classmethod
-    def regenerate_session():
+    def regenerate_session(cls):
         """
         Prevent session fixation by regenerating a fresh session ID.
         Clears old session data safely and forces Flask to create a new session.
