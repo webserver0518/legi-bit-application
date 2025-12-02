@@ -1,76 +1,161 @@
-<h2 class="text-center">שליטה מרחוק</h2>
-<!-- 🔗 כפתור תמיכה מרחוק -->
-<div class="support-remote-wrapper">
-  <p style="direction: rtl; text-align: right; line-height: 1.7; margin-bottom: 1.2rem;">
-    כדי שנוכל לעזור לך בצורה הטובה, המהירה והבטוחה ביותר — נבצע עכשיו חיבור תמיכה מרחוק.
-    זהו תהליך פשוט שמבוצע <strong>תוך כדי שיחה עם טכנאי</strong>,
-    כדי לוודא שאתה מרגיש בטוח ושכל שלב ברור לך.
-  </p>
+<!-- remote_control.html -->
+<section id="remote-control" class="remote-control-page">
+  <div class="remote-columns">
+    <!-- ======== Chrome Remote Desktop (3-step wizard) ======== -->
+    <article class="card crd-wizard" aria-labelledby="crd-title">
+      <header class="card-header">
+        <h2 id="crd-title">Remote Control via Chrome Remote Desktop</h2>
+        <p class="subtitle">Guided 3-step flow with validation for the 12-digit support code.</p>
+      </header>
 
-  <p style="direction: rtl; text-align: right; line-height: 1.7; margin-bottom: 1.2rem;">
-    החיבור מאפשר לנו לראות יחד את מה שמופיע אצלך על המסך ולעזור לך בדיוק איפה שצריך,
-    בלי שתתאמץ, ובלי צורך להסביר דברים טכניים.
-    אתה שולט בהכול — ואתה יכול לנתק את החיבור בכל רגע שתרצה.
-  </p>
+      <ol class="steps" role="list">
+        <li class="step-chip active" data-step="1"><span>1</span> Open CRD</li>
+        <li class="step-chip" data-step="2"><span>2</span> Paste code</li>
+        <li class="step-chip" data-step="3"><span>3</span> Connect</li>
+      </ol>
 
-  <p style="direction: rtl; text-align: right; line-height: 1.7; margin-bottom: 1.8rem;">
-    אם משהו לא ברור, אם אתה מרגיש תקוע, או אם אתה רוצה שנעשה את זה יחד שלב־אחד —
-    אני כאן איתך.
-    כל מה שצריך לעשות הוא ללחוץ על הכפתור, ואני אלווה אותך עד שנפתור את הכול.
-  </p>
+      <!-- Step 1 -->
+      <section class="step step-1 active" aria-label="Step 1: Open Chrome Remote Desktop">
+        <h3>Step 1 — Open Chrome Remote Desktop</h3>
+        <p>
+          Click the button below. In the new tab, install (if needed) and then click
+          <strong>“Generate code”</strong>.
+        </p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://remotedesktop.google.com/support/" target="_blank"
+            rel="noopener noreferrer">
+            Open CRD Support
+          </a>
+          <button class="btn btn-ghost" id="crd-next-1">I’m there →</button>
+        </div>
+        <details class="hint">
+          <summary>Where to find the code?</summary>
+          <p>
+            On the CRD page, under <em>“Get support”</em>, click <strong>Generate code</strong>.
+            You’ll see a 12-digit code like <code>123 456 789 012</code>.
+          </p>
+        </details>
+      </section>
 
-  <a href="https://remotedesktop.google.com/support" target="_blank" rel="noopener" class="support-remote-link">
-    💻 תמיכה מרחוק
-    <span class="support-remote-sub">לחץ כאן לחיבור מאובטח</span>
-  </a>
-</div>
+      <!-- Step 2 -->
+      <section class="step step-2" aria-label="Step 2: Paste the code">
+        <h3>Step 2 — Paste the 12-digit code</h3>
+        <label class="code-label" for="crd-code-input">Support code</label>
+        <div class="code-input-wrap">
+          <input id="crd-code-input" class="code-input" type="text" inputmode="numeric" autocomplete="one-time-code"
+            placeholder="___ ___ ___ ___" aria-describedby="crd-code-help" maxlength="19" />
+          <button class="btn btn-ghost" id="crd-clear" title="Clear">Clear</button>
+        </div>
+        <p id="crd-code-help" class="muted">
+          Auto-formatted as you type. Only digits are required (spaces optional).
+        </p>
+        <div class="actions">
+          <button class="btn" id="crd-back-2">← Back</button>
+          <button class="btn btn-primary" id="crd-next-2" disabled>Continue →</button>
+        </div>
+      </section>
 
-<style>
-  .support-remote-wrapper {
-    direction: rtl;
-    text-align: center;
-    margin: 2rem 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
+      <!-- Step 3 -->
+      <section class="step step-3" aria-label="Step 3: Connection">
+        <h3>Step 3 — We’re ready to connect</h3>
+        <p>
+          Keep this page open. Share the code below with our technician. You can copy it again anytime:
+        </p>
+        <div class="code-display">
+          <output id="crd-code-output" aria-live="polite">— — — —</output>
+          <button class="btn btn-ghost" id="crd-copy">Copy</button>
+        </div>
+        <details class="hint">
+          <summary>What happens next?</summary>
+          <ul>
+            <li>We’ll join using Chrome Remote Desktop on our side.</li>
+            <li>You’ll confirm the connection when prompted.</li>
+            <li>You can end the session at any time.</li>
+          </ul>
+        </details>
+        <div class="actions">
+          <button class="btn" id="crd-back-3">← Back</button>
+          <button class="btn btn-ghost" id="crd-restart">Start over</button>
+        </div>
+      </section>
+    </article>
 
-  .support-remote-link {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.2rem;
+    <!-- ======== WebRTC View-only Screenshare ======== -->
+    <article class="card webrtc" aria-labelledby="webrtc-title">
+      <header class="card-header">
+        <h2 id="webrtc-title">View-only Screenshare (WebRTC)</h2>
+        <p class="subtitle">In-browser, no install. Viewer cannot control mouse/keyboard.</p>
+      </header>
 
-    padding: 0.9rem 1.8rem;
-    border-radius: 999px;
+      <div class="webrtc-controls">
+        <button class="btn btn-primary" id="share-start">Start Screen Share</button>
+        <button class="btn" id="share-stop" disabled>Stop</button>
+        <button class="btn" id="pip-btn" disabled>Picture-in-Picture</button>
+        <span class="muted" id="share-status" aria-live="polite"></span>
+      </div>
 
-    text-decoration: none;
-    font-size: 1rem;
-    font-weight: 600;
+      <div class="video-wrap">
+        <video id="share-preview" autoplay playsinline muted></video>
+      </div>
 
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    color: #ffffff;
-    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
+      <details class="advanced">
+        <summary>Advanced: Manual WebRTC (copy-paste signaling)</summary>
 
-    transition:
-      transform 0.15s ease,
-      box-shadow 0.15s ease,
-      background 0.15s ease;
-  }
+        <div class="mode-switch">
+          <label><input type="radio" name="webrtc-mode" value="sharer" checked> I’m the Sharer</label>
+          <label><input type="radio" name="webrtc-mode" value="viewer"> I’m the Viewer</label>
+        </div>
 
-  .support-remote-link:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 25px rgba(37, 99, 235, 0.45);
-    background: linear-gradient(135deg, #1d4ed8, #1e40af);
-  }
+        <!-- Sharer flow -->
+        <section class="signal-panel" data-role="sharer">
+          <h3>Sharer</h3>
+          <ol class="mini-steps">
+            <li>Click <strong>Start Screen Share</strong> above.</li>
+            <li>Click <strong>Create Offer</strong> and send the Offer text to the viewer.</li>
+            <li>Paste the viewer’s Answer and click <strong>Apply Answer</strong>.</li>
+          </ol>
 
-  .support-remote-link:active {
-    transform: translateY(0);
-    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.3);
-  }
+          <div class="signal-actions">
+            <button class="btn btn-ghost" id="make-offer" disabled>Create Offer</button>
+          </div>
+          <label for="offer-out" class="signal-label">Offer (send this to viewer)</label>
+          <textarea id="offer-out" class="signal-text" readonly></textarea>
 
-  .support-remote-sub {
-    font-size: 0.8rem;
-    font-weight: 400;
-    opacity: 0.9;
-  }
-</style>
+          <label for="answer-in" class="signal-label">Paste Answer from viewer</label>
+          <textarea id="answer-in" class="signal-text" placeholder="Paste answer…"></textarea>
+          <div class="signal-actions">
+            <button class="btn" id="apply-answer" disabled>Apply Answer</button>
+          </div>
+        </section>
+
+        <!-- Viewer flow -->
+        <section class="signal-panel hidden" data-role="viewer">
+          <h3>Viewer</h3>
+          <ol class="mini-steps">
+            <li>Paste the Sharer’s Offer.</li>
+            <li>Click <strong>Create Answer</strong> and send the Answer back.</li>
+          </ol>
+
+          <label for="offer-in" class="signal-label">Paste Offer from sharer</label>
+          <textarea id="offer-in" class="signal-text" placeholder="Paste offer…"></textarea>
+
+          <div class="signal-actions">
+            <button class="btn btn-ghost" id="make-answer">Create Answer</button>
+          </div>
+
+          <label for="answer-out" class="signal-label">Answer (send back to sharer)</label>
+          <textarea id="answer-out" class="signal-text" readonly></textarea>
+
+          <div class="video-wrap">
+            <video id="viewer-video" autoplay playsinline controls></video>
+          </div>
+        </section>
+
+        <p class="muted small">
+          Works on HTTPS (or <code>localhost</code>). Uses a public STUN server. For production, add your own signaling
+          (WebSocket) — this UI is copy-paste for now.
+        </p>
+      </details>
+    </article>
+  </div>
+</section>
