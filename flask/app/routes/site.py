@@ -56,7 +56,7 @@ def env():
 """
 
 
-@site_bp.route("/clearsession")
+@site_bp.route("/clear/session")
 def clear_session():
     session.clear()
     return render_template("base_site.html")
@@ -270,48 +270,32 @@ def _get_office_serial_from_payload(payload: dict, required: bool = True):
 
 
 def _match_recovery_user_by_office_and_username(office_serial: int, username: str):
-    """
-    Helper משותף לכל מסלולי שחזור הסיסמה.
-
-    מחזיר:
-        (user_doc, error_response, matched)
-
-        * error_response != None  → להחזיר אותו ישירות מה־route
-        * matched == False        → לא נמצא משתמש תואם (בלי לחשוף ללקוח)
-    """
-
     username = (username or "").strip()
     if not username:
         return None, ResponseManager.bad_request("חסר שם משתמש"), False
 
-    # שליפת המשתמש לפי שם משתמש (כמו בלוגין)
-    user_res = mongodb_service.get_entity(
+    user_res = mongodb_service.search_entities(
         entity=MongoDBEntity.USERS,
         filters=MongoDBFilters.User.by_username(username=username),
         limit=1,
     )
     if not ResponseManager.is_success(response=user_res):
-        # תקלה במיקרו־סרוויס → מחזירים שגיאה ללקוח
         return None, user_res, False
 
-    users = ResponseManager.get_data(response=user_res) or []
-    if not users:
-        current_app.logger.debug(
-            f"password recovery: no user found for username='{username}'"
-        )
+    if ResponseManager.is_no_content(response=user_res):
+        current_app.logger.debug(f"password recovery: no content on get user='{username}'")
         return None, None, False
+    
+    users = ResponseManager.get_data(response=user_res)
+    user = users[0]
 
-    user_doc = users[0] or {}
-
-    # חייב להיות office_serial כדי להמשיך
-    user_office_serial = user_doc.get("office_serial")
+    user_office_serial = user.get("office_serial")
     if user_office_serial is None:
         current_app.logger.warning(
             f"password recovery: user '{username}' missing office_serial"
         )
         return None, None, False
 
-    # התאמת קוד משרד
     if office_serial is not None and int(user_office_serial) != int(office_serial):
         current_app.logger.debug(
             f"password recovery: office_serial mismatch for user='{username}' "
@@ -319,8 +303,7 @@ def _match_recovery_user_by_office_and_username(office_serial: int, username: st
         )
         return None, None, False
 
-    return user_doc, None, True
-
+    return user, None, True
 
 @site_bp.route("/password/recovery/verify-user", methods=["POST"])
 @AuthorizationManager.logout_required
@@ -370,19 +353,12 @@ def password_recovery_verify_user():
 @AuthorizationManager.logout_required
 @RateLimiter.limit(limit=5, window_seconds=300)
 def password_recovery_send_code():
-    """
-    שלב 1: קבלת קוד משרד + משתמש, ולשלוח קוד אימות למייל.
-
-    לא חושף האם המשתמש קיים – תמיד מחזיר הודעה גנרית.
-    """
     payload = request.get_json(silent=True) or {}
-
     office_serial, error_response = _get_office_serial_from_payload(payload)
     if error_response is not None:
         return error_response
 
     username = (payload.get("username") or "").strip()
-
     if not username:
         return ResponseManager.bad_request("חסר שם משתמש")
 
@@ -394,7 +370,6 @@ def password_recovery_send_code():
         return error_response
 
     if not matched:
-        # לא חושפים אם הפרטים לא תואמים
         return ResponseManager.success(message=_GENERIC_RECOVERY_MSG)
 
     user_email = (user_doc.get("email") or "").strip()
@@ -403,7 +378,6 @@ def password_recovery_send_code():
             f"password recovery: user '{username}' "
             f"(office_serial={office_serial}) has no email configured"
         )
-        # גם כאן נשמור על הודעה גנרית
         return ResponseManager.success(message=_GENERIC_RECOVERY_MSG)
 
     office_serial = user_doc.get("office_serial")
@@ -414,9 +388,7 @@ def password_recovery_send_code():
         )
         return ResponseManager.error("שגיאת שרת בעת הכנת איפוס סיסמא")
 
-    # יצירת קוד בן 6 ספרות
     code = f"{random.randint(0, 999999):06d}"
-
     recovery_doc = {
         "password_recovery": {
             "code": code,
@@ -424,7 +396,7 @@ def password_recovery_send_code():
         }
     }
 
-    up_res = mongodb_service.update_entity(
+    up_res = mongodb_service.update_entities(
         entity=MongoDBEntity.USERS,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(user_serial)),
@@ -435,7 +407,6 @@ def password_recovery_send_code():
     if not ResponseManager.is_success(response=up_res):
         return up_res
 
-    # שליחת מייל עם הקוד
     subject = "קוד לאיפוס סיסמא - Legi-Bit"
     message = (
         "קוד האימות שלך לאיפוס הסיסמא במערכת Legi-Bit הוא: "
@@ -501,11 +472,7 @@ def password_recovery_verify_code():
 @site_bp.route("/password/recovery/reset", methods=["POST"])
 @AuthorizationManager.logout_required
 def password_recovery_reset():
-    """
-    שלב 3: קבלת סיסמה חדשה + הקוד, ואיפוס הסיסמה בפועל.
-    """
     payload = request.get_json(silent=True) or {}
-
     office_serial, error_response = _get_office_serial_from_payload(payload)
     if error_response is not None:
         return error_response
@@ -516,11 +483,8 @@ def password_recovery_reset():
 
     if not username or not code or not new_password:
         return ResponseManager.bad_request("חסרים פרטים לאיפוס הסיסמא")
-
     if len(new_password) < 6:
-        # תוכל לחזק את המדיניות כאן
         return ResponseManager.bad_request("הסיסמא החדשה צריכה להכיל לפחות 6 תווים")
-
     if not code.isdigit() or len(code) != 6:
         return ResponseManager.bad_request("קוד אימות חייב להכיל 6 ספרות")
 
@@ -530,7 +494,6 @@ def password_recovery_reset():
     )
     if error_response is not None:
         return error_response
-
     if not matched:
         return ResponseManager.unauthorized("קוד אימות שגוי או פג תוקף")
 
@@ -548,14 +511,13 @@ def password_recovery_reset():
         return ResponseManager.error("שגיאת שרת בעת איפוס הסיסמא")
 
     new_hash = generate_password_hash(new_password)
-
     update_data = {
         "password_hash": new_hash,
-        "password_recovery": None,  # מנקים את מצב השחזור
+        "password_recovery": None,
         "password_changed_at": datetime.utcnow().isoformat() + "Z",
     }
 
-    up_res = mongodb_service.update_entity(
+    up_res = mongodb_service.update_entities(
         entity=MongoDBEntity.USERS,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(user_serial)),
@@ -570,7 +532,6 @@ def password_recovery_reset():
         f"password reset completed for user='{username}' "
         f"(office_serial={office_serial}, user_serial={user_serial})"
     )
-
     return ResponseManager.success(message="הסיסמא אופסה בהצלחה")
 
 
@@ -578,12 +539,6 @@ def password_recovery_reset():
 @AuthorizationManager.logout_required
 @RateLimiter.limit(limit=5, window_seconds=300)
 def username_recovery_send_username():
-    """
-    שחזור שם משתמש:
-    קבלת קוד משרד + אימייל, ואם יש משתמש תואם – נשלח את שם המשתמש למייל.
-
-    שים לב: ההודעה ללקוח תמיד גנרית, כדי לא לחשוף האם המשתמש קיים.
-    """
     payload = request.get_json(silent=True) or {}
 
     office_serial, error_response = _get_office_serial_from_payload(payload)
@@ -594,8 +549,7 @@ def username_recovery_send_username():
     if not email:
         return ResponseManager.bad_request("חסר אימייל")
 
-    # חיפוש משתמש לפי office_serial + email
-    user_res = mongodb_service.get_entity(
+    user_res = mongodb_service.search_entities(
         entity=MongoDBEntity.USERS,
         office_serial=office_serial,
         filters={"email": email},
@@ -606,7 +560,6 @@ def username_recovery_send_username():
 
     users = ResponseManager.get_data(response=user_res) or []
     if not users:
-        # לא חושפים אם לא נמצא – עדיין מחזירים success עם הודעה גנרית
         return ResponseManager.success(
             message=_GENERIC_USERNAME_RECOVERY_MSG,
             data={"sent": False},
@@ -617,7 +570,6 @@ def username_recovery_send_username():
     user_email = (user_doc.get("email") or "").strip()
 
     if not username or not user_email:
-        # גם כאן – הודעה גנרית ללקוח, אבל נרשום אזהרה בלוג
         current_app.logger.warning(
             f"username recovery: missing username/email for office_serial={office_serial}"
         )
@@ -639,7 +591,6 @@ def username_recovery_send_username():
         f"username recovery: sent username to '{user_email}' "
         f"(office_serial={office_serial}, username='{username}')"
     )
-
     return ResponseManager.success(
         message=_GENERIC_USERNAME_RECOVERY_MSG,
         data={"sent": True},
