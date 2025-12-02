@@ -1,4 +1,3 @@
-# flask/app/managers/mfa_manager.py
 from __future__ import annotations
 
 import base64
@@ -61,7 +60,7 @@ class MFAManager:
     def save_user_mfa(
         cls, office_serial: int, user_serial: int, secret: str, method: str = "totp"
     ):
-        return mongodb_service.update_entity(
+        return mongodb_service.update_entities(
             entity=MongoDBEntity.USERS,
             office_serial=office_serial,
             filters=MongoDBFilters.by_serial(int(user_serial)),
@@ -72,7 +71,7 @@ class MFAManager:
 
     @classmethod
     def reset_user_mfa(cls, office_serial: int, user_serial: int):
-        return mongodb_service.update_entity(
+        return mongodb_service.update_entities(
             entity=MongoDBEntity.USERS,
             office_serial=office_serial,
             filters=MongoDBFilters.by_serial(int(user_serial)),
