@@ -1,5 +1,6 @@
 # app/routes/user.py
 from datetime import datetime, timezone
+from urllib import response
 from werkzeug.security import check_password_hash
 from flask import Blueprint, render_template, request, flash, current_app
 
@@ -139,12 +140,12 @@ def get_office_users():
     if not office_serial:
         return ResponseManager.forbidden("Missing office context")
 
-    users_res = mongodb_service.get_entity(
+    users_res = mongodb_service.search_entities(
         entity=MongoDBEntity.USERS, office_serial=office_serial
     )
 
-    if ResponseManager.is_not_found(users_res):
-        current_app.logger.debug("⚠️ No users found, returning empty list")
+    if ResponseManager.is_no_content(users_res):
+        current_app.logger.debug("No users found, returning empty list")
         return ResponseManager.success(data=[])
 
     if not ResponseManager.is_success(users_res):
@@ -163,6 +164,11 @@ def get_office_users():
 def create_new_profile():
     office_serial = AuthorizationManager.get_office_serial()
     user_serial = AuthorizationManager.get_user_serial()
+
+    if not office_serial:
+        return ResponseManager.bad_request("Missing 'office_serial' in auth")
+    if not user_serial:
+        return ResponseManager.bad_request("Missing 'user_serial' in auth")
 
     payload = request.get_json(silent=True) or {}
     name = (payload.get("name") or "").strip()
@@ -185,74 +191,33 @@ def create_new_profile():
 @AuthorizationManager.login_required
 def get_office_profiles():
     office_serial = AuthorizationManager.get_office_serial()
-    res = mongodb_service.get_entity(
+
+    if not office_serial:
+        return ResponseManager.bad_request("Missing 'office_serial' in auth")
+
+    return mongodb_service.search_entities(
         entity=MongoDBEntity.PROFILES,
         office_serial=office_serial,
         filters={},
     )
-    if not ResponseManager.is_success(res):
-        return res
-
-    profiles_data = ResponseManager.get_data(res) or []
-    profiles = [c.get("profiles") for c in profiles_data]
-    return ResponseManager.success(data=profiles)
 
 
 @user_bp.route("/get_profile", methods=["GET"])
 @AuthorizationManager.login_required
 def get_profile():
     office_serial = AuthorizationManager.get_office_serial()
-
     serial = request.args.get("serial")
 
-    return mongodb_service.get_entity(
+    if not office_serial:
+        return ResponseManager.bad_request("Missing 'office_serial' in auth")
+    if not serial:
+        return ResponseManager.bad_request("serial is required")
+
+    return mongodb_service.search_entities(
         entity=MongoDBEntity.PROFILES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(serial)),
         limit=1,
-    )
-
-
-@user_bp.route("/update_profile_statuses", methods=["PATCH"])
-@AuthorizationManager.login_required
-def update_profile_statuses():
-    office_serial = AuthorizationManager.get_office_serial()
-    serial = request.args.get("serial", type=int)
-    if serial is None:
-        return ResponseManager.bad_request("serial is required")
-
-    payload = request.get_json(force=True) or {}
-
-    # align with existing pattern (e.g., update_case)
-    operator = payload.pop("_operator", "$set")
-
-    # only fields we allow here; keep it minimal and clear
-    update_data = {}
-    if "case_statuses" in payload:
-        update_data["case_statuses"] = payload["case_statuses"]
-    if "task_statuses" in payload:
-        update_data["task_statuses"] = payload["task_statuses"]
-
-    if not update_data:
-        return ResponseManager.bad_request("nothing to update")
-
-    # If caller wants to append items to arrays, support multi-append with $each
-    if operator in ("$push", "$addToSet"):
-        transformed = {}
-        for k, v in update_data.items():
-            if isinstance(v, list):
-                transformed[k] = {"$each": v}
-            else:
-                transformed[k] = v
-        update_data = transformed
-
-    return mongodb_service.update_entity(
-        entity=MongoDBEntity.PROFILES,
-        office_serial=office_serial,
-        filters=MongoDBFilters.by_serial(serial),
-        update_data=update_data,
-        multiple=False,
-        operator=operator,
     )
 
 
@@ -261,12 +226,13 @@ def update_profile_statuses():
 def delete_profile():
     office_serial = AuthorizationManager.get_office_serial()
     serial = request.args.get("serial")
+
     if not office_serial:
-        return ResponseManager.error("Missing 'office_serial' in auth")
+        return ResponseManager.bad_request("Missing 'office_serial' in auth")
     if not serial:
         return ResponseManager.bad_request("serial is required")
 
-    return mongodb_service.delete_entity(
+    return mongodb_service.delete_entities(
         entity=MongoDBEntity.PROFILES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(serial)),
@@ -300,7 +266,7 @@ def add_profile_status():
 
     # נשתמש ב-$addToSet; המיקרו-סרביס תומך ב-operator ועובר הלאה לאפליי עדכון.
     # למחיצות מרובות אפשר לשלוח $each ברוט המקורי; כאן שומרים על API פשוט של פריט בודד.
-    return mongodb_service.update_entity(
+    return mongodb_service.update_entities(
         entity=MongoDBEntity.PROFILES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(serial)),
@@ -335,68 +301,14 @@ def remove_profile_status():
 
     field = "case_statuses" if scope == "case" else "task_statuses"
 
-    # כאן זו מחיקה מתוך מערך בתוך מסמך — לא מסמך שלם — ולכן נכון להשתמש ב-$pull ולא ב-delete_entity.
-    return mongodb_service.update_entity(
+    # כאן זו מחיקה מתוך מערך בתוך מסמך — לא מסמך שלם — ולכן נכון להשתמש ב-$pull ולא ב-delete_entities.
+    return mongodb_service.update_entities(
         entity=MongoDBEntity.PROFILES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(serial)),
         update_data={field: value},
         multiple=False,
         operator="$pull",
-    )
-
-
-@user_bp.route("/set_active_profile", methods=["PATCH"])
-@AuthorizationManager.login_required
-def set_active_profile():
-    office_serial = AuthorizationManager.get_office_serial()
-    if not office_serial:
-        return ResponseManager.error("Missing 'office_serial' in auth")
-
-    serial = request.args.get("serial", type=int)
-
-    if serial is None:
-        data = request.get_json(silent=True) or {}
-        serial = data.get("serial")
-
-    try:
-        serial = int(serial)
-    except (TypeError, ValueError):
-        serial = None
-
-    if serial is None:
-        return ResponseManager.bad_request("serial is required")
-
-    # 1) מכבים רק את הפעיל (אם יש)
-    res_all_off = mongodb_service.update_entity(
-        entity=MongoDBEntity.PROFILES,
-        office_serial=office_serial,
-        filters={"is_active": True},
-        update_data={"is_active": False},
-        multiple=True,
-        operator="$set",
-    )
-
-    if not (
-        ResponseManager.is_success(res_all_off)
-        or ResponseManager.is_not_found(res_all_off)
-    ):
-        return res_all_off
-
-    # 2) מפעילים את הספציפי
-    res_set_one = mongodb_service.update_entity(
-        entity=MongoDBEntity.PROFILES,
-        office_serial=office_serial,
-        filters=MongoDBFilters.by_serial(int(serial)),
-        update_data={"is_active": True},
-        multiple=False,
-        operator="$set",
-    )
-    if not ResponseManager.is_success(res_set_one):
-        return res_set_one
-
-    return ResponseManager.success(
-        message="Active profile updated", data={"serial": serial}
     )
 
 
@@ -462,7 +374,7 @@ def update_file():
     if not update_data:
         return ResponseManager.bad_request("Missing update payload")
 
-    res = mongodb_service.update_entity(
+    res = mongodb_service.update_entities(
         entity=MongoDBEntity.FILES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(file_serial)),
@@ -570,7 +482,7 @@ def delete_file():
     # ----------------------------------------------------
     # Delete from Mongo (FILES entity)
     # ----------------------------------------------------
-    mongo_res = mongodb_service.delete_entity(
+    mongo_res = mongodb_service.delete_entities(
         entity=MongoDBEntity.FILES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(file_serial),
@@ -586,7 +498,7 @@ def delete_file():
     # ----------------------------------------------------
     # Remove file_serial from CASE.files_serials
     # ----------------------------------------------------
-    case_update_res = mongodb_service.update_entity(
+    case_update_res = mongodb_service.update_entities(
         entity=MongoDBEntity.CASES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(case_serial),
@@ -616,7 +528,7 @@ def get_office_files():
     if not office_serial:
         return ResponseManager.error("Missing 'office_serial' in auth")
 
-    files_res = mongodb_service.get_entity(
+    files_res = mongodb_service.search_entities(
         entity=MongoDBEntity.FILES,
         office_serial=office_serial,
         filters=None,
@@ -651,7 +563,7 @@ def update_file_description():
     # בונה עדכון מינימלי; אם תרצה גם updated_at – הוסף כאן
     update_data = {"description": description}
 
-    res = mongodb_service.update_entity(
+    res = mongodb_service.update_entities(
         entity=MongoDBEntity.FILES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(file_serial)),
@@ -674,7 +586,7 @@ def update_file_description():
 def get_case():
     office_serial = AuthorizationManager.get_office_serial()
     case_serial = request.args.get("serial")
-    expand = request.args.get("expand", False)
+    expand = (request.args.get("expand") or "").strip().lower() in ("1","true","yes","on")
 
     if not office_serial:
         return ResponseManager.error("Missing 'office_serial' in auth")
@@ -686,7 +598,7 @@ def get_case():
         f"🟦 [get_case] Fetching case={case_serial} expand={expand}"
     )
 
-    case_res = mongodb_service.get_entity(
+    case_res = mongodb_service.search_entities(
         entity=MongoDBEntity.CASES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(case_serial),
@@ -719,7 +631,8 @@ def get_office_cases():
     current_app.logger.debug("🟦 [get_office_cases] entered")
 
     office_serial = AuthorizationManager.get_office_serial()
-    expand = request.args.get("expand", False)
+    expand = (request.args.get("expand") or "").strip().lower() in ("1","true","yes","on")
+
     if not office_serial:
         current_app.logger.error("Missing office_serial in auth")
         return ResponseManager.error("Missing office_serial in auth")
@@ -737,14 +650,14 @@ def get_office_cases():
     filters = {}
 
     # --- Fetch cases ---
-    cases_res = mongodb_service.get_entity(
+    cases_res = mongodb_service.search_entities(
         entity=MongoDBEntity.CASES,
         office_serial=office_serial,
         filters=filters or None,
         expand=expand,
     )
 
-    if ResponseManager.is_not_found(cases_res):
+    if ResponseManager.is_no_content(cases_res):
         current_app.logger.debug("⚠️ No cases found, returning empty list")
         return ResponseManager.success(data=[])
 
@@ -858,7 +771,7 @@ def delete_case():
     case_serial = int(case_serial)
 
     # try to delete the case
-    delete_res = mongodb_service.delete_entity(
+    delete_res = mongodb_service.delete_entities(
         entity=MongoDBEntity.CASES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(case_serial),
@@ -902,7 +815,7 @@ def update_case():
     )
 
     # perform the update via MongoDB microservice
-    update_res = mongodb_service.update_entity(
+    update_res = mongodb_service.update_entities(
         entity=MongoDBEntity.CASES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(case_serial),
@@ -954,7 +867,7 @@ def update_case_status():
         f"PATCH /update_status | office={office_serial}, case={case_serial}, update={update_data}"
     )
 
-    update_res = mongodb_service.update_entity(
+    update_res = mongodb_service.update_entities(
         entity=MongoDBEntity.CASES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(case_serial),
@@ -1061,7 +974,7 @@ def update_client():
     )
 
     # 🧠 עדכון דרך microservice
-    update_res = mongodb_service.update_entity(
+    update_res = mongodb_service.update_entities(
         entity=MongoDBEntity.CLIENTS,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(client_serial),
@@ -1092,7 +1005,7 @@ def get_office_clients():
     if not office_serial:
         return ResponseManager.error("Missing 'office_serial' in auth")
 
-    clients_res = mongodb_service.get_entity(
+    clients_res = mongodb_service.search_entities(
         entity=MongoDBEntity.CLIENTS,
         office_serial=office_serial,
         filters=None,
@@ -1166,7 +1079,7 @@ def create_new_task():
     )
 
     # 2) Attach to CASE.tasks_serials (best-effort, כמו בקבצים)
-    case_update_res = mongodb_service.update_entity(
+    case_update_res = mongodb_service.update_entities(
         entity=MongoDBEntity.CASES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(case_serial),
@@ -1209,7 +1122,7 @@ def update_task():
         f"PATCH /update_task | office={office_serial}, task={task_serial}, update={update_data}"
     )
 
-    update_res = mongodb_service.update_entity(
+    update_res = mongodb_service.update_entities(
         entity=MongoDBEntity.TASKS,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(task_serial),
@@ -1258,7 +1171,7 @@ def delete_task():
     )
 
     # 1) Delete from TASKS collection
-    delete_res = mongodb_service.delete_entity(
+    delete_res = mongodb_service.delete_entities(
         entity=MongoDBEntity.TASKS,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(task_serial),
@@ -1272,7 +1185,7 @@ def delete_task():
         return delete_res
 
     # 2) Pull from CASE.tasks_serials (best-effort, כמו delete_file)
-    case_update_res = mongodb_service.update_entity(
+    case_update_res = mongodb_service.update_entities(
         entity=MongoDBEntity.CASES,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(case_serial),
@@ -1470,7 +1383,7 @@ def user_mfa_enroll():
         return ResponseManager.bad_request(error="Missing auth context")
 
     # אם כבר מופעל – נחזיר שגיאה (אפשר לשנות למדיניות אחרת)
-    user_res = mongodb_service.get_entity(
+    user_res = mongodb_service.search_entities(
         entity=MongoDBEntity.USERS,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(user_serial)),
@@ -1499,7 +1412,7 @@ def user_mfa_enroll():
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
     }
-    up_res = mongodb_service.update_entity(
+    up_res = mongodb_service.update_entities(
         entity=MongoDBEntity.USERS,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(user_serial)),
@@ -1533,7 +1446,7 @@ def user_mfa_verify_enroll():
         return ResponseManager.bad_request(error="Invalid code format")
 
     # שליפת secret מ-mfa.pending
-    user_res = mongodb_service.get_entity(
+    user_res = mongodb_service.search_entities(
         entity=MongoDBEntity.USERS,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(user_serial)),
@@ -1555,7 +1468,7 @@ def user_mfa_verify_enroll():
         return ResponseManager.unauthorized(error="Invalid TOTP code")
 
     # עדכון סטטוס ל-enabled ושמירת enabled_at
-    final_res = mongodb_service.update_entity(
+    final_res = mongodb_service.update_entities(
         entity=MongoDBEntity.USERS,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(user_serial)),
@@ -1596,7 +1509,7 @@ def user_mfa_reset():
 
     # 1) Fetch user to validate password
 
-    user_res = mongodb_service.get_entity(
+    user_res = mongodb_service.search_entities(
         entity=MongoDBEntity.USERS,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(user_serial)),
@@ -1632,7 +1545,7 @@ def user_mfa_status():
     if not office_serial or not user_serial:
         return ResponseManager.error("Missing auth context")
 
-    user_res = mongodb_service.get_entity(
+    user_res = mongodb_service.search_entities(
         entity=MongoDBEntity.USERS,
         office_serial=office_serial,
         filters=MongoDBFilters.by_serial(int(user_serial)),
