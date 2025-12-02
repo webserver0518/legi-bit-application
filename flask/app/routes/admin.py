@@ -26,13 +26,13 @@ def base_admin_dashboard():
 # ---------------- OFFICES MANAGEMENT ---------------- #
 
 
-@admin_bp.route("/get_offices", methods=["GET"])
+@admin_bp.route("/search_offices", methods=["GET"])
 @AuthorizationManager.login_required
 @AuthorizationManager.admin_required
-def get_offices():
-    current_app.logger.debug("🟦 [get_offices] Fetching all offices")
+def search_offices():
+    current_app.logger.debug("🟦 [search_offices] Fetching all offices")
 
-    get_res = mongodb_service.get_offices()
+    get_res = mongodb_service.search_offices()
 
     if not ResponseManager.is_success(response=get_res):
         current_app.logger.debug("Internal Server Error", "danger")
@@ -46,20 +46,20 @@ def get_offices():
     return ResponseManager.success(data=data)
 
 
-@admin_bp.route("/create_new_office", methods=["POST"])
+@admin_bp.route("/create_office", methods=["POST"])
 @AuthorizationManager.login_required
 @AuthorizationManager.admin_required
-def create_new_office():
-    current_app.logger.debug("🟦 [new_offices] creating new office")
+def create_office():
+    current_app.logger.debug("🟦 [new_offices] creating office")
 
     payload = request.get_json(silent=True) or {}
-    office_name = (payload.get("office_name") or "").strip()
+    name = (payload.get("name") or "").strip()
 
-    if not office_name:
-        current_app.logger.debug("⚠️ [new_offices] missing office_name in payload")
-        return ResponseManager.bad_request(error="office_name is required")
+    if not name:
+        current_app.logger.debug("⚠️ [new_offices] missing name in payload")
+        return ResponseManager.bad_request(error="name is required")
 
-    create_res = mongodb_service.create_new_office(office_name)
+    create_res = mongodb_service.create_office(name)
 
     if not ResponseManager.is_success(response=create_res):
         current_app.logger.debug("Internal Server Error", "danger")
