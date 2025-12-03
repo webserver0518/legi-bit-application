@@ -133,24 +133,41 @@ class RedisSessionStore:
         return obj and obj.get("answer")
 
 
-# ---------- בחירת store דינמית (Redis אם קיים, אחרת זיכרון) ----------
+# ---------------- Store factory ----------------
+
+class WebRTCStoreUnavailable(RuntimeError):
+    """Raised when WebRTC store cannot be initialized (e.g. Redis missing)."""
+    pass
+
+
 _STORE = None
 
+
 def webrtc_store():
+    """
+    מחזיר את ה־store הגלובלי ל־WebRTC.
+
+    דרישות:
+    - חייב להיות current_app
+    - חייב להיות current_app.config["SESSION_REDIS"]
+    אין יותר נפילה לזיכרון. אם אין Redis → נזרקת WebRTCStoreUnavailable.
+    """
     global _STORE
+
     if _STORE is not None:
         return _STORE
 
+    if current_app is None:
+        # לא אמור לקרות בפרוד, אבל שיהיה ברור בלוגים
+        raise WebRTCStoreUnavailable("WebRTC store requires Flask app context")
+
+    redis_conn = current_app.config.get("SESSION_REDIS")
+    if not redis_conn:
+        raise WebRTCStoreUnavailable(
+            "WebRTC store requires SESSION_REDIS (Redis). "
+            "In-memory fallback is disabled."
+        )
+
     ttl = int(os.getenv("WEBRTC_TTL", "600"))
-
-    # ננסה למשוך את ה־Redis מהאפליקציה (כמו Flask-Session)
-    try:
-        if current_app and current_app.config.get("SESSION_REDIS"):
-            _STORE = RedisSessionStore(current_app.config["SESSION_REDIS"], ttl_seconds=ttl)
-            return _STORE
-    except Exception:
-        pass
-
-    # נפילה לזיכרון
-    _STORE = InMemorySessionStore(ttl_seconds=ttl)
+    _STORE = RedisSessionStore(redis_conn, ttl_seconds=ttl)
     return _STORE
