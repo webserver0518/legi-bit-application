@@ -154,24 +154,32 @@
 
     // ===== Optional server join-by-code (kept here if you wire later) =====
     async function joinByCode() {
-        const code = (els.codeInput.value || '').trim();
-        if (!code) return toast.warn('Enter session code');
+        // נרמול: לוקחים רק את רצף הספרות הראשון באורך ≥6 וחותכים ל-6
+        const raw = (els.codeInput.value || '').trim();
+        const code = ((raw.match(/\d{6,}/) || [])[0] || '').slice(0, 6);
+        if (!code) return toast.warn('Enter a valid 6-digit session code');
 
         try {
             setStatus('Fetching offer by code…');
             const res = await window.API?.postJson('/admin/webrtc/join', { code });
             if (!res?.success) throw new Error(res?.error || 'join failed');
-            if (!res.data?.offer) throw new Error('No offer in response');
+            if (!res.data?.offer) throw new Error('Offer not ready (user didn’t publish yet)');
 
             const pc = createPeer();
+
+            setStatus('Setting remote offer…');
             await pc.setRemoteDescription(res.data.offer);
 
+            setStatus('Creating answer…');
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
-            await waitIceGathering(pc);
+
+            setStatus('Gathering ICE…');
+            await waitIceGathering(pc); // no-trickle: נחכה עד שיסתיים
 
             const res2 = await window.API?.postJson('/admin/webrtc/answer', {
-                code, answer: pc.localDescription
+                code,
+                answer: pc.localDescription
             });
             if (!res2?.success) throw new Error(res2?.error || 'answer submit failed');
 
@@ -207,7 +215,11 @@
         els.btnClearAnswer.addEventListener('click', () => { els.answerOut.value = ''; });
 
         // Server signaling buttons (no-op if you didn’t wire backend)
-        els.btnJoinCode.addEventListener('click', joinByCode);
+        els.btnJoinCode.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            joinByCode();
+        });
         els.btnLeave.addEventListener('click', leave);
         els.btnRetry.addEventListener('click', async () => {
             if (!state.pc) return;
