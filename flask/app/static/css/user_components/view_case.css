@@ -178,24 +178,6 @@ input.inline-input {
   min-width: 2px;
 }
 
-/* מולטיליין – עובדות התיק וכו' */
-textarea.inline-input {
-  border: none;
-  background: transparent;
-  outline: none;
-  font: inherit;
-  line-height: inherit;
-  color: inherit;
-  padding: 0;
-  margin: 0;
-  box-sizing: border-box;
-  width: 100%;
-  /* לוקח את כל הרוחב של ה־holder (#facts-body) */
-  resize: vertical;
-  /* אפשר למתוח אם רוצים */
-  overflow: hidden;
-  /* יחד עם auto-grow ב־JS */
-}
 
 /* אלמנט מדידה לרוחב inline */
 .inline-measure {
@@ -684,6 +666,10 @@ a:hover {
   opacity: 1
 }
 
+.icon {
+  height: min-content;
+}
+
 .icon-btn {
   width: 26px;
   height: 26px;
@@ -935,4 +921,355 @@ a:hover {
     opacity: 0;
     max-height: 0
   }
+}
+
+
+
+/* ✳️ להצמיד לקומפוננטה בלבד */
+.files-section {
+  /* מידות/ריכוך כרטיס */
+  --list-max: 720px;
+  --card-soft: #fbfdff;
+  --pop-arrow: 16px;
+
+  /* טקסט משני (fallback אם חסר גלובלית) */
+  --muted: #6b7280;
+
+  /* צבעים לסוגי קבצים (כמו ב-HTML1) */
+  --doc-bg: #fdecec;
+  --doc-st: #dc2626;
+  --img-bg: #e6fbff;
+  --img-st: #0891b2;
+  --vid-bg: #efe9ff;
+  --vid-st: #7c3aed;
+  --aud-bg: #fff3e6;
+  --aud-st: #f59e0b;
+  --zip-bg: #f6efe1;
+  --zip-st: #a16207;
+  --gen-bg: #eef2f7;
+  --gen-st: #64748b;
+  --note-bg: linear-gradient(180deg, #ffe2cf, #ffd6e0);
+  --note-st: #fb7185;
+}
+
+
+/* היה .title – להפוך לסגור לקומפוננטה */
+.files-section .title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-top: 0px;
+  margin-bottom: 8px;
+  text-align: right;
+  color: #0b3b66;
+  border-bottom: 1px solid var(--blue-200);
+  padding-bottom: 6px;
+}
+
+
+/* שמירת רוחב מלא בזמן עריכה בתוך הרשימה */
+.files-section .right .editable,
+.files-section .right .inline-input {
+  flex: 1 1 auto;
+  /* שיתפוס את כל המקום הפנוי */
+  min-width: 0;
+  /* מאפשר להתרחב באמת בתוך flex */
+}
+
+/* גם input חד-שורי וגם textarea */
+.files-section .right input.inline-input,
+.files-section .right textarea.inline-input {
+  width: 100%;
+  box-sizing: border-box;
+  /* שלא "יבריח" בגלל padding */
+  display: block;
+  /* שלא יושב על inline shrink */
+}
+
+
+textarea.inline-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  line-height: inherit;
+  color: inherit;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  min-width: 600px;
+  width: 100% !important;
+  /* אין auto-grow, אין מתיחה ידנית; אם התוכן ארוך – יהיה גלילה אנכית */
+  overflow-y: auto;
+  overflow-x: hidden;
+  resize: none;
+}
+
+
+
+
+/* כפתור מחיקה יחיד בפינה, תואם שפה עיצובית של HTML1 */
+.item .del-btn {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 12px;
+  /* RTL: end = שמאל */
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, .12);
+}
+
+.item .del-btn:hover {
+  background: #fecaca;
+}
+
+
+/* בחירה/מספור פריטים */
+.sel-btn {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid #e1eaf7;
+  background: #f5f9ff;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sel-btn:hover {
+  background: #eaf3ff;
+}
+
+
+
+
+
+
+/* הסתרת מחיקה/איחוד כברירת מחדל; הצגה רק ב-hover על השורה */
+.item .del-btn,
+.item .sel-btn {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s;
+}
+
+.item:hover .del-btn,
+.item:hover .sel-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* אל תאשר איחוד למשימות: אל תראה את כפתור האיחוד בכלל */
+.item[data-kind="task"] .sel-btn {
+  display: none !important;
+}
+
+
+
+
+
+
+
+
+
+
+/* פעולות צפות שמופיעות רק בהובר — שמאל, בשורה אחת */
+.item {
+  position: relative;
+}
+
+/* היה: flex-direction: row;  ->  עכשיו אנכי */
+.hover-actions {
+  position: absolute;
+  top: 6px;
+  left: 12px;
+  /* ממשיך להיות הכי שמאלי */
+  display: flex;
+  flex-direction: column;
+  /* <<< זה כל הקסם */
+  gap: 6px;
+  opacity: 0;
+  transition: opacity .12s;
+}
+
+.item:hover .hover-actions {
+  opacity: 1;
+}
+
+/* כפתור בחירה לאיחוד */
+.icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid #e1eaf7;
+  background: #f5f9ff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.icon-btn:hover {
+  background: #eaf3ff
+}
+
+/* כפתור מחיקה */
+.delete-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  color: #b91c1c;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background: #fecaca
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* --- Debug mini summary line --- */
+.vc-debug-summary {
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+  border-radius: 10px;
+  direction: rtl;
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.vc-dbg-row b {
+  color: #0b3b66;
+}
+
+.vc-dbg-spacer {
+  flex: 1;
+}
+
+.vc-debug-mini-btn {
+  padding: 6px 10px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* --- Floating debug button --- */
+.vc-debug-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000000;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 14px rgba(2, 6, 23, .12);
+  cursor: pointer;
+}
+
+/* --- Debug panel --- */
+.vc-debug-panel {
+  position: fixed;
+  inset: 6% 5% auto 5%;
+  width: 90%;
+  height: 88%;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: 0 20px 80px rgba(2, 6, 23, .25);
+  z-index: 1000001;
+  display: none;
+  overflow: hidden;
+}
+
+.vc-debug-panel.open {
+  display: block;
+}
+
+.vc-debug-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.vc-debug-grow {
+  flex: 1;
+}
+
+.vc-debug-close {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.vc-debug-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  height: calc(100% - 48px);
+}
+
+.vc-debug-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.vc-debug-col h4 {
+  margin: 0;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+.vc-debug-col pre {
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  white-space: pre;
+  direction: ltr;
+  text-align: left;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  height: 100%;
+  background: #0b1020;
+  color: #e6f3ff;
 }
