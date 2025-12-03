@@ -3,10 +3,13 @@ from werkzeug.security import check_password_hash
 from flask import Blueprint, render_template, request, flash, current_app
 
 from ..services import mongodb_service, s3_service
+from ..services.webrtc_service import STORE as WEBRTC_STORE
+
 from ..managers.response_management import ResponseManager
 from ..managers.json_management import JSONManager
 from ..managers.auth_management import AuthorizationManager
 from ..managers.mfa_manager import MFAManager
+
 from ..constants.constants_mongodb import MongoDBEntity, MongoDBFilters, MongoDBData
 
 admin_bp = Blueprint("admin", __name__)
@@ -104,6 +107,13 @@ def load_view_office():
     return render_template("admin_components/view_office.html")
 
 
+@admin_bp.route("/load_admin_remote_control")
+@AuthorizationManager.login_required
+@AuthorizationManager.admin_required
+def load_admin_remote_control():
+    return render_template("admin_components/admin_remote_control.html")
+
+
 @admin_bp.route("/get_roles_list")
 @AuthorizationManager.login_required
 @AuthorizationManager.admin_required
@@ -114,3 +124,33 @@ def get_roles_list():
     except Exception as e:
         current_app.logger.error(f"❌ load_users_management error: {e}")
         return ResponseManager.error(str(e))
+
+
+
+# ---------------- WebRTC for Remote Support ---------------- #
+
+@admin_bp.route("/admin/webrtc/join", methods=["POST"])
+@AuthorizationManager.login_required
+@AuthorizationManager.admin_required
+def admin_webrtc_join():
+    data = request.get_json(silent=True) or {}
+    code = (data.get("code") or "").strip()
+    if not code: return ResponseManager.bad_request("Missing 'code'")
+    offer = WEBRTC_STORE.get_offer(code)
+    if not offer:
+        return ResponseManager.not_found("Offer not ready (wrong code or user hasn't started sharing)")
+    return ResponseManager.success(data={"offer": offer})
+
+@admin_bp.route("/admin/webrtc/answer", methods=["POST"])
+@AuthorizationManager.login_required
+@AuthorizationManager.admin_required
+def admin_webrtc_answer():
+    data = request.get_json(silent=True) or {}
+    code = (data.get("code") or "").strip()
+    answer = data.get("answer")
+    if not code or not answer:
+        return ResponseManager.bad_request("Missing 'code' or 'answer'")
+    if not WEBRTC_STORE.set_answer(code, answer):
+        return ResponseManager.not_found("Invalid or expired code")
+    current_app.logger.info(f"[WebRTC] Admin set answer for code={code}")
+    return ResponseManager.success(data={"ok": True})
