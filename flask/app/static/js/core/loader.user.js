@@ -28,7 +28,8 @@
         files: "search_file",
         attendance: "birds_view_attendance",
         support: "contact",
-        regulations: "statement"
+        regulations: "statement",
+        calendar: "calendar_user"
     };
 
     function pathsFor(page) {
