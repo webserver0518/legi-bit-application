@@ -5,10 +5,13 @@ from werkzeug.security import check_password_hash
 from flask import Blueprint, render_template, request, flash, current_app
 
 from ..services import mongodb_service, s3_service
+from ..services.webrtc_service import STORE as WEBRTC_STORE
+
 from ..managers.response_management import ResponseManager
 from ..managers.json_management import JSONManager
 from ..managers.auth_management import AuthorizationManager
 from ..managers.mfa_manager import MFAManager
+
 from ..constants.constants_mongodb import MongoDBEntity, MongoDBFilters, MongoDBData
 from ..utils.file_utils import sanitize_filename
 
@@ -1558,3 +1561,40 @@ def user_mfa_status():
     user = user[0] or {}
 
     return ResponseManager.success(data={"mfa": user.get("mfa")})
+
+
+
+# ---------------- WebRTC Signaling ---------------- #
+
+@user_bp.route("/webrtc/session/create", methods=["POST"])
+@AuthorizationManager.login_required
+def webrtc_create_session():
+    office_serial = AuthorizationManager.get_office_serial()
+    user_serial = AuthorizationManager.get_user_serial()
+    code = WEBRTC_STORE.create(meta={"office_serial": office_serial, "user_serial": user_serial})
+    current_app.logger.info(f"[WebRTC] Created session code={code} by user={user_serial} office={office_serial}")
+    return ResponseManager.success(data={"code": code, "ttl_seconds": WEBRTC_STORE.ttl})
+
+@user_bp.route("/webrtc/offer", methods=["POST"])
+@AuthorizationManager.login_required
+def webrtc_submit_offer():
+    data = request.get_json(silent=True) or {}
+    code = (data.get("code") or "").strip()
+    offer = data.get("offer")
+    if not code or not offer:
+        return ResponseManager.bad_request("Missing 'code' or 'offer'")
+    if not WEBRTC_STORE.exists(code):
+        return ResponseManager.not_found("Invalid or expired code")
+    if not WEBRTC_STORE.set_offer(code, offer):
+        return ResponseManager.internal("Failed to store offer")
+    return ResponseManager.success(data={"ok": True})
+
+@user_bp.route("/webrtc/answer/get", methods=["POST"])
+@AuthorizationManager.login_required
+def webrtc_get_answer():
+    data = request.get_json(silent=True) or {}
+    code = (data.get("code") or "").strip()
+    if not code:
+        return ResponseManager.bad_request("Missing 'code'")
+    answer = WEBRTC_STORE.get_answer(code)
+    return ResponseManager.success(data={"answer": answer})
