@@ -6,7 +6,7 @@ from werkzeug.security import check_password_hash
 from flask import Blueprint, render_template, request, flash, current_app
 
 from ..services import mongodb_service, s3_service
-from ..services.webrtc_service import webrtc_store
+from ..services.webrtc_service import webrtc_store, WebRTCStoreUnavailable
 
 from ..managers.response_management import ResponseManager
 from ..managers.json_management import JSONManager
@@ -405,8 +405,26 @@ def get_file_url():
     office_serial = AuthorizationManager.get_office_serial()
     case_serial = request.args.get("case_serial")
     file_serial = request.args.get("file_serial")
-    raw_file_name = request.args.get("file_name")
-    file_name = sanitize_filename(raw_file_name)
+
+    file_res = mongodb_service.search_entities(
+        entity=MongoDBEntity.FILES,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(file_serial)),
+        limit=1
+    )
+
+    if not ResponseManager.is_success(response=file_res):
+        current_app.logger.error(
+            f"❌ [get_file_url] Failed to fetch file serial={file_serial} from MongoDB"
+        )
+        return file_res
+    
+    if ResponseManager.is_no_content(response=file_res):
+        return file_res
+    
+    file = ResponseManager.get_data(response=file_res)
+    file = file[0]
+    file_name = file.get("name")
 
     if not office_serial:
         current_app.logger.error("Missing 'office_serial' in auth")
@@ -1570,17 +1588,38 @@ def user_mfa_status():
 @user_bp.route("/webrtc/session/create", methods=["POST"])
 @AuthorizationManager.login_required
 def webrtc_create_session():
-    store = webrtc_store()
+    try:
+        store = webrtc_store()
+    except WebRTCStoreUnavailable as e:
+        current_app.logger.error(f"[WebRTC] store unavailable in webrtc_create_session: {e}")
+        return ResponseManager.internal(
+            "שיתוף מסך אינו זמין כרגע (בעיית Redis). אנא נסה מאוחר יותר או פנה לתמיכה."
+        )
+
     office_serial = AuthorizationManager.get_office_serial()
     user_serial = AuthorizationManager.get_user_serial()
+
     code = store.create(meta={"office_serial": office_serial, "user_serial": user_serial})
-    current_app.logger.info(f"[WebRTC] Created session code={code} by user={user_serial} office={office_serial}")
-    return ResponseManager.success(data={"code": code, "ttl_seconds": int(os.getenv("WEBRTC_TTL", "600"))})
+    current_app.logger.info(
+        f"[WebRTC] Created session code={code} by user={user_serial} office={office_serial}"
+    )
+
+    return ResponseManager.success(
+        data={"code": code, "ttl_seconds": int(os.getenv("WEBRTC_TTL", "600"))}
+    )
+
 
 @user_bp.route("/webrtc/offer", methods=["POST"])
 @AuthorizationManager.login_required
 def webrtc_submit_offer():
-    store = webrtc_store()
+    try:
+        store = webrtc_store()
+    except WebRTCStoreUnavailable as e:
+        current_app.logger.error(f"[WebRTC] store unavailable in webrtc_submit_offer: {e}")
+        return ResponseManager.internal(
+            "שיתוף מסך אינו זמין כרגע (בעיית Redis). אנא נסה מאוחר יותר או פנה לתמיכה."
+        )
+
     data = request.get_json(silent=True) or {}
     code = (data.get("code") or "").strip()
     offer = data.get("offer")
@@ -1592,13 +1631,22 @@ def webrtc_submit_offer():
         return ResponseManager.internal("Failed to store offer")
     return ResponseManager.success(data={"ok": True})
 
+
 @user_bp.route("/webrtc/answer/get", methods=["POST"])
 @AuthorizationManager.login_required
 def webrtc_get_answer():
-    store = webrtc_store()
+    try:
+        store = webrtc_store()
+    except WebRTCStoreUnavailable as e:
+        current_app.logger.error(f"[WebRTC] store unavailable in webrtc_get_answer: {e}")
+        return ResponseManager.internal(
+            "שיתוף מסך אינו זמין כרגע (בעיית Redis). אנא נסה מאוחר יותר או פנה לתמיכה."
+        )
+
     data = request.get_json(silent=True) or {}
     code = (data.get("code") or "").strip()
     if not code:
         return ResponseManager.bad_request("Missing 'code'")
+
     answer = store.get_answer(code)
     return ResponseManager.success(data={"answer": answer})
