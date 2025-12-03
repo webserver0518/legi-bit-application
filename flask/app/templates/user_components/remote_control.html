@@ -87,6 +87,12 @@
         <p class="subtitle">In-browser, no install. Viewer cannot control mouse/keyboard.</p>
       </header>
 
+      <div class="session-row" style="display:flex;gap:8px;align-items:center;margin:8px 0;">
+        <button class="btn btn-primary" id="rc-create-session">Generate session code</button>
+        <button class="btn" id="rc-publish-offer" disabled>Publish Offer</button>
+        <span id="rc-session-code" class="muted"></span>
+      </div>
+
       <div class="webrtc-controls">
         <button class="btn btn-primary" id="share-start">Start Screen Share</button>
         <button class="btn" id="share-stop" disabled>Stop</button>
