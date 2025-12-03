@@ -656,3 +656,65 @@ body.acc-links-highlight a {
 body.acc-readable-font {
   font-family: Arial, Helvetica, sans-serif !important;
 }
+
+
+
+
+/* --- Pin support/terms/logout to the bottom of the sidebar --- */
+.sidebar {
+  display: flex;
+  /* הופך את הסיידבר לעמודת פלקס */
+  flex-direction: column;
+  min-height: 100vh;
+  /* יש כבר – לא מזיק לחזור */
+}
+
+/* מרווח אלסטי שדוחף את הקבוצה התחתונה למטה */
+.sidebar::before {
+  content: "";
+  flex: 1 1 auto;
+  order: 1;
+}
+
+/* הקבוצה שצריכה להיות בתחתית */
+.sidebar a[data-sub-sidebar="support"],
+.sidebar a[data-sub-sidebar="regulations"],
+.sidebar a[href*="logout"],
+.sidebar a[onclick*="clearStorageAndLogout"],
+/* ה־hr שאחרי "תקנון" ושאחרי "התנתקות" */
+.sidebar a[data-sub-sidebar="regulations"]+hr,
+.sidebar a[href*="logout"]+hr,
+.sidebar a[onclick*="clearStorageAndLogout"]+hr {
+  order: 2;
+}
+
+/* לשים את הלוגו ממש הכי למטה */
+.sidebar .navbar-brand {
+  order: 3;
+  /* נמוך יותר מהקישורים שקיבלו order:2 */
+  margin-top: .5rem;
+  margin-bottom: 1.5rem;
+  /* רווח קטן מעליו (לא חובה) */
+}
+
+/* --- Keep sidebar logo neutral on hover --- */
+.sidebar a.navbar-brand,
+.sidebar a.navbar-brand:hover,
+.sidebar a.navbar-brand:focus,
+.sidebar a.navbar-brand:active {
+  color: inherit !important;
+  background-color: transparent !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+  outline: 0;
+}
+
+/* למקרה שיש כללי hover שמכהים/מגדילים תמונות בלינקים */
+.sidebar a.navbar-brand img,
+.sidebar a.navbar-brand:hover img {
+  height: 65px;
+  width: auto;
+  opacity: 1 !important;
+  filter: none !important;
+  transform: none !important;
+}
