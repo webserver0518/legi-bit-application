@@ -1325,6 +1325,18 @@ def load_clock_in_out():
     return render_template("user_components/clock_in_out.html")
 
 
+@user_bp.route("/load_calendar_office")
+@AuthorizationManager.login_required
+def load_calendar_office():
+    return render_template("user_components/calendar_office.html")
+
+
+@user_bp.route("/load_calendar_user")
+@AuthorizationManager.login_required
+def load_calendar_user():
+    return render_template("user_components/calendar_user.html")
+
+
 @user_bp.route("/load_contact")
 @AuthorizationManager.login_required
 def load_contact():
