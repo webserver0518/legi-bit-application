@@ -53,6 +53,15 @@ function showSubMenu(type, force = false) {
         <ul class="list-unstyled mb-0" id="recent-users-list"></ul>
       </div>
       <hr>`;
+  } else if (type === 'support') {
+    html = `
+      <hr>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="admin_remote_control">שליטה מרחוק</a>
+      <hr>
+      <div class="sub-group" id="recent-users">
+        <ul class="list-unstyled mb-0" id="recent-users-list"></ul>
+      </div>
+      <hr>`;
   } else {
     html = `
       <hr>
