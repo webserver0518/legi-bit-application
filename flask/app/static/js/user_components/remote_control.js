@@ -24,98 +24,131 @@
             };
         } catch {
             const mem = {};
-            return { set: (k, v) => (mem[k] = v), get: (k, d = null) => (k in mem ? mem[k] : d), del: (k) => delete mem[k] };
+            return {
+                set: (k, v) => (mem[k] = v),
+                get: (k, d = null) => (k in mem ? mem[k] : d),
+                del: (k) => delete mem[k],
+            };
         }
     })();
 
-    // ========= CRD WIZARD =========
-
+    // ========= CRD WIZARD ========
+    // Small helper to drive the “Chrome Remote Desktop-like” wizard UI
     const CRD = (() => {
-        function formatCodeDigits(raw) {
-            const digits = (raw || '').replace(/\D+/g, '').slice(0, 12);
-            return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
-        }
-        function isValidCode(raw) {
-            const digits = (raw || '').replace(/\D+/g, '');
-            return digits.length === 12;
-        }
-        function gotoStep(n) {
-            document.querySelectorAll('#remote-control .step').forEach((el) => el.classList.remove('active'));
-            document.querySelector(`#remote-control .step-${n}`)?.classList.add('active');
-            document.querySelectorAll('#remote-control .step-chip').forEach((chip) => {
-                chip.classList.toggle('active', Number(chip.dataset.step) === n);
-            });
-        }
-
         function init() {
-            const codeInput = document.getElementById('crd-code-input');
-            const codeOutput = document.getElementById('crd-code-output');
+            const root = document.getElementById('remote-control');
+            if (!root) return;
 
-            const btnNext1 = document.getElementById('crd-next-1');
-            const btnBack2 = document.getElementById('crd-back-2');
-            const btnNext2 = document.getElementById('crd-next-2');
-            const btnClear = document.getElementById('crd-clear');
-            const btnBack3 = document.getElementById('crd-back-3');
-            const btnRestart = document.getElementById('crd-restart');
-            const btnCopy = document.getElementById('crd-copy');
+            const wizard = root.querySelector('[data-crd-wizard]');
+            if (!wizard) return;
 
-            // Pre-fill from URL ?code= or stored
-            const params = new URLSearchParams(location.search);
-            const pre = params.get('code') || Store.get('crd_code', '');
-            if (pre) {
-                const fmt = formatCodeDigits(pre);
-                codeInput.value = fmt;
-                btnNext2.disabled = !isValidCode(fmt);
+            const stepEls = wizard.querySelectorAll('[data-step]');
+            const step1 = wizard.querySelector('[data-step="1"]');
+            const step2 = wizard.querySelector('[data-step="2"]');
+            const step3 = wizard.querySelector('[data-step="3"]');
+
+            const btnNext1 = wizard.querySelector('[data-next="1"]');
+            const btnNext2 = wizard.querySelector('[data-next="2"]');
+            const btnBack2 = wizard.querySelector('[data-back="2"]');
+            const btnBack3 = wizard.querySelector('[data-back="3"]');
+            const btnRestart = wizard.querySelector('[data-restart]');
+            const btnClear = wizard.querySelector('[data-clear-code]');
+            const codeInput = wizard.querySelector('[data-code-input]');
+            const codeOutput = wizard.querySelector('[data-code-output]');
+            const btnCopy = wizard.querySelector('[data-copy-code]');
+
+            function formatCodeDisplay(raw) {
+                const digits = (raw || '').replace(/\D+/g, '');
+                return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+            }
+            function isValidCode(raw) {
+                const digits = (raw || '').replace(/\D+/g, '');
+                return digits.length === 12;
+            }
+            function gotoStep(n) {
+                document.querySelectorAll('#remote-control .step').forEach((el) => el.classList.remove('active'));
+                document.querySelector(`#remote-control .step-${n}`)?.classList.add('active');
+                document.querySelectorAll('#remote-control .step-chip').forEach((chip) => {
+                    chip.classList.toggle('active', Number(chip.dataset.step) === n);
+                });
             }
 
-            codeInput.addEventListener('input', () => {
-                const caretAtEnd = codeInput.selectionStart === codeInput.value.length;
-                const fmt = formatCodeDigits(codeInput.value);
-                codeInput.value = fmt;
-                if (caretAtEnd) codeInput.selectionStart = codeInput.selectionEnd = codeInput.value.length;
-                btnNext2.disabled = !isValidCode(fmt);
-            });
+            if (step1) gotoStep(1);
 
-            btnClear.addEventListener('click', () => {
-                codeInput.value = '';
-                btnNext2.disabled = true;
-                codeInput.focus();
-            });
+            const startedCode = Store.get('crd_code', '');
+            if (startedCode && codeInput) {
+                codeInput.value = startedCode;
+            }
 
-            btnNext1.addEventListener('click', () => gotoStep(2));
-            btnBack2.addEventListener('click', () => gotoStep(1));
+            if (codeInput && btnNext2 && btnClear) {
+                btnNext2.disabled = !isValidCode(codeInput.value.trim());
 
-            btnNext2.addEventListener('click', () => {
-                const val = codeInput.value.trim();
-                if (!isValidCode(val)) {
-                    toast.err('Please enter a valid 12-digit code.');
+                codeInput.addEventListener('input', () => {
+                    const val = codeInput.value.trim();
+                    btnNext2.disabled = !isValidCode(val);
+                });
+
+                btnClear.addEventListener('click', () => {
+                    codeInput.value = '';
+                    btnNext2.disabled = true;
                     codeInput.focus();
-                    return;
-                }
-                Store.set('crd_code', val);
-                codeOutput.textContent = val;
-                gotoStep(3);
-                toast.ok('Code accepted. Keep this page open and confirm the prompt when it appears.');
-            });
+                });
 
-            btnCopy.addEventListener('click', async () => {
-                const txt = (codeOutput.textContent || '').trim();
-                try {
-                    await navigator.clipboard.writeText(txt);
-                    toast.ok('Code copied.');
-                } catch {
-                    toast.info('Select and copy the code manually.');
-                }
-            });
+                btnNext1.addEventListener('click', () => gotoStep(2));
+                btnBack2.addEventListener('click', () => gotoStep(1));
 
-            btnBack3.addEventListener('click', () => gotoStep(2));
-            btnRestart.addEventListener('click', () => {
-                codeInput.value = '';
-                btnNext2.disabled = true;
-                Store.del('crd_code');
-                codeOutput.textContent = '— — — —';
-                gotoStep(1);
-            });
+                btnNext2.addEventListener('click', () => {
+                    const val = codeInput.value.trim();
+                    if (!isValidCode(val)) {
+                        toast.err('Please enter a valid 12-digit code.');
+                        return;
+                    }
+                    Store.set('crd_code', val);
+                    if (codeOutput) {
+                        codeOutput.textContent = formatCodeDisplay(val);
+                    }
+                    gotoStep(3);
+                });
+
+                if (btnCopy && codeOutput) {
+                    btnCopy.addEventListener('click', () => {
+                        const text = codeOutput.textContent || '';
+                        if (!text.trim()) return;
+                        const normalized = text.replace(/\s+/g, '');
+                        if (navigator.clipboard?.writeText) {
+                            navigator.clipboard.writeText(normalized).then(
+                                () => toast.ok('Code copied to clipboard'),
+                                () => toast.warn('Could not copy automatically, please copy manually.')
+                            );
+                        } else {
+                            try {
+                                const ta = document.createElement('textarea');
+                                ta.style.position = 'fixed';
+                                ta.style.opacity = '0';
+                                ta.value = normalized;
+                                document.body.appendChild(ta);
+                                ta.select();
+                                document.execCommand('copy');
+                                document.body.removeChild(ta);
+                                toast.ok('Code copied to clipboard');
+                            } catch {
+                                toast.info('Select and copy the code manually.');
+                            }
+                        }
+                    });
+                }
+
+                btnBack3.addEventListener('click', () => gotoStep(2));
+                btnRestart.addEventListener('click', () => {
+                    codeInput.value = '';
+                    btnNext2.disabled = true;
+                    Store.del('crd_code');
+                    codeOutput.textContent = '— — — —';
+                    gotoStep(1);
+                });
+            }
+
+            return { gotoStep };
         }
 
         return { init };
@@ -139,14 +172,35 @@
 
             start.disabled = !!running;
             stop.disabled = !running;
-            pip.disabled = !running || !document.pictureInPictureEnabled;
+            pip.disabled = !running;
 
-            status.textContent = running ? 'Sharing…' : '';
-            preview.classList.toggle('active', !!running);
+            if (status) {
+                status.textContent = running
+                    ? 'Sharing your screen…'
+                    : 'Not sharing. Click "Share Screen" to begin.';
+            }
+
+            if (!running && preview && preview.srcObject) {
+                const tracks = preview.srcObject.getTracks();
+                tracks.forEach((t) => t.stop());
+                preview.srcObject = null;
+            }
+        }
+
+        async function waitForIceGathering(pc) {
+            if (pc.iceGatheringState === 'complete') return;
+            return new Promise((resolve) => {
+                function checkState() {
+                    if (pc.iceGatheringState === 'complete') {
+                        pc.removeEventListener('icegatheringstatechange', checkState);
+                        resolve();
+                    }
+                }
+                pc.addEventListener('icegatheringstatechange', checkState);
+            });
         }
 
         async function startShare() {
-            if (rtc.stream) return;
             try {
                 const stream = await navigator.mediaDevices.getDisplayMedia({
                     video: { frameRate: 15 },
@@ -162,9 +216,6 @@
                 stream.getVideoTracks()[0].addEventListener('ended', () => {
                     stopShare();
                 });
-
-                setShareUI({ running: true });
-                toast.ok('Screen sharing started.');
             } catch (err) {
                 console.error(err);
                 toast.err('Screen share was cancelled or blocked.');
@@ -181,29 +232,33 @@
                 rtc.pc = null;
             }
             setShareUI({ running: false });
-            document.getElementById('make-offer').disabled = true;
-            document.getElementById('offer-out').value = '';
-            document.getElementById('answer-in').value = '';
-            document.getElementById('apply-answer').disabled = true;
-            toast.info('Screen sharing stopped.');
         }
 
         async function enterPiP() {
-            const video = document.getElementById('share-preview');
-            if (!document.pictureInPictureEnabled) return;
+            const preview = document.getElementById('share-preview');
+            if (!preview) return;
+            if (!document.pictureInPictureEnabled) {
+                toast.info('Picture-in-Picture is not supported in this browser.');
+                return;
+            }
             try {
-                await video.requestPictureInPicture();
+                if (document.pictureInPictureElement) {
+                    await document.exitPictureInPicture();
+                } else if (preview.requestPictureInPicture) {
+                    await preview.requestPictureInPicture();
+                }
             } catch (e) {
-                console.warn(e);
+                console.warn('PiP error', e);
             }
         }
 
-        // --- Minimal copy-paste signaling (Sharer side) ---
+        // --- Sharer side: create Offer, apply Answer (manual) ---
         async function makeOffer() {
             if (!rtc.stream) {
-                toast.warn('Start screen share first.');
+                toast.warn('Start screen sharing first.');
                 return;
             }
+
             if (rtc.pc) {
                 rtc.pc.close();
                 rtc.pc = null;
@@ -243,7 +298,7 @@
                 toast.ok('Answer applied. Waiting for connection…');
             } catch (e) {
                 console.error(e);
-                toast.err('Invalid Answer JSON.');
+                toast.err('Failed to apply Answer.');
             }
         }
 
@@ -282,27 +337,26 @@
             await waitForIceGathering(rtc.viewerPc);
 
             document.getElementById('answer-out').value = JSON.stringify(rtc.viewerPc.localDescription);
-            toast.ok('Answer created. Send back to sharer.');
-        }
-
-        function waitForIceGathering(pc) {
-            return new Promise((resolve) => {
-                if (pc.iceGatheringState === 'complete') return resolve();
-                function check() {
-                    if (pc.iceGatheringState === 'complete') {
-                        pc.removeEventListener('icegatheringstatechange', check);
-                        resolve();
-                    }
-                }
-                pc.addEventListener('icegatheringstatechange', check);
-                setTimeout(() => resolve(), 2000);
-            });
+            toast.info('Answer created. Send back to sharer.');
         }
 
         function init() {
+            const container = document.getElementById('remote-control');
+            if (!container) return;
+
+            const modeSharer = container.querySelector('input[name="webrtc-mode"][value="sharer"]');
+            if (modeSharer) {
+                modeSharer.checked = true;
+            }
+
             const start = document.getElementById('share-start');
             const stop = document.getElementById('share-stop');
             const pip = document.getElementById('pip-btn');
+
+            if (!start || !stop || !pip) {
+                console.warn('WebRTC controls not found in DOM.');
+                return;
+            }
 
             start.addEventListener('click', startShare);
             stop.addEventListener('click', stopShare);
@@ -323,7 +377,7 @@
 
             // URL hint ?viewer=1 auto-switches to viewer mode
             const params = new URLSearchParams(location.search);
-            if (params.get('viewer') === '1') {
+            if (params.get('viewer') == '1') {
                 document.querySelector('input[name="webrtc-mode"][value="viewer"]').checked = true;
                 document.querySelector('.signal-panel[data-role="sharer"]').classList.add('hidden');
                 document.querySelector('.signal-panel[data-role="viewer"]').classList.remove('hidden');
@@ -359,8 +413,7 @@
 })();
 
 
-
-// === Session code flow (no-copy-paste) ===
+// === Session code flow (copy-paste signaling already in your app) ===
 (function () {
     const toast = {
         ok: (m) => (window.Toast?.success ? Toast.success(m) : alert(m)),
@@ -433,4 +486,160 @@
 
     if (elBtnCreate) elBtnCreate.addEventListener('click', createSession);
     if (elBtnPublish) elBtnPublish.addEventListener('click', publishOffer);
+})();
+
+let __autoInFlight = false;
+
+// ===== Auto-offer & publish after Share Screen (least-intrusive addon) =====
+(function () {
+    // Do not touch existing scope; add minimal helpers and hook.
+    const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    function getSessionCodeFromDom() {
+        const el = document.getElementById('rc-session-code');
+        if (!el) return null;
+        const txt = el.textContent || '';
+        const m = txt.match(/\d{6,}/);   // רצף ספרות ראשון לפחות 6 תווים
+        return m ? m[0].slice(0, 6) : null;
+    }
+
+    async function waitForScreenShare(timeoutMs = 20000) {
+        const start = Date.now();
+        while (Date.now() - start < timeoutMs) {
+            const video = document.getElementById('share-preview');
+            const ok = !!(video && video.srcObject && typeof video.srcObject.getVideoTracks === 'function' &&
+                video.srcObject.getVideoTracks().length);
+            if (ok) return true;
+            await delay(400);
+        }
+        return false;
+    }
+
+    async function waitForOfferText(timeoutMs = 15000) {
+        const start = Date.now();
+        const area = document.getElementById('offer-out');
+        while (Date.now() - start < timeoutMs) {
+            if (area && area.value && area.value.trim()) return true;
+            await delay(300);
+        }
+        return false;
+    }
+
+    async function postJson(url, body) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(body || {}),
+            credentials: 'same-origin',
+        });
+        return res.json().catch(() => ({}));
+    }
+
+    async function pollAnswerAndApply(sessionCode, timeoutMs = 120000) {
+        const started = Date.now();
+        while (Date.now() - started < timeoutMs) {
+            try {
+                const res = await postJson('/webrtc/answer/get', { code: sessionCode });
+                const answer = res && res.data && res.data.answer;
+                if (answer) {
+                    const ta = document.getElementById('answer-in');
+                    if (ta) ta.value = JSON.stringify(answer);
+                    const btn = document.getElementById('apply-answer');
+                    if (btn) btn.click();
+                    (window.Toast?.success ? Toast.success('Admin connected.') : console.log('Admin connected.'));
+                    return true;
+                }
+            } catch (e) {
+                console.warn('[auto-offer] polling error', e);
+            }
+            await delay(1200);
+        }
+        return false;
+    }
+
+    async function autoFlowAfterShare() {
+        if (__autoInFlight) return;
+        __autoInFlight = true;
+        try {
+            const code = getSessionCodeFromDom();
+            if (!code) {
+                (window.Toast?.warning ? Toast.warning('קודם צור קוד שיתוף (Generate Code).') : alert('Create code first.'));
+                return;
+            }
+
+            const hasShare = await waitForScreenShare();
+            if (!hasShare) {
+                console.warn('[auto-offer] No screen share detected.');
+                return;
+            }
+
+            // Trigger existing "Create Offer" flow
+            const makeOfferBtn = document.getElementById('make-offer');
+            if (!makeOfferBtn) {
+                console.warn('[auto-offer] #make-offer not found');
+                return;
+            }
+            try { makeOfferBtn.click(); } catch { }
+
+            const gotOffer = await waitForOfferText();
+            if (!gotOffer) {
+                console.warn('[auto-offer] Offer did not appear.');
+                return;
+            }
+
+            // Prefer using existing Publish button handler if present
+            const publishBtn = document.getElementById('rc-publish-offer');
+            if (publishBtn && !publishBtn.disabled) {
+                try { publishBtn.click(); } catch { }
+                return; // existing logic will start polling
+            }
+
+            // Fallback: direct post to server and start polling locally
+            let offerJson = null;
+            try {
+                offerJson = JSON.parse(document.getElementById('offer-out').value);
+            } catch {
+                (window.Toast?.error ? Toast.error('Invalid Offer JSON') : alert('Invalid Offer JSON'));
+                return;
+            }
+
+            const res = await postJson('/webrtc/offer', { code, offer: offerJson });
+            if (!res || res.success === false) {
+                const msg = (res && (res.error || res.message)) || 'Failed to publish offer';
+                (window.Toast?.error ? Toast.error(msg) : alert(msg));
+                return;
+            }
+
+            await pollAnswerAndApply(code);
+
+        } finally {
+            __autoInFlight = false;
+        }
+
+    }
+
+    function hookShareButton() {
+        const btn = document.getElementById('share-start');
+        if (!btn) return;
+        if (btn.__autoOfferHooked) return;
+        btn.__autoOfferHooked = true;
+
+        btn.addEventListener('click', () => {
+            // Fire-and-forget automation; no interference with existing handlers
+            setTimeout(autoFlowAfterShare, 0);
+        });
+    }
+
+    function init() {
+        hookShareButton();
+        // also observe DOM mutations in case UI loads late
+        const obs = new MutationObserver(() => hookShareButton());
+        obs.observe(document.documentElement, { childList: true, subtree: true });
+    }
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(init, 0);
+    } else {
+        document.addEventListener('DOMContentLoaded', init);
+    }
 })();
