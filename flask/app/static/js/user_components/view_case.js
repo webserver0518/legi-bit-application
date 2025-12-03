@@ -420,12 +420,22 @@
       const icon = document.createElement('span');
       icon.className = 'icon';
       icon.innerHTML = rec.kind === 'task' ? '🗒️' : window.utils.getFileIconHTML(rec.name);
+      right1.appendChild(icon);
+
+
+      const selIdx = selectedIndexBadge(rec._id);  // פונקציה קיימת אצלך
+      if (selIdx) {
+        const badge = document.createElement('span');
+        badge.className = 'pick-badge';
+        badge.textContent = selIdx;
+        right1.appendChild(badge);
+      }
 
       const titleSpan = document.createElement('span');
       titleSpan.className = 'title';
       titleSpan.textContent = rec.kind === 'task' ? (stripExt(rec.description).slice(0, 40) || 'הערה') : (rec.name || 'קובץ');
 
-      right1.appendChild(icon);
+
       right1.appendChild(titleSpan);
 
       const left1 = document.createElement('div');
@@ -495,12 +505,15 @@
       line2.appendChild(left2);
       item.appendChild(line2);
 
-      // Actions (open/delete) — על כל ה-item
-      item.addEventListener('click', () => {
-        if (rec.kind === 'file') {
-          openFile(rec).catch(err => window.Toast.danger(err?.message || 'שגיאה בפתיחת קובץ'));
-        }
-      });
+      if (rec.kind === 'file') {
+        icon.classList.add('file-opener');          // לצורך סטיילינג ב-CSS
+        icon.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openFile(rec).catch(err =>
+            window.Toast.danger(err?.message || 'שגיאה בפתיחת קובץ')
+          );
+        });
+      }
 
 
       // === פעולות בהובר - צמוד שמאל, שתי אייקונים אחד ליד השני ===
