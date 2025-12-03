@@ -1,0 +1,232 @@
+/* admin_components/remote_control.css — Admin viewer */
+#remote-control-admin.remote-control-admin-page {
+    --bg: #FFF8DC;
+    /* calm yellowish background */
+    --card: #FFFFFF;
+    --text: #111111;
+    --muted: #444444;
+    --primary: #0F62FE;
+    --primary-700: #0043CE;
+    --border: #E5E7EB;
+
+    color: var(--text);
+    background: var(--bg);
+    border-radius: 14px;
+    padding: 12px;
+}
+
+#remote-control-admin .muted {
+    color: var(--muted);
+}
+
+#remote-control-admin .small {
+    font-size: .9rem;
+}
+
+#remote-control-admin .rc-head h2 {
+    margin: 0 0 6px;
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+#remote-control-admin .rc-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 1100px) {
+    #remote-control-admin .rc-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+#remote-control-admin .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .08);
+}
+
+#remote-control-admin .steps {
+    display: flex;
+    gap: 8px;
+    padding: 0;
+    margin: 8px 0 12px;
+}
+
+#remote-control-admin .step-chip {
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--border);
+    background: #FFFDF4;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: .92rem;
+}
+
+#remote-control-admin .step-chip span {
+    display: inline-grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 800;
+    font-size: .82rem;
+}
+
+#remote-control-admin .label {
+    display: block;
+    font-weight: 800;
+    margin-bottom: 6px;
+}
+
+#remote-control-admin .form-row {
+    margin: 10px 0 4px;
+}
+
+#remote-control-admin .code-input-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#remote-control-admin .code-input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: .06em;
+    font-size: 1.08rem;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    width: 220px;
+    text-align: center;
+}
+
+#remote-control-admin .btn {
+    background: #FAFAFA;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .06s ease, background .15s ease, border-color .15s ease;
+}
+
+#remote-control-admin .btn:hover {
+    border-color: #D1D5DB;
+    background: #FFFFFF;
+}
+
+#remote-control-admin .btn:active {
+    transform: translateY(1px);
+}
+
+#remote-control-admin .btn[disabled] {
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+#remote-control-admin .btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+#remote-control-admin .btn-primary:hover {
+    background: var(--primary-700);
+    border-color: var(--primary-700);
+}
+
+#remote-control-admin .actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+#remote-control-admin .signal-label {
+    display: block;
+    font-weight: 800;
+    margin: 10px 0 6px;
+}
+
+#remote-control-admin .signal-text {
+    width: 100%;
+    min-height: 96px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #FFFFFF;
+    color: var(--text);
+    padding: 10px 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    resize: vertical;
+}
+
+#remote-control-admin .signal-actions {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+#remote-control-admin .video-card {
+    padding: 10px;
+}
+
+#remote-control-admin .video-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+#remote-control-admin .status {
+    font-size: .92rem;
+    color: var(--muted);
+}
+
+#remote-control-admin .video-wrap {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #000;
+    min-height: 200px;
+}
+
+#remote-control-admin video {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+}
+
+#remote-control-admin .hint {
+    margin-top: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #FFFDF4;
+}
+
+#remote-control-admin .mini {
+    margin: 6px 0 0 18px;
+}
+
+#remote-control-admin .log {
+    margin: 8px 0 0;
+    background: #111;
+    color: #d5f0ff;
+    padding: 10px;
+    border-radius: 10px;
+    max-height: 200px;
+    overflow: auto;
+    font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;
+}
