@@ -54,12 +54,16 @@
     <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="clients">לקוחות</a>
     <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="files">קבצים</a>
     <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="attendance">נוכחות</a>
+    <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="calendar">יומן</a>
     <hr>
     <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="support">תמיכה</a>
     <a href="#" class="sidebar-link" data-type="client" data-sidebar="sidebar" data-sub-sidebar="regulations">תקנון</a>
     <hr>
     <a href="{{ url_for('site.logout') }}" onclick="clearStorageAndLogout(event)">התנתקות</a>
     <hr>
+    <a class="navbar-brand">
+      <img src="{{ url_for('static', filename='images/circle_legibit.webp') }}" alt="Logo">
+    </a>
   </div>
 
   <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
