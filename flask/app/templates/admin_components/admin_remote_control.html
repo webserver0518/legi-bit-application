@@ -1,0 +1,90 @@
+<!-- admin_components/remote_control.html -->
+<section id="remote-control-admin" class="remote-control-admin-page">
+  <header class="rc-head">
+    <h2>Remote Control — Admin Viewer</h2>
+    <p class="muted">View-only WebRTC console to join a user’s screen-share session.</p>
+  </header>
+
+  <div class="rc-grid">
+    <!-- Left: Remote video -->
+    <div class="rc-col video-col">
+      <div class="card video-card">
+        <div class="video-toolbar">
+          <button class="btn" id="btn-fullscreen" title="Fullscreen video">⤢ Fullscreen</button>
+          <button class="btn" id="btn-mute" title="Mute / Unmute audio">🔇 Mute</button>
+          <span class="status" id="conn-status">Idle</span>
+        </div>
+        <div class="video-wrap">
+          <video id="remoteVideo" playsinline autoplay></video>
+        </div>
+      </div>
+
+      <details class="card hint" open>
+        <summary>Notes</summary>
+        <ul class="mini">
+          <li>Viewer is <strong>read-only</strong> (no mouse/keyboard control here).</li>
+          <li>Works via WebRTC (HTTPS/localhost). For tough NATs use a TURN server.</li>
+        </ul>
+      </details>
+    </div>
+
+    <!-- Right: Controls -->
+    <div class="rc-col controls-col">
+      <div class="card">
+        <h3>Join via Session Code (server signaling)</h3>
+        <p class="muted small">Use this when backend signaling endpoints are available.</p>
+
+        <div class="form-row">
+          <label for="code-input" class="label">Session code</label>
+          <div class="code-input-wrap">
+            <input id="code-input" class="code-input" inputmode="numeric" autocomplete="one-time-code"
+              placeholder="6-digit code">
+            <button id="btn-join-code" class="btn btn-primary">Join</button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="btn-leave" class="btn" disabled>Leave</button>
+          <button id="btn-retry" class="btn" disabled>Retry ICE</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Manual (copy / paste) signaling</h3>
+        <ol class="steps">
+          <li class="step-chip"><span>1</span> Paste Offer (from user page)</li>
+          <li class="step-chip"><span>2</span> Create Answer</li>
+          <li class="step-chip"><span>3</span> Send Answer back to user</li>
+        </ol>
+
+        <label class="signal-label" for="offer-in">Paste “Offer” JSON</label>
+        <textarea id="offer-in" class="signal-text" placeholder='{"type":"offer","sdp":"..."}'></textarea>
+
+        <div class="signal-actions">
+          <button id="btn-create-answer" class="btn btn-primary">Create Answer</button>
+          <button id="btn-clear-offer" class="btn">Clear</button>
+        </div>
+
+        <label class="signal-label" for="answer-out">Your “Answer” JSON</label>
+        <textarea id="answer-out" class="signal-text" readonly placeholder="Will appear after Create Answer"></textarea>
+        <div class="signal-actions">
+          <button id="btn-copy-answer" class="btn">Copy</button>
+          <button id="btn-clear-answer" class="btn">Clear</button>
+        </div>
+
+        <details class="hint">
+          <summary>Advanced</summary>
+          <ul class="mini">
+            <li>We wait for ICE gathering to finish so the Answer includes candidates (“no-trickle”).</li>
+            <li>Configure your own STUN/TURN via <code>window.__ICE_SERVERS</code> if needed.</li>
+          </ul>
+        </details>
+      </div>
+
+      <details class="card" id="log-box">
+        <summary>Connection log</summary>
+        <pre id="rtc-log" class="log"></pre>
+      </details>
+    </div>
+  </div>
+</section>
