@@ -1,45 +1,156 @@
-import time, secrets, threading
+# flask/app/services/webrtc_service.py
+import os, time, secrets, json, threading
+from typing import Any, Dict, Optional
 
-class WebRTCSessionStore:
-    def __init__(self, ttl_seconds=600):
+try:
+    from flask import current_app
+except Exception:
+    current_app = None  # type: ignore
+
+
+# ---------- In-memory fallback (ל־dev/וורקר יחיד) ----------
+class InMemorySessionStore:
+    def __init__(self, ttl_seconds: int = 600):
         self.ttl = ttl_seconds
-        self._d = {}
+        self._d: Dict[str, Dict[str, Any]] = {}
         self._lock = threading.Lock()
 
     def _prune(self):
         now = time.time()
-        for code in [c for c,v in self._d.items() if now - v["ts"] > self.ttl]:
-            self._d.pop(code, None)
+        stale = [c for c, v in self._d.items() if now - v["ts"] > self.ttl]
+        for c in stale:
+            self._d.pop(c, None)
 
     def _gen_code(self) -> str:
         return f"{secrets.randbelow(900000) + 100000}"  # 6 ספרות
 
-    def create(self, meta=None) -> str:
+    def create(self, meta: Optional[Dict[str, Any]] = None) -> str:
         self._prune()
         code = self._gen_code()
         with self._lock:
             self._d[code] = {"offer": None, "answer": None, "meta": meta or {}, "ts": time.time()}
         return code
 
-    def exists(self, code) -> bool:
-        self._prune(); return code in self._d
+    def exists(self, code: str) -> bool:
+        self._prune()
+        return code in self._d
 
-    def set_offer(self, code, offer) -> bool:
+    def set_offer(self, code: str, offer: Dict[str, Any]) -> bool:
         with self._lock:
-            s = self._d.get(code); 
-            if not s: return False
-            s["offer"] = offer; s["ts"] = time.time(); return True
+            s = self._d.get(code)
+            if not s:
+                return False
+            s["offer"] = offer
+            s["ts"] = time.time()
+            return True
 
-    def get_offer(self, code):
-        self._prune(); s = self._d.get(code); return s and s["offer"]
+    def get_offer(self, code: str) -> Optional[Dict[str, Any]]:
+        self._prune()
+        s = self._d.get(code)
+        return s and s["offer"]
 
-    def set_answer(self, code, answer) -> bool:
+    def set_answer(self, code: str, answer: Dict[str, Any]) -> bool:
         with self._lock:
-            s = self._d.get(code); 
-            if not s: return False
-            s["answer"] = answer; s["ts"] = time.time(); return True
+            s = self._d.get(code)
+            if not s:
+                return False
+            s["answer"] = answer
+            s["ts"] = time.time()
+            return True
 
-    def get_answer(self, code):
-        self._prune(); s = self._d.get(code); return s and s["answer"]
+    def get_answer(self, code: str) -> Optional[Dict[str, Any]]:
+        self._prune()
+        s = self._d.get(code)
+        return s and s["answer"]
 
-STORE = WebRTCSessionStore(ttl_seconds=600)
+
+# ---------- Redis store (לפרודקשן/ריבוי וורקרים) ----------
+class RedisSessionStore:
+    def __init__(self, redis_client, ttl_seconds: int = 600, prefix: str = "webrtc:session:"):
+        self.r = redis_client
+        self.ttl = ttl_seconds
+        self.prefix = prefix
+
+    def _key(self, code: str) -> str:
+        return f"{self.prefix}{code}"
+
+    def _gen_code(self) -> str:
+        return f"{secrets.randbelow(900000) + 100000}"
+
+    def create(self, meta: Optional[Dict[str, Any]] = None) -> str:
+        # מוודא ייחודיות בסיסית
+        for _ in range(10):
+            code = self._gen_code()
+            key = self._key(code)
+            if not self.r.exists(key):
+                payload = {
+                    "offer": None,
+                    "answer": None,
+                    "meta": meta or {},
+                    "ts": time.time(),
+                }
+                self.r.setex(key, self.ttl, json.dumps(payload))
+                return code
+        raise RuntimeError("Failed to allocate session code")
+
+    def exists(self, code: str) -> bool:
+        return bool(self.r.exists(self._key(code)))
+
+    def _load(self, code: str) -> Optional[Dict[str, Any]]:
+        raw = self.r.get(self._key(code))
+        if not raw:
+            return None
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8")
+        return json.loads(raw)
+
+    def _save(self, code: str, obj: Dict[str, Any]) -> None:
+        obj["ts"] = time.time()
+        self.r.setex(self._key(code), self.ttl, json.dumps(obj))
+
+    def set_offer(self, code: str, offer: Dict[str, Any]) -> bool:
+        obj = self._load(code)
+        if not obj:
+            return False
+        obj["offer"] = offer
+        self._save(code, obj)
+        return True
+
+    def get_offer(self, code: str) -> Optional[Dict[str, Any]]:
+        obj = self._load(code)
+        return obj and obj.get("offer")
+
+    def set_answer(self, code: str, answer: Dict[str, Any]) -> bool:
+        obj = self._load(code)
+        if not obj:
+            return False
+        obj["answer"] = answer
+        self._save(code, obj)
+        return True
+
+    def get_answer(self, code: str) -> Optional[Dict[str, Any]]:
+        obj = self._load(code)
+        return obj and obj.get("answer")
+
+
+# ---------- בחירת store דינמית (Redis אם קיים, אחרת זיכרון) ----------
+_STORE = None
+
+def webrtc_store():
+    global _STORE
+    if _STORE is not None:
+        return _STORE
+
+    ttl = int(os.getenv("WEBRTC_TTL", "600"))
+
+    # ננסה למשוך את ה־Redis מהאפליקציה (כמו Flask-Session)
+    try:
+        if current_app and current_app.config.get("SESSION_REDIS"):
+            _STORE = RedisSessionStore(current_app.config["SESSION_REDIS"], ttl_seconds=ttl)
+            return _STORE
+    except Exception:
+        pass
+
+    # נפילה לזיכרון
+    _STORE = InMemorySessionStore(ttl_seconds=ttl)
+    return _STORE
