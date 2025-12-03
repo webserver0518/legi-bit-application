@@ -71,6 +71,12 @@ function showSubMenu(type, force = false) {
       <hr>
       <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="clock_in_out">דיווח</a>
       <hr>`;
+  } else if (type === 'calendar') {
+    html = `
+      <hr>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="calendar_office">יומן משרד</a>
+      <a href="#" class="sub-sidebar-link" data-type="user" data-sidebar="sub-sidebar" data-page="calendar_user">יומן משתמש</a>
+      <hr>`;
   } else if (type === 'support') {
     html = `
       <hr>
