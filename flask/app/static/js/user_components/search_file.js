@@ -110,7 +110,7 @@ window.init_search_file = async function () {
                     return `
                     <tr data-file-serial="${file.serial}" data-case-serial="${file.case_serial || ''}">
                         <td>
-                            ${getFileIconHTML(file.name)}
+                            ${window.utils.getFileIconHTML(file.name)}
                             <a href="#" onclick="return OpenNewTab('${file.serial}')">
                                 ${window.utils.safeValue(file.name)}
                             </a>
@@ -245,30 +245,6 @@ function RowToSuperString(file) {
     walk(null, file);
     return parts.join("\n").toLowerCase();
 }
-
-
-
-// מחזיר HTML של <img> לאייקון מתאים לפי שם קובץ
-function getFileIconHTML(filename) {
-    const name = (filename || "").toLowerCase();
-
-    const byExt = (exts, icon) => exts.some(ex => name.endsWith("." + ex)) && icon;
-
-    const icon =
-        byExt(["pdf"], "PDF") ||
-        byExt(["doc", "docx", "rtf"], "WORD") ||
-        byExt(["xls", "xlsx", "csv"], "EXCEL") ||
-        byExt(["jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg"], "IMAGE") ||
-        byExt(["mp4", "mov", "avi", "mkv", "webm", "m4v"], "VIDEO") ||
-        byExt(["mp3", "m4a", "wav", "ogg", "flac"], "AUDIO") ||
-        byExt(["zip", "rar", "7z", "tar", "gz", "bz2"], "ARCHIVE") ||
-        "GENERIC";
-
-    const src = `/static/images/icons/${icon}.svg`;
-    // סגנון קטן inline כדי לא לגעת ב-CSS
-    return `<img src="${src}" alt="" style="width:18px;height:18px;vertical-align:-3px;margin-inline-end:6px;">`;
-}
-
 
 
 (function enableInlineEditDescription() {
