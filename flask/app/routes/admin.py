@@ -3,7 +3,7 @@ from werkzeug.security import check_password_hash
 from flask import Blueprint, render_template, request, flash, current_app
 
 from ..services import mongodb_service, s3_service
-from ..services.webrtc_service import webrtc_store
+from ..services.webrtc_service import webrtc_store, WebRTCStoreUnavailable
 
 from ..managers.response_management import ResponseManager
 from ..managers.json_management import JSONManager
@@ -133,27 +133,47 @@ def get_roles_list():
 @AuthorizationManager.login_required
 @AuthorizationManager.admin_required
 def admin_webrtc_join():
-    store = webrtc_store()
+    try:
+        store = webrtc_store()
+    except WebRTCStoreUnavailable as e:
+        current_app.logger.error(f"[WebRTC] store unavailable in admin_webrtc_join: {e}")
+        # אם יש לך service_unavailable השתמש בו, אחרת internal:
+        return ResponseManager.internal(
+            "WebRTC is currently unavailable (Redis offline or not configured)."
+        )
+
     data = request.get_json(silent=True) or {}
     code = (data.get("code") or "").strip()
     if not code:
         return ResponseManager.bad_request("Missing 'code'")
+
     offer = store.get_offer(code)
     if not offer:
         return ResponseManager.not_found("Offer not ready (wrong code or user hasn't started sharing)")
+
     return ResponseManager.success(data={"offer": offer})
 
 @admin_bp.route("/admin/webrtc/answer", methods=["POST"])
 @AuthorizationManager.login_required
 @AuthorizationManager.admin_required
 def admin_webrtc_answer():
-    store = webrtc_store()
+    try:
+        store = webrtc_store()
+    except WebRTCStoreUnavailable as e:
+        current_app.logger.error(f"[WebRTC] store unavailable in admin_webrtc_answer: {e}")
+        return ResponseManager.internal(
+            "WebRTC is currently unavailable (Redis offline or not configured)."
+        )
+
     data = request.get_json(silent=True) or {}
     code = (data.get("code") or "").strip()
     answer = data.get("answer")
+
     if not code or not answer:
         return ResponseManager.bad_request("Missing 'code' or 'answer'")
+
     if not store.set_answer(code, answer):
         return ResponseManager.not_found("Invalid or expired code")
+
     current_app.logger.info(f"[WebRTC] Admin set answer for code={code}")
     return ResponseManager.success(data={"ok": True})
