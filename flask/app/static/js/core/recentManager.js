@@ -50,6 +50,14 @@
         return { list, existed };
     }
 
+    function remove(kind, id) {
+        const sid = String(id ?? '');
+        if (!sid) return get(kind);
+        const list = get(kind).filter(x => x !== sid);
+        set(kind, list);
+        return list;
+    }
+
     async function openCase(serial) {
         touch('case', serial);
         window.renderRecentCases();
@@ -91,7 +99,7 @@
     }
 
     window.Recents = {
-        get, set, touch, openCase, openOffice,
+        get, set, touch, remove, openCase, openOffice,
         setCaseTitle, getCaseTitle,
         setOfficeTitle, getOfficeTitle
     };
@@ -107,28 +115,44 @@ function renderRecentCases() {
     const list = window.Recents.get('case');
     ul.innerHTML = '';
 
-    // בינתיים מציגים רק את המספר (serial) – בלי ניווט
     const frag = document.createDocumentFragment();
     list.forEach(serial => {
+        const title = window.Recents.getCaseTitle(serial) || `תיק #${serial}`;
         const li = document.createElement('li');
         li.innerHTML = `
-            <a href="#" class="sub-sidebar-link recent-case"
-                data-type="user" data-sidebar="sub-sidebar"
-                data-page="view_case"
-                data-case-serial="${serial}">
-                ${window.Recents.getCaseTitle(serial)}
-            </a>`;
+      <a href="#" class="sub-sidebar-link recent-case"
+         data-type="user" data-sidebar="sub-sidebar"
+         data-page="view_case"
+         data-case-serial="${serial}">
+        ${title}
+        <button type="button"
+                class="recent-remove"
+                data-case-serial="${serial}"
+                aria-label="הסר מהרשימה"
+                title="הסר">×</button>
+      </a>`;
         frag.appendChild(li);
     });
     ul.appendChild(frag);
 }
-
 function bindRecentCasesEvents() {
     const cont = document.getElementById('subMenu');
     if (!cont) return;
 
-    // לחיצה על פריט אחרון – נוגעים בתור בלבד (בלי ניווט)
     cont.addEventListener('click', (e) => {
+        // לחיצה על ✕ – מוחקים מהרשימה ולא מנווטים
+        const btn = e.target.closest('button.recent-remove');
+        if (btn) {
+            e.preventDefault();
+            e.stopPropagation(); // לא לתת ל-click של ה<a> לבעוט
+            const serial = btn.dataset.caseSerial || btn.closest('a.recent-case')?.dataset.caseSerial;
+            window.Recents.remove('case', serial);
+            window.renderRecentCases?.();
+            window.Toast?.success?.('התיק הוסר מרשימת האחרונים');
+            return;
+        }
+
+        // לחיצה על הפריט עצמו – פותחים את התיק
         const a = e.target.closest('a.recent-case');
         if (!a) return;
         e.preventDefault();
