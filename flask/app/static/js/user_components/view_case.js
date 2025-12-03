@@ -20,20 +20,13 @@
 
   // ---------- Utils ----------
   const fmtTime = (ts) => ts || ''; // מגיע כבר בפורמט שלך "YYYY-MM-DD HH:MM:SS"
-  const iconByMime = (mime, name = '') => {
-    if ((name || '').match(/\.(pdf)$/i)) return '📄';
-    if ((name || '').match(/\.(docx?|rtf)$/i)) return '📝';
-    if ((name || '').match(/\.(xlsx?|csv)$/i)) return '📊';
-    if ((name || '').match(/\.(png|jpe?g|gif|webp|bmp|svg)$/i)) return '🖼️';
-    if ((name || '').match(/\.(mp4|mov|avi|mkv|webm)$/i)) return '🎞️';
-    if ((name || '').match(/\.(mp3|wav|m4a|flac)$/i)) return '🎧';
-    return mime?.startsWith('text/') ? '📄' : '📦';
-  };
   const stripExt = (s = '') => s.replace(/\.[^.]+$/, '');
   const cap = (s = '') => (s ? s[0].toUpperCase() + s.slice(1) : '');
 
   // ---------- Bootstrap ----------
   async function init_view_case() {
+
+    await window.utils.waitForDom();
     // 1) זהה איזה תיק לפתוח
     const recentCases = window.Recents?.get?.('case') || [];
     CASE_SERIAL = Number(recentCases?.[0] || 0);
@@ -53,6 +46,7 @@
     bindSorter();
     bindUploaders(); // העלאה מיידית
 
+    console.log('rendering case view for case serial:', CASE_SERIAL);
     // 5) רנדר ראשון
     renderHeader();
     renderParties();
@@ -94,6 +88,8 @@
     }
     CASE = res.data[0]; // case מורחב
     console.log('Loaded case:', CASE);
+    console.log("Loaded case: " + JSON.stringify(CASE));
+
   }
 
   // ---------- Render: Header ----------
@@ -111,17 +107,27 @@
     title.dataset.field = 'title';
     title.textContent = CASE.title || '—';
     $('#case-title').replaceChildren(title);
+    console.log('done rendering header1');
 
     // סטטוס — span קליק שהופך ל-select
-    const statusWrap = document.createElement('span');
-    statusWrap.className = 'status-edit';
-    const dot = document.createElement('span');
-    dot.className = 'status-dot';
-    dot.textContent = CASE.status || '—';
-    applyStatusDot(dot, CASE.status);
-    statusWrap.appendChild(dot);
-    statusWrap.addEventListener('click', () => openStatusSelect(statusWrap));
-    $('#status').replaceChildren(statusWrap);
+    let statusHost = document.querySelector('#status');
+    if (statusHost && /^(INPUT|SELECT|TEXTAREA)$/.test(statusHost.tagName)) {
+      const span = document.createElement('span');
+      span.id = statusHost.id;
+      statusHost.replaceWith(span);
+      statusHost = span;
+    }
+    if (statusHost) {
+      const statusWrap = document.createElement('span');
+      statusWrap.className = 'status-edit';
+      const dot = document.createElement('span');
+      dot.className = 'status-dot';
+      applyStatusDot(dot, CASE.status);
+      statusWrap.appendChild(dot);
+      statusWrap.addEventListener('click', () => openStatusSelect(statusWrap));
+      statusHost.replaceChildren(statusWrap);
+    }
+    console.log('done rendering header2');
 
     // בטיפול — span קליק שהופך ל-select משתמשים
     const handler = document.createElement('span');
@@ -130,12 +136,28 @@
     handler.addEventListener('click', () => openHandlerSelect(handler));
     $('#handler').replaceChildren(handler);
 
+    console.log('done rendering header3');
     attachCaseEditors();
   }
 
+  // מחזיר “slug” בטוח לקלאס אחד
+  function statusSlug(s) {
+    return String(s || '')
+      .normalize('NFKD')                 // מפרק ניקוד
+      .replace(/[\u0591-\u05C7]/g, '')   // מסיר ניקוד עברי
+      .replace(/[^\p{L}\p{N}]+/gu, '-')  // רווחים/סימנים -> מקף
+      .replace(/^-+|-+$/g, '')           // מסיר מקפים בקצוות
+      .toLowerCase();
+  }
+
   function applyStatusDot(el, status) {
-    el.classList.remove('status-active', 'status-archived', 'status-pending', 'status-on-hold');
-    const cls = `status-${(status || '').toLowerCase()}`;
+    // מסיר כל מחלקה קודמת שמתחילה ב-status-
+    [...el.classList].forEach(c => { if (c.startsWith('status-')) el.classList.remove(c); });
+
+    const slug = statusSlug(status);
+    // אם לא הצלחנו להפיק slug – נשתמש ב־pending כבסיס
+    const cls = slug ? `status-${slug}` : 'status-pending';
+
     el.classList.add(cls);
     el.textContent = status || '—';
   }
@@ -219,6 +241,8 @@
     // Applicants (clients)
     const tbA = $('#applicant-tbody');
     tbA.innerHTML = '';
+    console.log('Rendering parties for case:', CASE.serial);
+    console.log('clients:', CASE.clients);
     (CASE.clients || []).forEach(cl => {
       const tr = document.createElement('tr');
       tr.dataset.clientSerial = String(cl.serial);
@@ -314,7 +338,7 @@
       if (!res?.success) throw new Error(res?.error || 'עדכון עובדות נכשל');
       CASE.facts = value;
       window.Toast.success('עובדות עודכנו');
-    }, { multiline: true });
+    }, { multiline: true, fixedHeight: true });
   }
 
   // ---------- Records (files + tasks) ----------
@@ -383,6 +407,7 @@
       const item = document.createElement('div');
       item.className = 'item';
       item.dataset.id = rec._id;
+      item.dataset.kind = rec.kind;
 
       // Row 1: icon + name/desc | time + (bell for notes) + select button
       const line1 = document.createElement('div');
@@ -394,7 +419,7 @@
       // item badge/index + icon + name
       const icon = document.createElement('span');
       icon.className = 'icon';
-      icon.textContent = rec.kind === 'task' ? '🗒️' : iconByMime(rec.technical_type, rec.name);
+      icon.innerHTML = rec.kind === 'task' ? '🗒️' : window.utils.getFileIconHTML(rec.name);
 
       const titleSpan = document.createElement('span');
       titleSpan.className = 'title';
@@ -426,17 +451,7 @@
         timeWrap.appendChild(bell);
       }
 
-      const selectBtn = document.createElement('button');
-      selectBtn.className = 'sel-btn';
-      selectBtn.title = 'בחר/בטל לבחירה';
-      selectBtn.textContent = selectedIndexBadge(rec._id) || '◻';
-      selectBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleSelect(rec._id);
-      });
-
       left1.appendChild(timeWrap);
-      left1.appendChild(selectBtn);
 
       line1.appendChild(right1);
       line1.appendChild(left1);
@@ -487,16 +502,41 @@
         }
       });
 
-      // לחצן מחיקה (בפינה)
-      const del = document.createElement('button');
-      del.className = 'del-btn';
-      del.title = rec.kind === 'task' ? 'מחק הערה' : 'מחק קובץ';
-      del.textContent = '🗑';
-      del.addEventListener('click', (e) => {
+
+      // === פעולות בהובר - צמוד שמאל, שתי אייקונים אחד ליד השני ===
+      const actions = document.createElement('div');
+      actions.className = 'hover-actions';
+
+      // מחיקה — קבצים ומשימות
+      const del2 = document.createElement('button');
+      del2.className = 'delete-btn';
+      del2.title = rec.kind === 'task' ? 'מחק הערה' : 'מחק קובץ';
+      del2.textContent = '🗑';
+      del2.addEventListener('click', (e) => {
         e.stopPropagation();
         confirmDelete(rec);
       });
-      item.appendChild(del);
+      actions.appendChild(del2);
+
+      // איחוד — רק לקבצים
+      if (rec.kind === 'file') {
+        const pick = document.createElement('button');
+        pick.className = 'icon-btn';
+        pick.title = 'בחר לאיחוד';
+        // מס' סידורי כשנבחר, או ריבוע ריק כשלא
+        pick.textContent = selectedIndexBadge(rec._id) || '◻';
+        pick.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleSelect(rec._id);
+          // רענון הטקסט על הכפתור לפי המיקום החדש בבחירה
+          pick.textContent = selectedIndexBadge(rec._id) || '◻';
+        });
+        actions.appendChild(pick);
+      }
+
+      // להדביק לאייטם
+      item.appendChild(actions);
+
 
       listEl.appendChild(item);
     });
@@ -533,6 +573,7 @@
     return idx >= 0 ? String(idx + 1) : '';
   }
   function toggleSelect(id) {
+    if (!String(id).startsWith('f-')) return;
     const i = SELECTED.indexOf(id);
     if (i >= 0) SELECTED.splice(i, 1);
     else SELECTED.push(id);
@@ -540,12 +581,14 @@
   }
 
   async function openFile(rec) {
-    const fileSerial = rec.serial;
-    const fileName = rec.file_name || rec.name;
-    const url = `/get_file_url?case_serial=${encodeURIComponent(CASE.serial)}&file_serial=${encodeURIComponent(fileSerial)}&file_name=${encodeURIComponent(fileName)}`;
-    const res = await window.API.getJson(url);
+    const params = new URLSearchParams({
+      case_serial: String(rec.case_serial || (window.CASE && CASE.serial) || ''),
+      file_serial: String(rec.serial),
+      file_name: rec.name || rec.file_name || ''
+    });
+    const res = await window.API.getJson(`/get_file_url?${params}`);
     if (!res?.success || !res.data) throw new Error(res?.error || 'לא ניתן לפתוח את הקובץ');
-    window.open(res.data, '_blank');
+    window.open(typeof res.data === 'string' ? res.data : (res.data.url || ''), '_blank');
   }
 
   function confirmDelete(rec) {
@@ -810,8 +853,12 @@
   }
 
   // ---------- Inline editor infra ----------
-  function attachInlineEditor(span, onCommit, { multiline = false } = {}) {
+  function attachInlineEditor(span, onCommit, { multiline = false, fixedHeight = false } = {}) {
     if (!span) return;
+
+    if (!multiline && (span.dataset?.multiline === '1' || span.dataset?.multiline === 'true')) {
+      multiline = true;
+    }
 
     const startEdit = () => {
       if (span.dataset.editing) return;
@@ -827,11 +874,19 @@
       input.value = before;
       input.className = 'inline-input';
 
+      // אם זה בתוך העמודה הימנית של הרשימה — ננעל רוחב מלא
+      const insideRight = !!span.closest('.right');
+      if (insideRight) {
+        input.style.width = '100%';
+        input.style.flex = '1 1 auto';
+        input.style.boxSizing = 'border-box';
+      }
+
       // ---- חישוב רוחב לחד־שורתיים ----
       let measure = null;
       const baseWidth = multiline ? 0 : (span.getBoundingClientRect().width || 0);
 
-      if (!multiline) {
+      if (!multiline && !insideRight) {
         // אלמנט נסתר למדידה בפונט המדויק של הספאן
         measure = document.createElement('span');
         measure.className = 'inline-measure';
@@ -855,16 +910,30 @@
         syncWidth();
         input.addEventListener('input', syncWidth);
       } else {
-        // ---- מולטיליין: כל הרוחב + גובה אוטומטי ----
+        // רוחב מלא (או מולטיליין) + גובה אוטומטי במקרה של textarea
         span.replaceChildren(input);
 
-        const autoGrow = () => {
-          input.style.height = 'auto';
-          const h = input.scrollHeight || 40;
-          input.style.height = `${h}px`;
-        };
-        autoGrow();
-        input.addEventListener('input', autoGrow);
+        if (multiline) {
+          if (fixedHeight) {
+            // מודדים את הגובה שהיה לפני ההחלפה ל-textarea
+            const measured = span.getBoundingClientRect().height || span.offsetHeight || 80;
+            const h = Math.max(Math.round(measured), 80);
+            // קיבוע גובה: אין auto-grow, יש גלילה אם צריך
+            input.style.minHeight = h + 'px';
+            input.style.height = h + 'px';
+            input.style.maxHeight = h + 'px';
+            input.style.overflowY = 'auto';
+            input.style.resize = 'none';
+          } else {
+            const autoGrow = () => {
+              input.style.height = 'auto';
+              const h = input.scrollHeight || 40;
+              input.style.height = `${h}px`;
+            };
+            autoGrow();
+            input.addEventListener('input', autoGrow);
+          }
+        }
       }
 
       input.focus();
