@@ -789,6 +789,26 @@
     }
   }
 
+  // מודד רוחב טקסט אמיתי לפי הפונט ומגדיר width ל-input
+  function autoSizeInlineInput(input) {
+    const mirror = document.createElement('span');
+    mirror.className = 'inline-measure';
+    mirror.textContent = input.value || '\u200b'; // שלא יהיה 0 תווים
+
+    // לוודא אותו פונט כמו ה-input
+    const cs = getComputedStyle(input);
+    mirror.style.font = cs.font;
+    mirror.style.lineHeight = cs.lineHeight;
+    mirror.style.letterSpacing = cs.letterSpacing;
+    mirror.style.whiteSpace = 'pre';
+
+    document.body.appendChild(mirror);
+    const width = mirror.getBoundingClientRect().width;
+    mirror.remove();
+
+    input.style.width = (width + 4) + 'px'; // כמה פיקסלים רווח
+  }
+
   // ---------- Inline editor infra ----------
   function attachInlineEditor(span, onCommit, { multiline = false } = {}) {
     if (!span) return;
@@ -799,51 +819,109 @@
       span.dataset.editing = '1';
       span.classList.add('editing');
 
-      const old = span.textContent === '—' ? '' : span.textContent;
+      // הטקסט לפני עריכה (מתייחס ל־"—" כערך ריק)
+      const before = span.textContent === '—' ? '' : span.textContent;
+
+      // קלט לפי סוג
       const input = multiline ? document.createElement('textarea') : document.createElement('input');
-      input.value = old;
+      input.value = before;
       input.className = 'inline-input';
 
-      const updateWidth = () => {
-        input.style.width = (input.value.length + 1) + "ch";
-      };
-      updateWidth();
-      input.addEventListener("input", updateWidth);
+      // ---- חישוב רוחב לחד־שורתיים ----
+      let measure = null;
+      const baseWidth = multiline ? 0 : (span.getBoundingClientRect().width || 0);
 
-      span.replaceChildren(input);
+      if (!multiline) {
+        // אלמנט נסתר למדידה בפונט המדויק של הספאן
+        measure = document.createElement('span');
+        measure.className = 'inline-measure';
+
+        const cs = window.getComputedStyle(span);
+        measure.style.fontFamily = cs.fontFamily;
+        measure.style.fontSize = cs.fontSize;
+        measure.style.fontWeight = cs.fontWeight;
+        measure.style.letterSpacing = cs.letterSpacing;
+
+        document.body.appendChild(measure);
+
+        const syncWidth = () => {
+          measure.textContent = input.value || ' ';
+          const w = measure.getBoundingClientRect().width;
+          const target = Math.max(w, baseWidth, 4); // לא פחות מהרוחב המקורי
+          input.style.width = `${target + 4}px`;
+        };
+
+        span.replaceChildren(input);
+        syncWidth();
+        input.addEventListener('input', syncWidth);
+      } else {
+        // ---- מולטיליין: כל הרוחב + גובה אוטומטי ----
+        span.replaceChildren(input);
+
+        const autoGrow = () => {
+          input.style.height = 'auto';
+          const h = input.scrollHeight || 40;
+          input.style.height = `${h}px`;
+        };
+        autoGrow();
+        input.addEventListener('input', autoGrow);
+      }
+
       input.focus();
 
+      // קפיצה לסוף הטקסט בשדות חד־שורתיים
+      if (!multiline) {
+        const v = input.value;
+        try {
+          input.setSelectionRange(v.length, v.length);
+        } catch { /* לא קריטי */ }
+      }
 
+      const cleanup = () => {
+        if (measure && measure.parentNode) {
+          measure.parentNode.removeChild(measure);
+          measure = null;
+        }
+        delete span.dataset.editing;
+        span.classList.remove('editing');
+      };
+
+      const cancel = () => {
+        span.textContent = before || '—';
+        cleanup();
+      };
 
       const commit = async () => {
         const val = input.value.trim();
-        if (val === old) return cancel();
+        if (val === (before || '').trim()) {
+          cancel();
+          return;
+        }
         try {
           await onCommit(val);
           span.textContent = val || '—';
         } catch (e) {
           window.Toast.danger(e?.message || 'שמירה נכשלה');
-          span.textContent = old || '—';
+          span.textContent = before || '—';
         } finally {
-          delete span.dataset.editing;
-          span.classList.remove('editing');
+          cleanup();
         }
       };
 
-      const cancel = () => {
-        span.textContent = old || '—';
-        delete span.dataset.editing;
-        span.classList.remove('editing');
-      };
-
+      // התנהגות מקלדת – כמו שהיה:
       input.addEventListener('keydown', (e) => {
         if (!multiline && e.key === 'Enter') { e.preventDefault(); commit(); }
         if (e.key === 'Escape') { e.preventDefault(); cancel(); }
       });
 
-      input.addEventListener('blur', () => { if (!multiline) cancel(); });
+      // blur:
+      // חד־שורה → ביטול (לא לשנות לך התנהגות קיימת)
+      input.addEventListener('blur', () => {
+        if (!multiline) cancel();
+      });
+
+      // מולטיליין → שמירה אוטומטית ב־blur
       if (multiline) {
-        // במולטיליין – נשמור ב־blur
         input.addEventListener('blur', commit);
       }
     };
