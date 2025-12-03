@@ -357,3 +357,80 @@
         document.addEventListener('DOMContentLoaded', tryInit);
     }
 })();
+
+
+
+// === Session code flow (no-copy-paste) ===
+(function () {
+    const toast = {
+        ok: (m) => (window.Toast?.success ? Toast.success(m) : alert(m)),
+        info: (m) => (window.Toast?.info ? Toast.info(m) : console.log(m)),
+        warn: (m) => (window.Toast?.warning ? Toast.warning(m) : alert(m)),
+        err: (m) => (window.Toast?.error ? Toast.error(m) : alert(m)),
+    };
+
+    let sessionCode = null;
+    let pollTimer = null;
+
+    const elBtnCreate = document.getElementById('rc-create-session');
+    const elBtnPublish = document.getElementById('rc-publish-offer');
+    const elCode = document.getElementById('rc-session-code');
+
+    function offerTextarea() { return document.getElementById('offer-out'); }
+    function answerTextarea() { return document.getElementById('answer-in'); }
+
+    async function createSession() {
+        try {
+            const res = await API.postJson('/webrtc/session/create', {});
+            if (!res?.success) throw new Error(res?.error || 'Failed to create session');
+            sessionCode = res.data.code;
+            elBtnPublish.disabled = false;
+            elCode.textContent = `Code: ${sessionCode} (valid ~${Math.round((res.data.ttl_seconds || 600) / 60)} min)`;
+            toast.ok('Session code created. Create an Offer and then click "Publish Offer".');
+        } catch (e) {
+            toast.err(e.message || 'Create session failed');
+        }
+    }
+
+    async function publishOffer() {
+        try {
+            if (!sessionCode) { toast.warn('Create session code first'); return; }
+            const txt = (offerTextarea()?.value || '').trim();
+            if (!txt) { toast.warn('Create Offer first (click "Create Offer")'); return; }
+
+            let offer; try { offer = JSON.parse(txt); } catch { toast.err('Offer JSON is invalid'); return; }
+            const res = await API.postJson('/webrtc/offer', { code: sessionCode, offer });
+            if (!res?.success) throw new Error(res?.error || 'Failed to publish offer');
+
+            toast.ok('Offer published. Ask admin to join with the code.');
+            startPollingAnswer();
+        } catch (e) {
+            toast.err(e.message || 'Publish offer failed');
+        }
+    }
+
+    async function pollAnswerOnce() {
+        if (!sessionCode) return;
+        const res = await API.postJson('/webrtc/answer/get', { code: sessionCode });
+        const answer = res?.data?.answer;
+        if (answer) {
+            // Drop into existing flow: set textarea and click the existing Apply button
+            answerTextarea().value = JSON.stringify(answer);
+            document.getElementById('apply-answer')?.click();
+            toast.ok('Admin connected.');
+            return true;
+        }
+        return false;
+    }
+
+    function startPollingAnswer() {
+        clearTimeout(pollTimer);
+        (async function loop() {
+            const done = await pollAnswerOnce();
+            if (!done) pollTimer = setTimeout(loop, 1200);
+        })();
+    }
+
+    if (elBtnCreate) elBtnCreate.addEventListener('click', createSession);
+    if (elBtnPublish) elBtnPublish.addEventListener('click', publishOffer);
+})();
