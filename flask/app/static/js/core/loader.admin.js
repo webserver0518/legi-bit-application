@@ -22,6 +22,8 @@
 
     const pageMap = {
         offices: "search_office",
+        users: "search_user",
+        support: "admin_remote_control"
     };
 
     function pathsFor(page) {
