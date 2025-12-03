@@ -7,7 +7,7 @@ from ..managers.response_management import ResponseManager
 
 
 def safe_service_request(
-    service_url: str, method: str, path: str, timeout: int = 8, **kwargs
+    service_url: str, method: str, path: str, timeout: int = 30, **kwargs
 ):
     """
     Unified safe request handler for all microservice calls.
