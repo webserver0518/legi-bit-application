@@ -71,16 +71,25 @@
     return lastDot > 0 ? filename.substring(0, lastDot) : filename;
   };
 
-  utils.fileIconPath = (mime = '') => {
-    const m = String(mime || '').toLowerCase();
-    if (m === 'application/pdf') return '/static/images/icons/PDF.svg';
-    if (m.includes('word')) return '/static/images/icons/WORD.svg';
-    if (m.includes('excel') || m.includes('spreadsheet')) return '/static/images/icons/EXCEL.svg';
-    if (m.startsWith('image/')) return '/static/images/icons/IMAGE.svg';
-    if (m.startsWith('video/')) return '/static/images/icons/VIDEO.svg';
-    if (m.startsWith('audio/')) return '/static/images/icons/AUDIO.svg';
-    if (m.includes('zip') || m.includes('rar') || m.includes('7z')) return '/static/images/icons/ARCHIVE.svg';
-    return '/static/images/icons/GENERIC.svg';
+  // === File icon by filename (shared) ===
+  utils.getFileIconHTML = function (filename, size = 18) {
+    const name = String(filename || '').toLowerCase();
+
+    const byExt = (exts, icon) => exts.some(ex => name.endsWith("." + ex)) && icon;
+
+    const icon =
+      byExt(["pdf"], "PDF") ||
+      byExt(["doc", "docx", "rtf"], "WORD") ||
+      byExt(["xls", "xlsx", "csv"], "EXCEL") ||
+      byExt(["jpg", "jpeg", "png", "gif", "webp", "bmp", "tiff", "svg"], "IMAGE") ||
+      byExt(["mp4", "mov", "avi", "mkv", "webm", "m4v"], "VIDEO") ||
+      byExt(["mp3", "m4a", "wav", "ogg", "flac"], "AUDIO") ||
+      byExt(["zip", "rar", "7z", "tar", "gz", "bz2"], "ARCHIVE") ||
+      "GENERIC";
+
+    const src = `/static/images/icons/${icon}.svg`;
+    const s = Number(size) || 18;
+    return `<img src="${src}" alt="" style="width:${s}px;height:${s}px;vertical-align:-3px;">`;
   };
 
   // Time
