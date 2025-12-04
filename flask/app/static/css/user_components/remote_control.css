@@ -1,32 +1,47 @@
-/* remote_control.css — light, calm theme */
+/* Remote Control — Calm, minimal UI (RTL) */
 #remote-control.remote-control-page {
-    /* Palette */
-    --bg: #FFF8DC;
-    /* Cornsilk (צהבהב עדין) */
-    --card: #FFFFFF;
-    /* לבן */
-    --muted: #444444;
-    /* אפור כהה לטקסט משני */
-    --text: #111111;
-    /* שחור כמעט מלא לטקסט ראשי */
-    --primary: #0F62FE;
-    /* כחול כפתור עיקרי */
-    --primary-700: #0043CE;
-    /* כחול כהה יותר ל-hover */
-    --border: #E5E7EB;
-    /* אפור בהיר למסגרות */
+    --bg-0: #f6fbff;
+    --bg-1: #f3f7fc;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #4b5563;
+    --primary: #1e88e5;
+    --primary-700: #1660b4;
+    --border: #e6effa;
+    --shadow: rgba(15, 23, 42, 0.06);
 
+    direction: rtl;
     color: var(--text);
-    background: var(--bg);
+    background: linear-gradient(180deg, var(--bg-0), var(--bg-1));
     border-radius: 14px;
-    padding: 12px;
+    padding: 18px;
+}
+
+/* Hero */
+#remote-control .rc-hero {
+    text-align: right;
+    margin-bottom: 14px;
+}
+
+#remote-control .rc-hero h1 {
+    margin: 0 0 6px;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+}
+
+#remote-control .rc-lead {
+    margin: 0;
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.7;
 }
 
 /* Layout */
 #remote-control .remote-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 18px;
+    gap: 16px;
 }
 
 @media (max-width: 980px) {
@@ -41,7 +56,7 @@
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 16px 18px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, .08);
+    box-shadow: 0 6px 18px var(--shadow);
 }
 
 #remote-control .card-header {
@@ -50,107 +65,61 @@
 
 #remote-control h2 {
     margin: 0 0 6px;
-    font-size: 1.28rem;
+    font-size: 1.24rem;
     font-weight: 800;
-    color: var(--text);
-    /* שחור */
-}
-
-#remote-control h3 {
-    margin: 10px 0 6px;
-    font-size: 1.08rem;
-    font-weight: 700;
-    color: var(--text);
 }
 
 #remote-control .subtitle {
     margin: 0;
     color: var(--muted);
     font-size: 0.95rem;
+    line-height: 1.6;
 }
 
-#remote-control .muted {
-    color: var(--muted);
-}
-
-#remote-control .small {
-    font-size: .86rem;
-}
-
-/* Steps */
-#remote-control .steps {
-    display: flex;
-    gap: 8px;
-    padding: 0;
-    margin: 12px 0 14px;
-}
-
-#remote-control .step-chip {
-    list-style: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border: 1px solid var(--border);
-    background: #FFFDF4;
-    /* בהיר מאוד */
-    padding: 6px 10px;
-    border-radius: 10px;
-    font-size: .92rem;
+/* Bullet points */
+#remote-control .rc-points {
+    margin: 10px 0 0;
+    padding: 0 1.1em 0 0;
     color: var(--text);
+    line-height: 1.7;
+}
+
+#remote-control .rc-points li {
+    margin: 4px 0;
+}
+
+/* Actions & Buttons (scoped) */
+#remote-control .actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+#remote-control .btn {
+    display: inline-block;
+    background: #fafafa;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .06s ease, background .15s ease, border-color .15s ease;
     user-select: none;
 }
 
-#remote-control .step-chip.active {
-    border-color: var(--primary);
-    background: #EEF4FF;
-    /* רמז כחול */
-}
-
-#remote-control .step-chip span {
-    display: inline-grid;
-    place-items: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 999px;
-    background: var(--primary);
-    color: #FFFFFF;
-    /* על כחול — לבן לקונטרסט */
-    font-weight: 800;
-    font-size: .82rem;
-}
-
-/* Step sections */
-#remote-control .step {
-    display: none;
-}
-
-#remote-control .step.active {
-    display: block;
-}
-
-/* Buttons */
-#remote-control .btn {
-    background: #FAFAFA;
-    color: var(--text);
-    /* טקסט שחור */
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 9px 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform .06s ease, background .15s ease, border-color .15s ease;
-}
-
 #remote-control .btn:hover {
-    border-color: #D1D5DB;
-    background: #FFFFFF;
+    border-color: #d1d5db;
+    background: #ffffff;
 }
 
 #remote-control .btn:active {
     transform: translateY(1px);
 }
 
-#remote-control .btn[disabled] {
+#remote-control .btn[aria-disabled="true"] {
     opacity: .55;
     cursor: not-allowed;
 }
@@ -158,8 +127,7 @@
 #remote-control .btn-primary {
     background: var(--primary);
     border-color: var(--primary);
-    color: #FFFFFF;
-    /* כפתור ראשי — טקסט לבן לקונטרסט */
+    color: #ffffff;
 }
 
 #remote-control .btn-primary:hover {
@@ -172,134 +140,34 @@
     color: var(--text);
 }
 
-/* Actions row */
-#remote-control .actions {
-    margin-top: 10px;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+/* Hints & footer */
+#remote-control .rc-hint {
+    margin-top: 8px;
 }
 
-/* Hints */
 #remote-control details.hint {
-    margin-top: 10px;
+    margin-top: 16px;
     border: 1px dashed var(--border);
     border-radius: 10px;
-    padding: 8px 10px;
-    background: #FFFDF4;
-}
-
-/* Code input + display */
-#remote-control .code-label {
-    display: block;
-    font-weight: 800;
-    margin-bottom: 6px;
-    color: var(--text);
-}
-
-#remote-control .code-input-wrap {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-#remote-control .code-input {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    letter-spacing: .06em;
-    font-size: 1.18rem;
     padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: #FFFFFF;
-    color: var(--text);
-    width: 280px;
-    text-align: center;
+    background: #fcfdff;
 }
 
-#remote-control .code-display {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    padding: 8px 10px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: #FFFFFF;
-    width: fit-content;
+#remote-control details.hint>summary {
+    cursor: pointer;
+    font-weight: 700;
+    outline: none;
 }
 
-#remote-control .code-display output {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 1.28rem;
-    letter-spacing: .06em;
-    color: var(--text);
+#remote-control .rc-footer {
+    margin-top: 14px;
 }
 
-/* Video */
-#remote-control .video-wrap {
-    margin-top: 10px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    background: #FFFFFF;
-    min-height: 180px;
+/* Small helpers */
+#remote-control .muted {
+    color: var(--muted);
 }
 
-#remote-control video {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-height: 70vh;
-    background: #000000;
-    /* וידאו נשאר שחור כשהוא ריק */
-    border-radius: 8px;
-}
-
-/* Advanced (manual signaling) */
-#remote-control details.advanced {
-    margin-top: 12px;
-    background: #FFFDF4;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 8px 10px;
-}
-
-#remote-control .mode-switch {
-    display: flex;
-    gap: 16px;
-    margin: 10px 0;
-    color: var(--text);
-}
-
-#remote-control .signal-panel.hidden {
-    display: none;
-}
-
-#remote-control .signal-label {
-    display: block;
-    margin: 10px 0 6px;
-    font-weight: 800;
-    color: var(--text);
-}
-
-#remote-control .signal-text {
-    width: 100%;
-    min-height: 96px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: #FFFFFF;
-    color: var(--text);
-    padding: 10px 12px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    resize: vertical;
-}
-
-#remote-control .signal-actions {
-    display: flex;
-    gap: 8px;
-    margin: 8px 0;
-}
-
-#remote-control .mini-steps {
-    margin: 0 0 8px 18px;
-    color: var(--text);
+#remote-control .small {
+    font-size: .88rem;
 }
