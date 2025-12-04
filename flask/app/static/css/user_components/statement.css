@@ -1,0 +1,223 @@
+/* LegiBit — Privacy/Declaration page (Dynamic Content) */
+
+.lb-policy-page {
+    direction: rtl;
+    text-align: right;
+    padding: 18px 12px;
+}
+
+/* Card wrapper */
+.lb-policy-card {
+    max-width: 980px;
+    margin: 0 auto;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+    padding: 18px 16px;
+}
+
+@media (min-width: 768px) {
+    .lb-policy-card {
+        padding: 28px 26px;
+    }
+}
+
+/* Header */
+.lb-policy-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+}
+
+.lb-policy-title {
+    margin: 0 0 10px;
+    font-size: 1.45rem;
+    line-height: 1.25;
+    letter-spacing: 0.2px;
+}
+
+.lb-policy-subtitle {
+    margin: 10px 0 0;
+    opacity: 0.9;
+    line-height: 1.7;
+}
+
+/* Meta */
+.lb-policy-meta {
+    display: grid;
+    gap: 6px;
+    margin: 10px 0 10px;
+    padding: 10px 12px;
+    border: 1px dashed rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.lb-policy-meta-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: baseline;
+}
+
+.lb-policy-meta-label {
+    font-weight: 700;
+    opacity: 0.9;
+}
+
+.lb-policy-meta-value {
+    opacity: 0.95;
+}
+
+/* TOC */
+.lb-policy-toc {
+    margin: 14px 0 18px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.10);
+}
+
+.lb-policy-toc-list {
+    margin: 8px 0 0;
+    padding: 0 18px 0 0;
+}
+
+.lb-policy-toc-list li {
+    margin: 6px 0;
+}
+
+/* Section headings */
+.lb-policy-h2 {
+    margin: 0 0 10px;
+    font-size: 1.1rem;
+}
+
+.lb-policy-h3 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+}
+
+/* Sections */
+.lb-policy-section {
+    margin: 18px 0;
+    padding: 0;
+}
+
+.lb-policy-section p {
+    margin: 0 0 10px;
+    line-height: 1.8;
+    opacity: 0.95;
+}
+
+.lb-policy-block {
+    margin: 12px 0;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.lb-policy-list {
+    margin: 8px 0 0;
+    padding: 0 18px 0 0;
+}
+
+.lb-policy-list li {
+    margin: 8px 0;
+    line-height: 1.75;
+}
+
+/* Links */
+.lb-policy-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    opacity: 0.95;
+    transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.lb-policy-link:hover {
+    opacity: 1;
+}
+
+.lb-policy-link:focus {
+    outline: 2px solid rgba(255, 255, 255, 0.35);
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+/* Note */
+.lb-policy-note {
+    margin: 12px 0 0;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.16);
+    line-height: 1.8;
+}
+
+/* Contact */
+.lb-policy-contact {
+    margin-top: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.lb-policy-contact-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+/* Footer */
+.lb-policy-footer {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: flex-start;
+}
+
+.lb-policy-backtotop {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(0, 0, 0, 0.10);
+    text-decoration: none;
+    color: inherit;
+    opacity: 0.95;
+    transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.lb-policy-backtotop:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+}
+
+/* Print */
+@media print {
+    .lb-policy-page {
+        padding: 0;
+    }
+
+    .lb-policy-card {
+        box-shadow: none;
+        background: #fff;
+        color: #000;
+        border: 1px solid #ddd;
+    }
+
+    .lb-policy-link {
+        text-decoration: none;
+    }
+}
