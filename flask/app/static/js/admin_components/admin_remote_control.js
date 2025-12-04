@@ -1,291 +1,183 @@
-// admin_components/remote_control.js
+// flask/app/static/js/admin_components/admin_remote_control.js
 (function () {
     'use strict';
 
-    // ---- Toast with fallbacks so clicks never feel "dead" ----
-    const toast = {
-        success: (m) => (window.Toast?.success ? Toast.success(m) : alert(m)),
-        info: (m) => (window.Toast?.info ? Toast.info(m) : console.log(m)),
-        warn: (m) => (window.Toast?.warning ? Toast.warning(m) : alert(m)),
-        error: (m) => (window.Toast?.error ? Toast.error(m) : alert(m)),
-        danger: (m) => (window.Toast?.danger ? Toast.danger(m) : alert(m)),
-    };
+    const ICE_DEFAULT = [{ urls: 'stun:stun.l.google.com:19302' }];
+    const $ = (sel) => document.querySelector(sel);
 
-    // ---- Config ----
-    const ICE_SERVERS = (window.__ICE_SERVERS && Array.isArray(window.__ICE_SERVERS))
-        ? window.__ICE_SERVERS
-        : [
-            { urls: ['stun:stun.l.google.com:19302'] }
-            // Add TURN in prod:
-            // { urls: 'turn:turn.example.com:3478', username: 'u', credential: 'p' }
-        ];
-
-    const state = {
-        pc: null,
-        remoteStream: null,
-        audioMuted: false,
-    };
-
-    const els = {};
-
-    function logLine(msg) {
-        const time = new Date().toLocaleTimeString();
-        if (els.log) {
-            els.log.textContent += `[${time}] ${msg}\n`;
-            els.log.scrollTop = els.log.scrollHeight;
-        }
-        console.log('[ADMIN RTC]', msg);
+    function getIceServers() {
+        return (window.WEBRTC_ICE_SERVERS && Array.isArray(window.WEBRTC_ICE_SERVERS) && window.WEBRTC_ICE_SERVERS.length)
+            ? window.WEBRTC_ICE_SERVERS
+            : ICE_DEFAULT;
     }
-
-    function setStatus(txt) {
-        if (els.status) els.status.textContent = txt;
-        logLine(`STATUS: ${txt}`);
+    async function postJSON(url, data) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(data || {})
+        });
+        return res.json();
     }
-
-    function copy(text) {
-        if (!text) return toast.warn('Nothing to copy');
-        navigator.clipboard?.writeText(text).then(
-            () => toast.success('Copied'),
-            () => toast.info('Copy failed — select manually')
-        );
+    async function delJSON(url, data) {
+        const res = await fetch(url, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(data || {})
+        });
+        return res.json();
     }
-
-    function fsVideo() {
-        const v = els.video;
-        if (!v) return;
-        if (document.fullscreenElement) document.exitFullscreen();
-        else v.requestFullscreen?.();
+    async function getJSON(url) {
+        const res = await fetch(url, { credentials: 'include' });
+        return res.json();
     }
-
-    function toggleMute() {
-        state.audioMuted = !state.audioMuted;
-        if (els.video) els.video.muted = state.audioMuted;
-        if (els.btnMute) els.btnMute.textContent = state.audioMuted ? '🔈 Unmute' : '🔇 Mute';
-    }
-
-    function createPeer() {
-        // cleanup old
-        try { state.pc?.close(); } catch { }
-        state.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 0 });
-
-        state.remoteStream = new MediaStream();
-        els.video.srcObject = state.remoteStream;
-
-        state.pc.ontrack = (ev) => {
-            const stream = ev.streams?.[0];
-            if (stream) stream.getTracks().forEach(t => state.remoteStream.addTrack(t));
-            setStatus('Receiving media…');
-        };
-
-        state.pc.onicecandidate = (ev) => {
-            if (!ev.candidate) logLine('ICE: complete');
-            else logLine(`ICE: candidate ${ev.candidate.protocol || ''}`);
-        };
-
-        state.pc.onconnectionstatechange = () => {
-            const st = state.pc.connectionState;
-            logLine(`PC state: ${st}`);
-            if (st === 'connected') setStatus('Connected');
-            if (st === 'disconnected' || st === 'failed') setStatus('Disconnected');
-            if (st === 'connecting') setStatus('Connecting…');
-        };
-
-        return state.pc;
-    }
-
-    function waitIceGathering(pc) {
+    function waitForIceComplete(pc) {
         return new Promise((resolve) => {
             if (pc.iceGatheringState === 'complete') return resolve();
             const check = () => {
-                if (pc.iceGatheringState === 'complete') {
-                    pc.removeEventListener('icegatheringstatechange', check);
-                    resolve();
-                }
+                if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', check); resolve(); }
             };
             pc.addEventListener('icegatheringstatechange', check);
-            // Safety timeout so UI never stalls
-            setTimeout(resolve, 2500);
+            setTimeout(() => { pc.removeEventListener('icegatheringstatechange', check); resolve(); }, 6000);
         });
     }
-
-    // ===== Manual copy/paste flow =====
-    async function handleManualCreateAnswer() {
-        try {
-            const raw = (els.offerIn.value || '').trim();
-            if (!raw) {
-                toast.warn('Paste an Offer first (from the user page → "Offer (send this to viewer)")');
-                return;
-            }
-
-            let offer;
-            try {
-                offer = JSON.parse(raw);
-            } catch {
-                toast.error('Invalid JSON. Paste the exact Offer text (JSON) from the user page.');
-                return;
-            }
-
-            if (offer.type !== 'offer' || !offer.sdp) {
-                toast.error('This doesn’t look like a WebRTC Offer (missing type/sdp).');
-                return;
-            }
-
-            setStatus('Setting remote offer…');
-            const pc = createPeer();
-            await pc.setRemoteDescription(offer);
-
-            setStatus('Creating answer…');
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-
-            setStatus('Gathering ICE…');
-            await waitIceGathering(pc);
-
-            const local = pc.localDescription; // includes ICE (no-trickle style)
-            els.answerOut.value = JSON.stringify(local);
-            toast.success('Answer ready. Copy & send back to the user.');
-            setButtonsConnected(true);
-        } catch (e) {
-            console.error(e);
-            toast.error('Failed to create Answer. See console for details.');
-            setStatus('Error');
-        }
-    }
-
-    // ===== Optional server join-by-code (kept here if you wire later) =====
-    async function joinByCode() {
-        // נרמול: לוקחים רק את רצף הספרות הראשון באורך ≥6 וחותכים ל-6
-        const raw = (els.codeInput.value || '').trim();
-        const code = ((raw.match(/\d{6,}/) || [])[0] || '').slice(0, 6);
-        if (!code) return toast.warn('Enter a valid 6-digit session code');
-
-        try {
-            setStatus('Fetching offer by code…');
-            const res = await window.API?.postJson('/admin/webrtc/join', { code });
-            if (!res?.success) throw new Error(res?.error || 'join failed');
-            if (!res.data?.offer) throw new Error('Offer not ready (user didn’t publish yet)');
-
-            const pc = createPeer();
-
-            setStatus('Setting remote offer…');
-            await pc.setRemoteDescription(res.data.offer);
-
-            setStatus('Creating answer…');
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-
-            setStatus('Gathering ICE…');
-            await waitIceGathering(pc); // no-trickle: נחכה עד שיסתיים
-
-            const res2 = await window.API?.postJson('/admin/webrtc/answer', {
-                code,
-                answer: pc.localDescription
-            });
-            if (!res2?.success) throw new Error(res2?.error || 'answer submit failed');
-
-            setStatus('Connecting…');
-            setButtonsConnected(true);
-            toast.success('Joined. Waiting for media…');
-        } catch (e) {
-            console.error(e);
-            toast.error(e.message || 'Join failed');
-            setStatus('Error');
-        }
-    }
-
-    function leave() {
-        try { state.pc?.close(); } catch { }
-        state.pc = null;
-        state.remoteStream = null;
-        if (els.video) els.video.srcObject = null;
-        setStatus('Idle');
-        setButtonsConnected(false);
-    }
-
-    function setButtonsConnected(connected) {
-        if (els.btnLeave) els.btnLeave.disabled = !connected;
-        if (els.btnRetry) els.btnRetry.disabled = !connected;
-    }
-
-    function bind() {
-        // Manual signaling buttons
-        els.btnCreateAnswer.addEventListener('click', handleManualCreateAnswer);
-        els.btnClearOffer.addEventListener('click', () => { els.offerIn.value = ''; });
-        els.btnCopyAnswer.addEventListener('click', () => copy(els.answerOut.value));
-        els.btnClearAnswer.addEventListener('click', () => { els.answerOut.value = ''; });
-
-        // Server signaling buttons (no-op if you didn’t wire backend)
-        els.btnJoinCode.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            joinByCode();
+    function fmtCode(c) { const s = String(c || ''); return s.length === 6 ? `${s.slice(0, 3)}-${s.slice(3)}` : s; }
+    function fmtTTL(sec) { const n = Math.max(0, parseInt(sec || 0, 10)); const m = String(Math.floor(n / 60)).padStart(2, '0'); const s = String(n % 60).padStart(2, '0'); return `${m}:${s}`; }
+    function toast(msg, type = 'info') { const fn = window.Toast?.[type] || window.Toast?.info; fn ? fn(msg) : console.log(`[${type}]`, msg); }
+    function el(tag, attrs = {}, children = []) {
+        const n = document.createElement(tag);
+        Object.entries(attrs).forEach(([k, v]) => {
+            if (k === 'class') n.className = v;
+            else if (k === 'style' && typeof v === 'object') Object.assign(n.style, v);
+            else n.setAttribute(k, v);
         });
-        els.btnLeave.addEventListener('click', leave);
-        els.btnRetry.addEventListener('click', async () => {
-            if (!state.pc) return;
+        ([]).concat(children).forEach(c => n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c));
+        return n;
+    }
+
+    window.init_admin_remote_control = function init_admin_remote_control() {
+        const root = document.getElementById('admin-remote-control') || document;
+        const video = root.querySelector('[data-rc="video"]');
+        const status = root.querySelector('[data-rc="status"]');
+        const listEl = root.querySelector('#rc-pending-list');
+        const refreshBtn = root.querySelector('[data-action="refresh-pending"]');
+
+        let pc = null;
+        let currentCode = null;
+        let currentMeta = null;
+
+        async function cleanup() {
+            try { if (pc) { pc.ontrack = null; pc.close(); } } catch { }
+            pc = null;
+            currentCode = null;
+            currentMeta = null;
+            if (video) video.srcObject = null;
+            if (status) status.textContent = 'מצב: ממתין לחיבור…';
+        }
+
+        async function doJoin(code) {
+            code = String(code || '').trim();
+            if (!/^\d{6}$/.test(code)) { toast('קוד לא תקין.', 'danger'); return; }
+
             try {
-                const offer = await state.pc.createOffer({ iceRestart: true });
-                await state.pc.setLocalDescription(offer);
-                toast.info('ICE restart attempted (requires server flow to renegotiate).');
+                const join = await postJSON('/admin/webrtc/join', { code });
+                if (!join?.success) { toast(join?.message || 'לא נמצא שיתוף עבור הקוד.', 'danger'); return; }
+
+                const offer = join.data?.offer;
+                currentMeta = join.data?.meta || null;
+
+                pc = new RTCPeerConnection({ iceServers: getIceServers() });
+                pc.ontrack = (ev) => {
+                    const inbound = ev.streams?.[0] || new MediaStream([ev.track]);
+                    video.srcObject = inbound;
+                    video.play?.().catch(() => { });
+                };
+
+                await pc.setRemoteDescription(offer);
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                await waitForIceComplete(pc);
+
+                const up = await postJSON('/admin/webrtc/answer', { code, answer: pc.localDescription });
+                if (!up?.success) { toast(up?.message || 'נכשלה העלאת ה-Answer.', 'danger'); await cleanup(); return; }
+
+                currentCode = code;
+                if (status) {
+                    const who = currentMeta ? `${currentMeta.user_name || 'משתמש'} (משרד ${currentMeta.office_name || currentMeta.office_serial || '-'})` : '—';
+                    status.textContent = `מצב: צופה ב־${who}`;
+                }
+                toast('מחובר לצפייה.', 'success');
+
             } catch (e) {
-                console.warn(e);
+                console.error(e);
+                toast('שגיאה בהצטרפות לשיתוף.', 'danger');
+                await cleanup();
+            }
+        }
+
+        async function refreshPending() {
+            try {
+                const res = await getJSON('/admin/webrtc/pending');
+                if (!res?.success) { return; }
+                renderPending(res.data?.items || []);
+            } catch { }
+        }
+
+        function renderPending(items) {
+            listEl.innerHTML = '';
+            if (!items.length) {
+                listEl.appendChild(el('div', { class: 'pending-empty muted small' }, ['אין כרגע משתמשים ממתינים.']));
+                return;
+            }
+            items.forEach((it) => {
+                const meta = it.meta || {};
+                const title = `${meta.user_name || 'משתמש לא ידוע'}`;
+                const sub = `משרד ${meta.office_name || meta.office_serial || 'לא ידוע'} • קוד ${fmtCode(it.code)} • נותר ${fmtTTL(it.ttl_left)}`;
+
+                const joinBtn = el('button', { class: 'btn btn-primary', type: 'button', 'data-action': 'join', 'data-code': it.code }, ['הצטרף']);
+                const ext10Btn = el('button', { class: 'btn', type: 'button', 'data-action': 'extend', 'data-code': it.code, 'data-minutes': '10' }, ['+10']);
+                const ext20Btn = el('button', { class: 'btn', type: 'button', 'data-action': 'extend', 'data-code': it.code, 'data-minutes': '20' }, ['+20']);
+                const delBtn = el('button', { class: 'btn btn-danger', type: 'button', 'data-action': 'delete', 'data-code': it.code }, ['מחק']);
+
+                const card = el('div', { class: 'pending-card' }, [
+                    el('div', { class: 'pending-info' }, [
+                        el('div', { class: 'pending-title' }, [title]),
+                        el('div', { class: 'pending-sub' }, [sub]),
+                    ]),
+                    el('div', { class: 'pending-actions' }, [joinBtn, ext10Btn, ext20Btn, delBtn]),
+                ]);
+                listEl.appendChild(card);
+            });
+        }
+
+        // האזנה לפעולות כפתורים ברשימה
+        listEl.addEventListener('click', async (e) => {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
+            const action = btn.getAttribute('data-action');
+            const code = btn.getAttribute('data-code');
+
+            if (action === 'join') {
+                await doJoin(code);
+            } else if (action === 'extend') {
+                const minutes = parseInt(btn.getAttribute('data-minutes') || '0', 10);
+                const res = await postJSON('/admin/webrtc/extend', { code, minutes });
+                if (res?.success) { toast('התוקף הוארך.', 'success'); refreshPending(); }
+                else { toast(res?.message || 'פעולת הארכה נכשלה.', 'danger'); }
+            } else if (action === 'delete') {
+                const res = await delJSON('/admin/webrtc/delete', { code });
+                if (res?.success) { toast('השיתוף נמחק.', 'success'); if (code === currentCode) await cleanup(); refreshPending(); }
+                else { toast(res?.message || 'מחיקה נכשלה.', 'danger'); }
             }
         });
 
-        // Video controls
-        els.btnFullscreen.addEventListener('click', fsVideo);
-        els.btnMute.addEventListener('click', toggleMute);
-    }
+        // רענון
+        refreshBtn?.addEventListener('click', (e) => { e.preventDefault(); refreshPending(); });
 
-    // ===== Init hook (called by your Admin Loader) =====
-    window.init_admin_remote_control = function () {
-        // Cache elements safely
-        els.video = document.getElementById('remoteVideo');
-        els.status = document.getElementById('conn-status');
-        els.log = document.getElementById('rtc-log');
-
-        els.offerIn = document.getElementById('offer-in');
-        els.answerOut = document.getElementById('answer-out');
-        els.btnCreateAnswer = document.getElementById('btn-create-answer');
-        els.btnClearOffer = document.getElementById('btn-clear-offer');
-        els.btnCopyAnswer = document.getElementById('btn-copy-answer');
-        els.btnClearAnswer = document.getElementById('btn-clear-answer');
-
-        els.codeInput = document.getElementById('code-input');
-        els.btnJoinCode = document.getElementById('btn-join-code');
-        els.btnLeave = document.getElementById('btn-leave');
-        els.btnRetry = document.getElementById('btn-retry');
-
-        els.btnFullscreen = document.getElementById('btn-fullscreen');
-        els.btnMute = document.getElementById('btn-mute');
-
-        // Guard if the HTML didn't load for some reason
-        if (!els.btnCreateAnswer || !els.offerIn || !els.answerOut) {
-            console.error('Admin remote_control: HTML not found or not loaded yet.');
-            return;
-        }
-
-        bind();
-        setButtonsConnected(false);
-
-        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-            toast.warn('WebRTC requires HTTPS in production');
-        }
-
-        setStatus('Idle');
-        logLine('Admin viewer ready.');
+        // מחזור אוטו כל 5 שניות
+        refreshPending();
+        const pendTimer = setInterval(refreshPending, 5000);
+        window.addEventListener('beforeunload', () => { clearInterval(pendTimer); cleanup(); });
     };
-
-    // Fallback auto-init if loader forgets to call us
-    function tryInit() {
-        if (document.getElementById('remote-control-admin') && !window.__remote_control_admin_inited) {
-            window.__remote_control_admin_inited = true;
-            window.init_admin_remote_control();
-        }
-    }
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        setTimeout(tryInit, 0);
-    } else {
-        document.addEventListener('DOMContentLoaded', tryInit);
-    }
 })();
