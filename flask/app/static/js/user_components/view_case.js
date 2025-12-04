@@ -107,7 +107,6 @@
     title.dataset.field = 'title';
     title.textContent = CASE.title || '—';
     $('#case-title').replaceChildren(title);
-    console.log('done rendering header1');
 
     // סטטוס — span קליק שהופך ל-select
     let statusHost = document.querySelector('#status');
@@ -127,7 +126,6 @@
       statusWrap.addEventListener('click', () => openStatusSelect(statusWrap));
       statusHost.replaceChildren(statusWrap);
     }
-    console.log('done rendering header2');
 
     // בטיפול — span קליק שהופך ל-select משתמשים
     const handler = document.createElement('span');
@@ -136,7 +134,6 @@
     handler.addEventListener('click', () => openHandlerSelect(handler));
     $('#handler').replaceChildren(handler);
 
-    console.log('done rendering header3');
     attachCaseEditors();
   }
 
