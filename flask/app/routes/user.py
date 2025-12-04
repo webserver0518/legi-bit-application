@@ -116,48 +116,194 @@ def get_user_serial():
 @AuthorizationManager.login_required
 def get_office_users():
     """
-    Return all users (staff) for the current office
-    for selection as 'responsible' in case creation.
+    מחזיר את משתמשי המשרד.
+    אם המשתמש הוא admin — ניתן לעבור למשרד אחר בעזרת office_serial בפרמטרי ה־query,
+    ובנוסף עדיין נתמכת גרסת ה־JSON הישנה (למקרה שקוראים אליה מסקריפט/שרת).
     """
-    # Always require auth to be logged in
-    office_serial_from_session = AuthorizationManager.get_office_serial()
     is_admin = AuthorizationManager.is_admin()
+    office_serial = None
 
-    # If admin: allow override
     if is_admin:
-        payload = request.get_json(silent=True) or {}
-        office_override = payload.get("office_serial")
+        # 1) עדיפות ל-query string (מתאים ל-fetch בדפדפן / Dynamic Loader)
+        office_override = request.args.get("office_serial")
+
+        # 2) תאימות לאחור: JSON בגוף (אם יגיע מלקוח אחר, לא מהדפדפן)
+        if office_override is None:
+            payload = request.get_json(silent=True) or {}
+            office_override = payload.get("office_serial")
 
         if office_override is not None:
             try:
                 office_serial = int(office_override)
             except ValueError:
                 return ResponseManager.bad_request("Invalid office_serial")
-        else:
-            office_serial = office_serial_from_session
 
-    # If regular user: force session office
-    else:
-        office_serial = office_serial_from_session
+    # לא admin או אין override -> נשתמש במשרד מה־session
+    if office_serial is None:
+        office_serial = AuthorizationManager.get_office_serial()
 
-    # Still ensure we have an office context
     if not office_serial:
         return ResponseManager.forbidden("Missing office context")
 
     users_res = mongodb_service.search_entities(
-        entity=MongoDBEntity.USERS, office_serial=office_serial
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
     )
 
     if ResponseManager.is_no_content(users_res):
-        current_app.logger.debug("No users found, returning empty list")
         return ResponseManager.success(data=[])
 
     if not ResponseManager.is_success(users_res):
         return ResponseManager.internal("Failed to fetch office users")
 
     users = ResponseManager.get_data(users_res)
-    current_app.logger.debug(f"✅ Returning {len(users)} users")
     return ResponseManager.success(data=users)
+
+
+@user_bp.route("/get_user_favorites", methods=["GET"])
+@AuthorizationManager.login_required
+def get_user_favorites():
+    """
+    מחזיר את מערך המועדפים של המשתמש הנוכחי (serials של תיקים).
+    """
+    office_serial = AuthorizationManager.get_office_serial()
+    user_serial = AuthorizationManager.get_user_serial()
+    if not office_serial:
+        current_app.logger.debug("Missing office in auth")
+        return ResponseManager.bad_request("Missing office in auth")
+    
+    if not user_serial:
+        current_app.logger.debug("Missing user in auth")
+        return ResponseManager.bad_request("Missing user in auth")
+
+    # שליפת מסמך המשתמש
+    res = mongodb_service.search_entities(
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(user_serial)),
+        limit=1,
+    )
+    if not ResponseManager.is_success(res):
+        current_app.logger.debug("Failed to fetch user document")
+        return res
+    
+    if ResponseManager.is_no_content(res):
+        return res
+    data = ResponseManager.get_data(res)
+    user_doc = data[0]
+    favorites = user_doc.get("favorite_cases", [])
+    # נוודא רשימת מספרים אחידה
+    try:
+        favorites = [int(x) for x in favorites]
+    except Exception:
+        current_app.logger.warning("Invalid favorite_cases data, resetting to empty list")
+        favorites = []
+    return ResponseManager.success(data=favorites)
+
+
+@user_bp.route("/add_favorite_case", methods=["PATCH"])
+@AuthorizationManager.login_required
+def add_favorite_case():
+    """
+    מוסיף תיק לרשימת המועדפים (עד 10, חדש מצטרף לסוף).
+    """
+    office_serial = AuthorizationManager.get_office_serial()
+    user_serial = AuthorizationManager.get_user_serial()
+    case_serial = request.args.get("case_serial", type=int)
+
+    if not office_serial:
+        current_app.logger.debug("Missing office in auth")
+        return ResponseManager.bad_request("Missing office in auth")
+    if not user_serial:
+        current_app.logger.debug("Missing user in auth")
+        return ResponseManager.bad_request("Missing user in auth")
+    if not case_serial:
+        current_app.logger.debug("Missing case_serial in request")
+        return ResponseManager.bad_request("Missing case_serial")
+
+    # שלוף נוכחי
+    cur = mongodb_service.search_entities(
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(user_serial)),
+        limit=1,
+    )
+    if not ResponseManager.is_success(cur):
+        current_app.logger.debug("Failed to fetch user document")
+        return cur
+    
+    if ResponseManager.is_no_content(cur):
+        return cur
+    
+    arr = (ResponseManager.get_data(cur) or [{}])[0].get("favorite_cases", []) or []
+    # הוסף לסוף אם לא קיים
+    if case_serial not in arr:
+        arr.append(int(case_serial))
+    # אם חרגנו מ-10 – הסר מראשון/ות
+    MAX = 10
+    if len(arr) > MAX:
+        arr = arr[-MAX:]
+
+    upd = mongodb_service.update_entities(
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(user_serial)),
+        update_data={"favorite_cases": arr},
+        multiple=False,
+        operator="$set",
+    )
+    if not ResponseManager.is_success(upd):
+        current_app.logger.debug("Failed to update favorite_cases")
+        return upd
+    return ResponseManager.success(data=arr)
+
+
+@user_bp.route("/remove_favorite_case", methods=["PATCH", "DELETE"])
+@AuthorizationManager.login_required
+def remove_favorite_case():
+    """
+    מסיר תיק מרשימת המועדפים.
+    """
+    office_serial = AuthorizationManager.get_office_serial()
+    user_serial = AuthorizationManager.get_user_serial()
+    case_serial = request.args.get("case_serial", type=int)
+
+    if not office_serial:
+        current_app.logger.debug("Missing office in auth")
+        return ResponseManager.bad_request("Missing office in auth")
+    if not user_serial:
+        current_app.logger.debug("Missing user in auth")
+        return ResponseManager.bad_request("Missing user in auth")
+    if not case_serial:
+        current_app.logger.debug("Missing case_serial in request")
+        return ResponseManager.bad_request("Missing case_serial")
+
+    # שלוף נוכחי
+    cur = mongodb_service.search_entities(
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(user_serial)),
+        limit=1,
+    )
+    if not ResponseManager.is_success(cur):
+        return cur
+    if ResponseManager.is_no_content(cur):
+        return cur
+    arr = (ResponseManager.get_data(cur) or [{}])[0].get("favorite_cases", []) or []
+    arr = [int(x) for x in arr if int(x) != int(case_serial)]
+
+    upd = mongodb_service.update_entities(
+        entity=MongoDBEntity.USERS,
+        office_serial=office_serial,
+        filters=MongoDBFilters.by_serial(int(user_serial)),
+        update_data={"favorite_cases": arr},
+        multiple=False,
+        operator="$set",
+    )
+    if not ResponseManager.is_success(upd):
+        current_app.logger.debug("Failed to update favorite_cases")
+        return upd
+    return ResponseManager.success(data=arr)
 
 
 # ---------------- PROFILES MANAGEMENT ---------------- #
@@ -1604,22 +1750,57 @@ def webrtc_create_session():
         store = webrtc_store()
     except WebRTCStoreUnavailable as e:
         current_app.logger.error(f"[WebRTC] store unavailable in webrtc_create_session: {e}")
-        return ResponseManager.internal(
-            "שיתוף מסך אינו זמין כרגע (בעיית Redis). אנא נסה מאוחר יותר או פנה לתמיכה."
-        )
+        return ResponseManager.internal("שיתוף מסך אינו זמין כרגע (בעיית Redis). אנא נסה מאוחר יותר או פנה לתמיכה.")
 
     office_serial = AuthorizationManager.get_office_serial()
     user_serial = AuthorizationManager.get_user_serial()
+    user_name = AuthorizationManager.get_username() or f"user:{user_serial}"
 
-    code = store.create(meta={"office_serial": office_serial, "user_serial": user_serial})
-    current_app.logger.info(
-        f"[WebRTC] Created session code={code} by user={user_serial} office={office_serial}"
-    )
+    # נסה להביא שם משרד (אם יש לך פונקציה כזו; אם לא—נשאר ריק)
+    office_name = None
+    try:
+        office_name = AuthorizationManager.get_office_name()  # אם אין—יתפוס except
+    except Exception:
+        office_name = None
 
-    return ResponseManager.success(
-        data={"code": code, "ttl_seconds": int(os.getenv("WEBRTC_TTL", "600"))}
-    )
+    meta = {
+        "user_id": int(user_serial) if user_serial else None,
+        "user_name": str(user_name),
+        "office_serial": int(office_serial) if office_serial else None,
+        "office_name": office_name or "",
+    }
 
+    try:
+        code = store.create(meta=meta)  # נשמר ב־pending אוטומטית ע"י ה־Store
+    except Exception as e:
+        current_app.logger.exception(f"[WebRTC] failed to create session code: {e}")
+        return ResponseManager.internal("לא ניתן ליצור שיתוף כרגע. נסה שוב מאוחר יותר.")
+
+    ttl_seconds = int(os.getenv("WEBRTC_TTL", 600))
+    current_app.logger.info(f"[WebRTC] Created session code={code} by user={user_serial} office={office_serial}")
+
+    # שליחת התראה אוטומטית (אופציונלי):
+    # Slack Webhook? Twilio? SES? אם אין קונפיג—פשוט נרשום לוג.
+    try:
+        webhook = os.getenv("SUPPORT_SLACK_WEBHOOK")
+        if webhook:
+            import urllib.request, json as _json
+            payload = {
+                "text": f"🖥️ שיתוף חדש — {user_name} (משרד {office_serial}). קוד: {code} · תוקף: {ttl_seconds}s"
+            }
+            req = urllib.request.Request(
+                webhook,
+                data=_json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            urllib.request.urlopen(req, timeout=3)
+        else:
+            current_app.logger.info(f"[Support] pending session announced: code={code}, user={user_name}, office={office_serial}")
+    except Exception as e:
+        current_app.logger.warning(f"[Support] notify failed: {e}")
+
+    return ResponseManager.success(data={"code": code, "ttl_seconds": ttl_seconds})
 
 @user_bp.route("/webrtc/offer", methods=["POST"])
 @AuthorizationManager.login_required
@@ -1662,3 +1843,24 @@ def webrtc_get_answer():
 
     answer = store.get_answer(code)
     return ResponseManager.success(data={"answer": answer})
+
+
+@user_bp.route("/webrtc/session/stop", methods=["POST"])
+@AuthorizationManager.login_required
+def webrtc_stop_session():
+    try:
+        store = webrtc_store()
+    except WebRTCStoreUnavailable as e:
+        current_app.logger.error(f"[WebRTC] store unavailable in webrtc_stop_session: {e}")
+        return ResponseManager.internal("שיתוף מסך אינו זמין כרגע.")
+
+    data = request.get_json(silent=True) or {}
+    code = (data.get("code") or "").strip()
+    if not code:
+        return ResponseManager.bad_request("Missing 'code'")
+
+    # מוחק את הסשן – ייעלם מרשימת הממתינים
+    store.delete(code)
+    current_app.logger.info(f"[WebRTC] Session {code} stopped by user")
+    return ResponseManager.success(data={"ok": True})
+
