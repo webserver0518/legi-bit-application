@@ -1,202 +1,219 @@
-// static/js/user_components/cases.js
+/* office_user_manager.js — dynamic AdminLoader page */
+(function () {
+  'use strict';
 
-window.init_search_office = async function () {
-  try {
-    await window.utils.waitForDom();
+  const sel = (s, r = document) => r.querySelector(s);
+  const selAll = (s, r = document) => Array.from(r.querySelectorAll(s));
 
-    const table = $("#casesTable");
-    const tbody = table.find("tbody");
-    let dataTableInstance = null;
+  // state
+  let allOffices = [];
+  let selectedOffice = null;
 
-    let CURRENT_ROWS = [];
+  // elements (scoped under the page root)
+  function els() {
+    const root = sel('#office-user-manager');
+    return root ? {
+      root,
+      search: sel('#oum-search', root),
+      clear: sel('#oum-clear', root),
+      empty: sel('#oum-empty', root),
+      offices: sel('#oum-offices', root),
+      usersWrap: sel('#oum-users-wrap', root),
+      usersHint: sel('#oum-users-hint', root),
+      usersTbody: sel('#oum-users-tbody', root),
+      badge: sel('#oum-office-badge', root),
+      addForm: sel('#oum-add-form', root),
+      addNote: sel('#oum-add-note', root),
+    } : {};
+  }
 
-    function loadRows() {
+  function toastOK(msg) { window.Toast?.success?.(msg) || window.Toast?.info?.(msg); }
+  function toastWarn(msg) { window.Toast?.warning?.(msg) || window.Toast?.info?.(msg); }
+  function toastErr(msg) { window.Toast?.danger?.(msg) || window.Toast?.info?.(msg); }
 
-      // 🔒 נועל את שורת הסינון בזמן טעינה
-      const filterBar = document.querySelector(".filter-bar");
-      window.Tables.setFilterBarLoading(filterBar, true);
+  // ---- API helpers using global window.API (ResponseManager normalized) ----
+  async function apiGet(url) { return window.API.getJson(url); }
+  async function apiPost(url, body) { return window.API.postJson(url, body); }
+  async function apiDel(url) { return window.API.delete(url); }
 
-      const url = `/get_offices`;
+  // ---- Offices ----
+  async function loadOffices() {
+    const res = await apiGet('/search_offices');
+    if (!res.success) {
+      toastErr('טעינת רשימת המשרדים נכשלה');
+      return [];
+    }
+    const items = Array.isArray(res.data) ? res.data : [];
+    allOffices = items;
+    return items;
+  }
 
-      window.API.getJson(url)
-        .then(payload => {
-          if (dataTableInstance) {
-            dataTableInstance.clear().destroy();
-            dataTableInstance = null;
-          }
+  function renderOffices() {
+    const { search, empty, offices } = els();
+    const q = (search.value || '').trim().toLowerCase();
+    const list = allOffices
+      .filter(o => (o.name || '').toLowerCase().includes(q))
+      .slice(0, 40);
 
-          const rows = Array.isArray(payload?.data) ? payload.data : [];
-          CURRENT_ROWS = rows;
+    offices.innerHTML = '';
+    if (!list.length) { empty.hidden = false; return; }
+    empty.hidden = true;
 
-          // Superstring for each case
-          rows.forEach(office => {
-            office.__super = RowToSuperString(office);
-          });
+    list.forEach(o => {
+      const li = document.createElement('li');
 
-          applyFilters();
-        })
-        .catch(err => {
-          console.error("Error loading cases:", err);
-          tbody.html(
-            `<tr><td colspan="100%" class="text-center text-danger py-3">
-            שגיאת טעינה
-            </td></tr>`
-          );
-        })
-        .finally(() => {
-          // 🔓 רק אם יש תיקים — נפתח את הסינון
-          const hasRows = (CURRENT_ROWS?.length || 0) > 0;
-          if (hasRows) {
-            window.Tables.setFilterBarLoading(filterBar, false);
-          }
+      const left = document.createElement('div');
+      left.className = 'om-left';
+      const t = document.createElement('div'); t.className = 'om-title';
+      t.textContent = o.name || `משרד #${o.serial}`;
+      const s = document.createElement('div'); s.className = 'om-sub';
+      s.textContent = `מס׳ משרד: ${o.serial}`;
+      left.appendChild(t); left.appendChild(s);
 
-        });
+      const actions = document.createElement('div');
+      actions.className = 'om-actions';
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-outline-primary';
+      btn.textContent = 'בחר/י';
+      btn.addEventListener('click', () => selectOffice(o));
+      actions.appendChild(btn);
+
+      li.appendChild(left);
+      li.appendChild(actions);
+      offices.appendChild(li);
+    });
+  }
+
+  // ---- Users ----
+  async function selectOffice(office) {
+    const { usersWrap, usersHint, usersTbody, badge } = els();
+    selectedOffice = office;
+
+    badge.hidden = false;
+    badge.textContent = `נבחר: ${office.name} (#${office.serial})`;
+
+    usersHint.hidden = true;
+    usersWrap.hidden = false;
+    usersTbody.innerHTML = `<tr><td colspan="6">טוען...</td></tr>`;
+
+    const users = await fetchUsers(office.serial);
+    renderUsers(users || []);
+  }
+
+  async function fetchUsers(officeSerial) {
+    // ניסיון 1: query param
+    let res = await apiGet(`/get_office_users?office_serial=${encodeURIComponent(officeSerial)}`);
+    console.log('fetchUsers response:', res);
+    if (res.success && Array.isArray(res.data)) return res.data;
+
+    // ניסיון 2: POST עם גוף JSON (אם ה־route אצלך קורא get_json גם ב־GET)
+    res = await apiPost('/get_office_users', { office_serial: Number(officeSerial) });
+    if (res.success && Array.isArray(res.data)) return res.data;
+
+    toastWarn('לא ניתן למשוך משתמשים למשרד (דרוש עדכון API)');
+    return [];
+  }
+
+  function renderUsers(rows) {
+    const { usersTbody } = els();
+    usersTbody.innerHTML = '';
+
+    if (!rows.length) {
+      usersTbody.innerHTML = '<tr><td colspan="6">אין משתמשים להצגה.</td></tr>';
+      return;
     }
 
-    function applyFilters() {
-      const search = document
-        .getElementById("search")
-        .value.trim()
-        .toLowerCase();
+    rows.forEach(u => {
+      const tr = document.createElement('tr');
+      const roles = Array.isArray(u.roles) ? u.roles.join(', ') : (u.roles || '');
+      tr.innerHTML = `
+        <td>${safe(u.serial)}</td>
+        <td>${safe(u.username)}</td>
+        <td>${safe(u.full_name || u.name)}</td>
+        <td>${safe(u.email)}</td>
+        <td>${safe(roles)}</td>
+        <td>
+          <button class="btn btn-sm btn-danger oum-del" data-serial="${u.serial}">מחק</button>
+        </td>`;
+      usersTbody.appendChild(tr);
+    });
 
-      const status = document.getElementById("status")?.value || "";
+    selAll('.oum-del', usersTbody).forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = Number(btn.dataset.serial);
+        if (!Number.isFinite(id)) return;
+        if (!confirm(`למחוק את משתמש ${id}?`)) return;
+        await deleteUser(id);
+        const users = await fetchUsers(selectedOffice.serial);
+        renderUsers(users || []);
+      });
+    });
+  }
 
-      let filtered = [...CURRENT_ROWS];
+  function safe(v) { return (v ?? '-') + ''; }
 
-      // 🔍 סינון לפי חיפוש
-      if (search) {
-        const tokens = search.split(/\s+/).filter(Boolean);
-        filtered = filtered.filter(office => {
-          return tokens.every(t => office.__super.includes(t));
-        });
+  async function deleteUser(userSerial) {
+    if (!selectedOffice) return toastWarn('בחר/י משרד קודם');
+    const url = `/admin/users?office_serial=${encodeURIComponent(selectedOffice.serial)}&user_serial=${encodeURIComponent(userSerial)}`;
+    const res = await apiDel(url);
+    if (!res.success) toastErr('מחיקה נכשלה (יש להשלים Route בצד שרת)');
+    else toastOK('המשתמש נמחק');
+  }
+
+  // ---- Add user ----
+  function bindAddForm() {
+    const { addForm, addNote } = els();
+    addForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!selectedOffice) return toastWarn('בחר/י משרד קודם');
+
+      const fd = new FormData(addForm);
+      const payload = {
+        office_serial: Number(selectedOffice.serial),
+        username: (fd.get('username') || '').trim(),
+        full_name: (fd.get('full_name') || '').trim(),
+        email: (fd.get('email') || '').trim(),
+        password: (fd.get('password') || '').trim(),
+        roles: String(fd.get('roles') || '').split(',').map(s => s.trim()).filter(Boolean)
+      };
+
+      if (!payload.username || !payload.password) {
+        return toastWarn('נא למלא שם משתמש, שם מלא וסיסמה');
       }
 
-      renderRows(filtered);
-    }
-
-    document.getElementById("search").addEventListener("input", () => {
-      applyFilters();
-    });
-
-    document.getElementById("status").addEventListener("change", () => {
-      applyFilters();
-    });
-
-    document.getElementById("clear-filters").addEventListener("click", () => {
-      // איפוס שדה חיפוש
-      const searchInput = document.getElementById("search");
-      if (!searchInput) return;
-      searchInput.value = "";
-
-      // איפוס סטטוס
-      const statusSelect = document.getElementById("status");
-      statusSelect.value = "";
-
-      // רנדר מחדש את כל התיקים
-      renderRows(CURRENT_ROWS);
-    });
-
-    function renderRows(list) {
-      if (dataTableInstance) {
-        dataTableInstance.clear().destroy();
-        dataTableInstance = null;
-      }
-
-      if (!list.length) {
-        tbody.html(
-          `<tr><td colspan="100%" class="text-center text-muted py-3">לא נמצאו רשומות</td></tr>`
-        );
+      const res = await apiPost('/admin/users', payload);
+      if (!res.success) {
+        addNote.textContent = 'הוספה נכשלה (דרוש Route בצד שרת).';
+        toastErr('הוספה נכשלה (Route חסר)');
         return;
       }
-
-      const htmlRows = list
-        .map(office => {
-
-          const createdDate = office.created_at
-            ? new Date(office.created_at).toLocaleDateString("he-IL")
-            : "-";
-
-          return `
-          <tr onclick="OpenNewTab('${office.office_serial}', '${office.office_name}')">
-            <td class="col-wide">${window.utils.safeValue(office.office_name)}</td>
-            <td>${window.utils.safeValue(office.office_serial)}</td>
-            <td>${createdDate}</td>
-          </tr>
-        `;
-        })
-        .join("");
-
-      tbody.html(htmlRows);
-
-      const tableApi = window.Tables.createHebrewTable(table, {
-        dom: "lrtip",
-        order: [[1, "desc"]],
-      });
-      dataTableInstance = tableApi.dt;
-    }
-
-    loadRows();
-
-  } catch (e) {
-    console.error("Error initializing cases component:", e);
-  }
-};
-
-function OpenNewTab(serial, title) {
-  window.Recents.openOffice(serial);
-
-  window.Recents.touch('office', serial);
-  if (title) window.Recents.setCaseTitle(serial, title);
-  window.renderRecentCases();
-
-  // היילייט אם כבר יש לינק:
-  const a = document.querySelector(`.sub-sidebar a.recent-case[data-office-serial="${serial}"]`);
-  window.Nav.highlightInSidebar(a, 'sub-sidebar');
-
-  // ניווט רגיל:
-  window.AdminLoader.navigate({ page: 'view_office', force: true });
-
-}
-
-function RowToSuperString(c) {
-  let parts = [];
-
-  // שדות אסורים
-  const BLOCKED_KEYS = new Set([
-    "password",
-    "password_hash",
-    "password_hashes",
-    "passwordHash",
-    "passwordHashes",
-    "secret",
-    "token"
-  ]);
-
-  function walk(key, value) {
-    if (value == null) return;
-    if (key && BLOCKED_KEYS.has(key)) return;
-
-    if (
-      typeof value === "string" ||
-      typeof value === "number" ||
-      typeof value === "boolean"
-    ) {
-      parts.push(String(value));
-      return;
-    }
-
-    if (Array.isArray(value)) {
-      value.forEach(v => walk(null, v));
-      return;
-    }
-
-    if (typeof value === "object") {
-      Object.entries(value).forEach(([k, v]) => {
-        if (!BLOCKED_KEYS.has(k)) walk(k, v);
-      });
-    }
+      addNote.textContent = 'נוסף בהצלחה.';
+      addForm.reset();
+      const users = await fetchUsers(selectedOffice.serial);
+      renderUsers(users || []);
+    });
   }
 
-  walk(null, c);
-  return parts.join("\n").toLowerCase();
-}
+  // ---- bindings ----
+  function bindSearch() {
+    const { search, clear } = els();
+    search.addEventListener('input', renderOffices);
+    clear.addEventListener('click', () => {
+      search.value = '';
+      renderOffices();
+      search.focus();
+    });
+  }
+
+  // ---- init entrypoint for AdminLoader ----
+  window.init_search_office = async function () {
+    const nodes = els();
+    if (!nodes.root) return;
+
+    bindSearch();
+    bindAddForm();
+
+    await loadOffices();
+    renderOffices();
+  };
+})();

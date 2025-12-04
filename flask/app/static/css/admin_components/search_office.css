@@ -1,161 +1,129 @@
-/* סרגל סינון – רק מבנה */
-.filter-bar {
+/* office_user_manager.css */
+.office-user-manager .page-head {
+    margin-bottom: .5rem;
+}
+
+.office-user-manager .page-head .title {
+    margin: 0;
+    font-size: 1.35rem;
+}
+
+.office-user-manager .page-head .sub {
+    margin: .25rem 0 0;
+    color: var(--muted, #475569);
+    font-size: .9rem;
+}
+
+.office-user-manager .card {
+    border: 1px solid #d7e5f5;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 6px 22px rgba(15, 23, 42, .06);
+    padding: 12px;
+    margin-bottom: 14px;
+}
+
+.office-user-manager .card-tight {
+    padding: 12px;
+}
+
+.office-user-manager .card-head {
     display: flex;
-    flex-wrap: nowrap;
-    gap: 8px;
-    margin-bottom: 12px;
-
-    background: #c3daf5;
-    /* רקע עדין */
-    border: 1px solid #ddd;
-    /* מסגרת קלה */
-    border-radius: 8px;
-    /* עיגול פינות */
-    padding: 12px 14px;
-    /* ריווח פנימי */
+    align-items: center;
+    justify-content: flex-start;
+    gap: .5rem;
+    margin-bottom: .5rem;
 }
 
-/* === FILTER INPUT === */
-.filter-input {
+.office-user-manager .between {
+    justify-content: space-between;
+}
+
+.office-user-manager .badge {
+    background: linear-gradient(135deg, #004e92, #00c2ff);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: .8rem;
+}
+
+.office-user-manager .search-row {
+    display: flex;
+    gap: .5rem;
+}
+
+.office-user-manager .search-row .form-control {
     flex: 1;
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 14px;
-    outline: none;
 }
 
-/* מצב פוקוס */
-.filter-input:focus {
-    border-color: #888;
+.office-user-manager .om-list {
+    display: grid;
+    gap: 6px;
+    margin: .75rem 0 0;
+    padding: 0;
 }
 
-/* === FILTER SELECT === */
-.filter-select {
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 14px;
-    outline: none;
-    background: white;
-    min-width: 140px;
+.office-user-manager .om-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    border: 1px solid #d7e5f5;
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: #fff;
 }
 
-.filter-select:focus {
-    border-color: #888;
+.office-user-manager .om-title {
+    font-weight: 700;
 }
 
-/* === FILTER BUTTON === */
-.filter-btn {
-    padding: 8px 14px;
-    font-size: 14px;
-    border: 1px solid #bbb;
-    border-radius: 6px;
-    background: #f2f2f2;
-    cursor: pointer;
+.office-user-manager .om-sub {
+    color: #64748b;
+    font-size: .8rem;
 }
 
-.filter-btn:hover {
-    background: #e6e6e6;
+.office-user-manager .om-left {
+    display: grid;
 }
 
-/* === TABLE BASE === */
-.customTable {
-    width: 100% !important;
-    border-collapse: collapse;
-    direction: rtl;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-/* === TABLE HEADER === */
-.customTable thead th {
-    background: #c3daf5;
-    /* רקע עדין לכותרת */
-    padding: 4px 6px;
-    border-bottom: 2px solid #444d58;
-    font-weight: 600;
-    text-align: center !important;
+.office-user-manager .om-actions .btn {
     white-space: nowrap;
 }
 
-/* === TABLE BODY CELLS === */
-.customTable td {
-    padding: 4px 6px;
-    border-bottom: 1px solid #eee;
-    /* קו דק בין שורות */
-    text-align: center;
+.office-user-manager .divider {
+    margin: 12px 0;
+    border-color: #e5eef9;
 }
 
-/* === ROW HEIGHT === */
-.customTable tr {
-    height: 32px;
+.office-user-manager .grid-compact {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
 }
 
-/* === HOVER EFFECT === */
-.customTable tbody tr:hover {
-    background: #c3daf5 !important;
+.office-user-manager .grid-compact label {
+    display: grid;
+    gap: 6px;
 }
 
-
-/* כותרת בטבלה */
-.customTable th.col-wide {
-    width: 300px;
+.office-user-manager .grid-compact .actions {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-/* התאים באותה עמודה (מבוסס מיקום) */
-.customTable td.col-wide {
-    width: 300px;
-    text-align: right !important;
+.office-user-manager .muted {
+    color: #475569;
 }
 
-.dataTables_paginate {
-    float: left !important;
-    text-align: left !important;
-    direction: rtl;
+.office-user-manager .small {
+    font-size: .85rem;
 }
 
-/* ✨ מצב טעינה של שורת הסינון */
-.filter-bar.loading {
-    opacity: 0.5;
-    transition: opacity 0.3s ease;
-}
-
-/* כשהיא חוזרת לפעילות */
-.filter-bar {
-    transition: opacity 0.3s ease;
-}
-
-.filter-bar.loading * {
-    cursor: not-allowed !important;
-}
-
-
-
-
-
-
-/* הנקודה עצמה */
-.status-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin-left: 6px;
-}
-
-/* סטטוסים */
-.status-dot.active {
-    background-color: #28a745;
-    /* ירוק */
-}
-
-.status-dot.archived {
-    background-color: #dc3545;
-    /* אפור */
-}
-
-
-.customTable tbody td:first-child {
-    text-align: right !important;
+@media (max-width: 900px) {
+    .office-user-manager .grid-compact {
+        grid-template-columns: 1fr;
+    }
 }
