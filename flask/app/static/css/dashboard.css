@@ -100,7 +100,7 @@ body {
   text-decoration: none;
   margin: 0;
   padding: 5px;
-  padding-right: 15px;
+  padding-right: 5px;
   border-radius: 0;
   text-align: right;
   transition: background 0.2s ease, color 0.2s ease;
@@ -722,38 +722,162 @@ body.acc-readable-font {
 
 
 
-/* ==== Recent cases: remove (✕) button ==== */
-.sub-sidebar #recent-cases-list a.recent-case {
-  position: relative;
-  padding-left: 28px;
-  /* מקום לאיקס בצד שמאל (RTL) */
+/* === Recents & Favorites — FLEX row, icons left, text right === */
+
+.sub-sidebar #recent-cases-list,
+.sub-sidebar #favorite-cases-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.sub-sidebar #recent-cases-list .recent-remove {
-  position: absolute;
-  left: 6px;
-  /* "הכי שמאל" */
-  top: 50%;
-  transform: translateY(-50%);
+.sub-sidebar #recent-cases-list>li,
+.sub-sidebar #favorite-cases-list>li {
+  margin: 0;
+}
+
+/* העוגן עצמו — שורת Flex דינמית:
+   - direction:ltr => ציר שמאל→ימין כך שהכפתורים יישבו בשמאל הוויזואלי.
+   - ה־title ידחף לימין עם margin-left:auto (פיזי, לא לוגי). */
+.sub-sidebar a.recent-case,
+.sub-sidebar a.favorite-item {
+  display: flex;
+  align-items: center;
+  gap: 0rem;
+  direction: ltr;
+  /* כפתורים נשארים בשמאל הוויזואלי תמיד */
+  padding: .35rem .5rem;
+  border-radius: .5rem;
+  text-decoration: none;
+  min-width: 0;
+  /* כדי לאפשר קיצור ... */
+}
+
+.sub-sidebar a.recent-case:hover,
+.sub-sidebar a.favorite-item:hover {
+  background: rgba(0, 0, 0, .04);
+}
+
+/* כותרת התיק — ימין, שורה אחת, … */
+.sub-sidebar a.recent-case .title,
+.sub-sidebar a.favorite-item .title {
+  margin-left: auto;
+  /* דוחף את הטקסט לימין ואת הכפתורים לשמאל */
+  min-width: 0;
+  /* חובה בשביל ellipsis בתוך flex */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  /* טקסט עברית */
+  text-align: right;
+}
+
+/* כפתורי ✕ ו־★ — מוסתרים כברירת מחדל, נחשפים רק ב-hover */
+.sub-sidebar button.recent-remove,
+.sub-sidebar button.recent-fav,
+.sub-sidebar button.favorite-remove {
+  inline-size: 1rem;
+  block-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .5rem;
+  border: 1px solid transparent;
   background: transparent;
-  border: 0;
-  font-size: 16px;
-  font-weight: 700;
-  /* טיפה עבה */
-  line-height: 1;
-  color: #dc2626;
-  /* אדום */
   cursor: pointer;
   opacity: 0;
-  /* יופיע רק בהובר */
-  user-select: none;
+  /* מוסתר כברירת מחדל */
+  pointer-events: none;
+  transition: opacity .15s, transform .15s, background-color .15s, border-color .15s;
 }
 
-.sub-sidebar #recent-cases-list a.recent-case:hover .recent-remove {
+.sub-sidebar a.recent-case:hover button.recent-remove,
+.sub-sidebar a.recent-case:hover button.recent-fav,
+.sub-sidebar a.favorite-item:hover button.favorite-remove {
   opacity: 1;
+  /* נראה רק בהובר על כל השורה */
+  pointer-events: auto;
 }
 
-.sub-sidebar #recent-cases-list .recent-remove:focus-visible {
-  outline: 2px solid #dc2626;
-  outline-offset: 2px;
+.sub-sidebar button.recent-remove:hover,
+.sub-sidebar button.favorite-remove:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+.sub-sidebar button.recent-fav:hover {
+  background: #fff7e6;
+  /* נגיעה "זהובה" לכוכב */
+  border-color: #fed7aa;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* === SIDEBAR SHIELD — גרסה דקה כמו "תיקים"/"תיק חדש" === */
+
+.sub-sidebar a.recent-case .title,
+.sub-sidebar a.favorite-item .title {
+  /* איפוס מלא נגד .title גלובלי מעמודים אחרים */
+  all: unset;
+
+  /* הורשה מלאה מטקסט הקישור (כמו "תיקים"/"תיק חדש") */
+  display: inline-block;
+  /* יושב יפה בתוך ה-flex */
+  font: inherit;
+  font-weight: inherit;
+  /* בדרך כלל 400 = "דק" */
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  text-decoration: none;
+
+  /* אליפסיס ויישור — ללא שינוי לוגיקה קיימת */
+  margin-left: auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* בלי קווים/מסגרות/רקעים */
+  margin: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.sub-sidebar a.recent-case .title::before,
+.sub-sidebar a.recent-case .title::after,
+.sub-sidebar a.favorite-item .title::before,
+.sub-sidebar a.favorite-item .title::after {
+  content: none !important;
+}
+
+/* לוודא שהשורה עצמה לא “מתמתנת” לסגנון כרטיס */
+.sub-sidebar a.recent-case,
+.sub-sidebar a.favorite-item {
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
