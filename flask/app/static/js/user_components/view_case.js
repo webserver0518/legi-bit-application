@@ -804,13 +804,23 @@
 
       // 2) presign POST
       const key = `uploads/${office_serial}/${CASE.serial}/${file_serial}/${file.name}`;
-      const ps = await window.API.postJson('/presign/post', { key, content_type: file.type || 'application/octet-stream' });
-      if (!ps?.success || !ps.data?.url || !ps.data?.fields) {
-        window.Toast.danger(ps?.error || 'קבלת presign POST נכשלה'); return;
+
+      const ps = await window.API.postJson('/presign/post', {
+        file_name: file.name,
+        file_type: file.type || 'application/octet-stream',
+        file_size: file.size,
+        key: key
+      });
+
+      if (!ps?.success || !ps.data?.presigned?.url) {
+        window.Toast.danger(ps?.error || 'קבלת presign POST נכשלה');
+        return;
       }
 
+      const { url, fields } = ps.data.presigned;
+
       // 3) upload to S3
-      await uploadViaPresignedPost(ps.data.url, ps.data.fields, file);
+      await uploadViaPresignedPost(url, fields, file);
 
       // 4) mark file available
       await window.API.patchJson(`/update_file?serial=${file_serial}`, { status: 'available' }).catch(() => { });
