@@ -59,7 +59,7 @@ jobs:
       - name: Run Tests with Pytest
         run: |
           cd flask
-          pytest
+          python -m pytest
 
   # Step 2: Build and Push Images (Matrix Strategy)
   build-and-push:
