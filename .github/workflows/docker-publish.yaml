@@ -116,4 +116,4 @@ jobs:
         with:
           context: ${{ matrix.context }}
           push: true
-          tags: webserver0518/${{ matrix.image_name }}:v${{ github.run_number }}
+          tags: webserver0518/${{ matrix.image_name }}:v0.${{ github.run_number }}
