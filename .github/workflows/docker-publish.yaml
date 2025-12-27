@@ -1,66 +1,79 @@
-name: Build & Push Docker Images
+name: Build and Push Docker Images
 
 on:
   push:
     branches:
       - main
-    paths-ignore:
-      - "README.md"
-      - "LICENCE"
-  pull_request:
-    branches:
-      - main
-    paths-ignore:
-      - "README.md"
-      - "LICENCE"
 
 jobs:
-  build-and-push:
+  # Step 1: Detect Changes (Path Filtering)
+  detect-changes:
     runs-on: ubuntu-latest
+    outputs:
+      # Expose filter outputs for the next job
+      backend: ${{ steps.filter.outputs.backend }} # true if changes detected in 'flask/' directory
+      web: ${{ steps.filter.outputs.web }} # true if changes detected in 'nginx/' directory
+      mongodb: ${{ steps.filter.outputs.mongodb }} # true if changes detected in 'services/mongodb/' directory
+      s3: ${{ steps.filter.outputs.s3 }} # true if changes detected in 'services/s3/' directory
+      ses: ${{ steps.filter.outputs.ses }} # true if changes detected in 'services/ses/' directory
+    steps:
+      - uses: actions/checkout@v3 # clone the repo
 
+      - uses: dorny/paths-filter@v2 # path filtering action
+        id: filter # step ID to reference outputs
+        with:
+          filters: |
+            backend:
+              - 'flask/**'
+            web:
+              - 'nginx/**'
+            mongodb:
+              - 'services/mongodb/**'
+            s3:
+              - 'services/s3/**'
+            ses:
+              - 'services/ses/**'
+
+  # Step 2: Build and Push Images (Matrix Strategy)
+  build-and-push:
+    needs: detect-changes # depend on the previous job
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false # If one job fails, do not cancel the others
       matrix:
         include:
-          - name: flask
-            context: flask
-            dockerfile: flask/Dockerfile
-            image: legi-bit-flask
+          - service: backend
+            context: ./flask
+            image_name: legi-bit-flask
+          - service: web
+            context: ./nginx
+            image_name: legi-bit-nginx
+          - service: mongodb
+            context: ./services/mongodb
+            image_name: legi-bit-mongodb
+          - service: s3
+            context: ./services/s3
+            image_name: legi-bit-s3
+          - service: ses
+            context: ./services/ses
+            image_name: legi-bit-ses
 
-          - name: nginx
-            context: nginx
-            dockerfile: nginx/Dockerfile
-            image: legi-bit-nginx
-
-          - name: mongodb
-            context: services/mongodb
-            dockerfile: services/mongodb/Dockerfile
-            image: legi-bit-mongodb
-
-          - name: s3
-            context: services/s3
-            dockerfile: services/s3/Dockerfile
-            image: legi-bit-s3
-
-          - name: ses
-            context: services/ses
-            dockerfile: services/ses/Dockerfile
-            image: legi-bit-ses
+    # Conditional Execution: Run only if the specific service has changed
+    # Using dynamic key access to check the relevant output
+    if: ${{ needs.detect-changes.outputs[matrix.service] == 'true' }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-      - name: Log in to Docker Hub (only on push)
-        if: github.event_name == 'push'
-        uses: docker/login-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build & Push ${{ matrix.name }} image
-        uses: docker/build-push-action@v5
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v4
         with:
           context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          push: ${{ github.event_name == 'push' }}
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:v0.${{ github.run_number }}
+          push: true
+          tags: webserver0518/${{ matrix.image_name }}:v${{ github.run_number }}
