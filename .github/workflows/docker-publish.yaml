@@ -17,9 +17,11 @@ jobs:
       s3: ${{ steps.filter.outputs.s3 }} # true if changes detected in 'services/s3/' directory
       ses: ${{ steps.filter.outputs.ses }} # true if changes detected in 'services/ses/' directory
     steps:
-      - uses: actions/checkout@v3 # clone the repo
+      - name: Checkout Repository - Clone
+        uses: actions/checkout@v3
 
-      - uses: dorny/paths-filter@v2 # path filtering action
+      - name: Detect Changed Paths
+        uses: dorny/paths-filter@v2
         id: filter # step ID to reference outputs
         with:
           filters: |
@@ -34,9 +36,45 @@ jobs:
             ses:
               - 'services/ses/**'
 
+  # Step 2: Run Tests (Only for Backend)
+  test-backend:
+    needs: detect-changes
+    # Run only if backend files changed
+    if: ${{ needs.detect-changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository - Clone
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          cd flask
+          pip install -r requirements.txt
+
+      - name: Run Tests with Pytest
+        run: |
+          cd flask
+          pytest
+
   # Step 2: Build and Push Images (Matrix Strategy)
   build-and-push:
-    needs: detect-changes # depend on the previous job
+    needs: [detect-changes, test-backend] # depend on the previous jobs
+
+    # we need always() to evaluate conditions even if test-backend is skipped
+    # so that if only non-backend services changed, this job can still run
+    if: |
+      always() &&
+      needs.detect-changes.result == 'success' &&
+      (
+        needs.detect-changes.outputs.backend != 'true' ||
+        needs.test-backend.result == 'success'
+      )
+
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # If one job fails, do not cancel the others
@@ -62,7 +100,8 @@ jobs:
     # Using dynamic key access to check the relevant output
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repository - Clone
+        uses: actions/checkout@v3
 
       - name: Login to Docker Hub
         if: ${{ needs.detect-changes.outputs[matrix.service] == 'true' }}
