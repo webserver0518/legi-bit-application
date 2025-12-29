@@ -31,6 +31,9 @@ def safe_service_request(
         msg = f"Service unavailable (Network error) - {path}"
         return ResponseManager.bad_gateway(message=msg)
 
+    if resp.status_code == 204 or not resp.content:
+        return ResponseManager.no_content(message="No content from upstream service")
+
     # Try JSON decode
     try:
         current_app.logger.debug(resp)
