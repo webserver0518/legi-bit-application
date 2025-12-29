@@ -95,7 +95,7 @@ def send_email():
 @site_bp.route("/about")
 @AuthorizationManager.logout_required
 def home():
-    #current_app.logger.debug("Home Page rendering")
+    # current_app.logger.debug("Home Page rendering")
     return render_template("base_site.html")
 
 
@@ -143,6 +143,7 @@ def login():
         return ResponseManager.bad_request("Missing reCAPTCHA token")
 
     import requests
+
     verify_url = "https://www.google.com/recaptcha/api/siteverify"
 
     secret = current_app.config.get("RECAPTCHA_SECRET")
@@ -152,10 +153,9 @@ def login():
     current_app.logger.debug(f"reCAPTCHA secret: {secret}")
     current_app.logger.debug(f"reCAPTCHA site key: {site_key}")
     current_app.logger.debug(f"reCAPTCHA verify URL: {verify_url}")
-    resp = requests.post(verify_url, data={
-        "secret": secret,
-        "response": recaptcha_token
-    }).json()
+    resp = requests.post(
+        verify_url, data={"secret": secret, "response": recaptcha_token}
+    ).json()
 
     if not resp.get("success"):
         current_app.logger.warning(
@@ -283,9 +283,11 @@ def _match_recovery_user_by_office_and_username(office_serial: int, username: st
         return None, user_res, False
 
     if ResponseManager.is_no_content(response=user_res):
-        current_app.logger.debug(f"password recovery: no content on get user='{username}'")
+        current_app.logger.debug(
+            f"password recovery: no content on get user='{username}'"
+        )
         return None, None, False
-    
+
     users = ResponseManager.get_data(response=user_res)
     user = users[0]
 
@@ -304,6 +306,7 @@ def _match_recovery_user_by_office_and_username(office_serial: int, username: st
         return None, None, False
 
     return user, None, True
+
 
 @site_bp.route("/password/recovery/verify-user", methods=["POST"])
 @AuthorizationManager.logout_required
@@ -556,10 +559,17 @@ def username_recovery_send_username():
         limit=1,
     )
     if not ResponseManager.is_success(response=user_res):
+        current_app.logger.error(
+            f"username recovery: failed to search user by email='{email}' "
+        )
         return user_res
 
     users = ResponseManager.get_data(response=user_res) or []
     if not users:
+        current_app.logger.info(
+            f"username recovery: no user found for email='{email}' "
+            f"(office_serial={office_serial})"
+        )
         return ResponseManager.success(
             message=_GENERIC_USERNAME_RECOVERY_MSG,
             data={"sent": False},
@@ -579,12 +589,7 @@ def username_recovery_send_username():
         )
 
     subject = "שחזור שם משתמש - Legi-Bit"
-    message = (
-        "שלום,\n\n"
-        "שם המשתמש שלך למערכת Legi-Bit הוא:\n"
-        f"{username}\n\n"
-        "אם לא ביקשת שחזור שם משתמש, ניתן להתעלם מהודעה זו."
-    )
+    message = f"שם המשתמש שלך למערכת הוא: {username}"
     ses_service.send_email(to_email=user_email, subject=subject, message=message)
 
     current_app.logger.info(
