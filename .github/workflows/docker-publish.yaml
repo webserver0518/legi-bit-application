@@ -36,44 +36,11 @@ jobs:
             ses:
               - 'services/ses/**'
 
-  # Step 2: Run Tests (Only for Backend)
-  test-backend:
-    needs: detect-changes
-    # Run only if backend files changed
-    if: ${{ needs.detect-changes.outputs.backend == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository - Clone
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Install Dependencies
-        run: |
-          cd flask
-          pip install -r requirements.txt
-
-      - name: Run Tests with Pytest
-        run: |
-          cd flask
-          python -m pytest
-
-  # Step 2: Build and Push Images (Matrix Strategy)
+  # Step 2: Build and Push tested Docker Images (Matrix Strategy)
   build-and-push:
-    needs: [detect-changes, test-backend] # depend on the previous jobs
+    needs: detect-changes # Depend on change detection
 
-    # we need always() to evaluate conditions even if test-backend is skipped
-    # so that if only non-backend services changed, this job can still run
-    if: |
-      always() &&
-      needs.detect-changes.result == 'success' &&
-      (
-        needs.detect-changes.outputs.backend != 'true' ||
-        needs.test-backend.result == 'success'
-      )
+    if: ${{ needs.detect-changes.result == 'success' }}
 
     runs-on: ubuntu-latest
     strategy:
@@ -102,6 +69,19 @@ jobs:
     steps:
       - name: Checkout Repository - Clone
         uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        if: ${{ matrix.service == 'backend' && needs.detect-changes.outputs.backend == 'true' }}
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies and Run Tests
+        if: ${{ matrix.service == 'backend' && needs.detect-changes.outputs.backend == 'true' }}
+        run: |
+          cd flask
+          pip install -r requirements.txt
+          python -m pytest
 
       - name: Login to Docker Hub
         if: ${{ needs.detect-changes.outputs[matrix.service] == 'true' }}
