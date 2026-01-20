@@ -46,6 +46,10 @@ These images are meant to be orchestrated together.
 see [infra repo](https://github.com/webserver0518/legi-bit-infrastructure)
 for more details
 
+## Best Practices
+
+- small docker images
+
 ## License
 
 This project is licensed under the terms described in [`LICENSE`](LICENSE).
