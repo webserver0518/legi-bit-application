@@ -5,7 +5,7 @@ from .managers.s3_management import S3Manager
 from .managers.response_management import ResponseManager
 
 
-bp = Blueprint('main', __name__)
+bp = Blueprint("main", __name__)
 
 
 # ---------------------- Core ----------------------
@@ -34,12 +34,9 @@ def generate_post():
     file_type = data.get("file_type")
     file_size = data.get("file_size")
     key = data.get("key")
-    
+
     return S3Manager.generate_presigned_post(
-        file_name=file_name,
-        file_type=file_type,
-        file_size=file_size,
-        key=key
+        file_name=file_name, file_type=file_type, file_size=file_size, key=key
     )
 
 
@@ -48,8 +45,9 @@ def generate_post():
 def generate_get():
     """Generate a presigned GET (download) URL for a file key."""
     key = request.args.get("key")
-    
+
     return S3Manager.generate_presigned_get(key=key)
+
 
 # ------------------------ Upload -------------------------
 @bp.route("/create", methods=["POST"])
@@ -57,11 +55,8 @@ def create():
     """Upload a file object to S3."""
     file_obj = request.files.get("file")
     key = request.form.get("key")
-    
-    return S3Manager.create(
-        file_obj=file_obj, 
-        key=key
-    )
+
+    return S3Manager.create(file_obj=file_obj, key=key)
 
 
 # ------------------------ Delete -------------------------
@@ -70,5 +65,5 @@ def delete():
     """Delete an object from S3 by key."""
     data = request.get_json()
     key = data.get("key")
-    
+
     return S3Manager.delete(key=key)
