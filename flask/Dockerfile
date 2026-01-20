@@ -2,6 +2,7 @@
 FROM python:3.11-slim
 
 # Install curl for healthchecks
+# Delete apt lists to reduce image size
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Prevent Python from writing pyc files and enable unbuffered logs
