@@ -13,9 +13,9 @@ jobs:
       # Expose filter outputs for the next job
       backend: ${{ steps.filter.outputs.backend }} # true if changes detected in 'flask/' directory
       web: ${{ steps.filter.outputs.web }} # true if changes detected in 'nginx/' directory
-      mongodb: ${{ steps.filter.outputs.mongodb }} # true if changes detected in 'services/mongodb/' directory
-      s3: ${{ steps.filter.outputs.s3 }} # true if changes detected in 'services/s3/' directory
-      ses: ${{ steps.filter.outputs.ses }} # true if changes detected in 'services/ses/' directory
+      mongodb: ${{ steps.filter.outputs.mongodb }} # true if changes detected in 'mongodb/' directory
+      s3: ${{ steps.filter.outputs.s3 }} # true if changes detected in 's3/' directory
+      ses: ${{ steps.filter.outputs.ses }} # true if changes detected in 'ses/' directory
     steps:
       - name: Checkout Repository - Clone
         uses: actions/checkout@v3
@@ -30,11 +30,11 @@ jobs:
             web:
               - 'nginx/**'
             mongodb:
-              - 'services/mongodb/**'
+              - 'mongodb/**'
             s3:
-              - 'services/s3/**'
+              - 's3/**'
             ses:
-              - 'services/ses/**'
+              - 'ses/**'
 
   # Step 2: Build and Push tested Docker Images (Matrix Strategy)
   build-and-push:
@@ -54,13 +54,13 @@ jobs:
             context: ./nginx
             image_name: legi-bit-nginx
           - service: mongodb
-            context: ./services/mongodb
+            context: ./mongodb
             image_name: legi-bit-mongodb
           - service: s3
-            context: ./services/s3
+            context: ./s3
             image_name: legi-bit-s3
           - service: ses
-            context: ./services/ses
+            context: ./ses
             image_name: legi-bit-ses
 
     # Conditional Execution: Run only if the specific service has changed
