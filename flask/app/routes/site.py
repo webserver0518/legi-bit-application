@@ -161,6 +161,7 @@ def login():
         current_app.logger.warning(
             f"reCAPTCHA failed for user '{username}' - error_codes: {resp.get('error-codes')} - hostname: {resp.get('hostname')}"
         )
+        current_app.login_metrics.labels(status='failure_recaptcha_invalid').inc()
         return ResponseManager.unauthorized("reCAPTCHA verification failed")
 
     score = resp.get("score")  # קיים רק ב-v3
@@ -168,17 +169,21 @@ def login():
         current_app.logger.warning(
             f"reCAPTCHA blocked login for user '{username}' - score: {score} - action: {resp.get('action')}"
         )
+        current_app.login_metrics.labels(status='failure_recaptcha_low_score').inc()
         return ResponseManager.unauthorized("reCAPTCHA verification failed")
 
     if not username or not password:
+        current_app.login_metrics.labels(status='failure_missing_data').inc()
         return ResponseManager.bad_request("Missing username or password")
 
     # 1) Verify credentials
     valid_login_res = AuthenticationManager.authenticate_login(username, password)
     if not ResponseManager.is_success(response=valid_login_res):
+        current_app.login_metrics.labels(status='failure_credentials').inc()
         return valid_login_res
 
     if ResponseManager.is_no_content(response=valid_login_res):
+        current_app.login_metrics.labels(status='failure_no_content').inc()
         return valid_login_res
 
     login_context = ResponseManager.get_data(valid_login_res)
@@ -196,6 +201,7 @@ def login():
     if mfa_enabled:
         secret = mfa.get("secret") or ""
         if not MFAManager.verify_totp(secret, mfa_code):
+            current_app.login_metrics.labels(status='failure_mfa_code').inc()
             return ResponseManager.unauthorized("קוד MFA שגוי")
 
     # 3) Success → establish login context + cookie and return redirect url
@@ -212,6 +218,8 @@ def login():
         samesite="Lax",
         path="/",
     )
+    
+    current_app.login_metrics.labels(status='success').inc()
     return resp, status
 
 
