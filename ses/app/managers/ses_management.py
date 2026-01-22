@@ -54,6 +54,9 @@ class SESManager:
                     "Body": {"Html": {"Data": message}},
                 },
             )
+            current_app.email_metrics.labels(status='success', type='generic').inc()
+            return ResponseManager.success(data="Email sent successfully")
         except Exception as e:
             current_app.logger.error(f"Error sending email: {e}")
+            current_app.email_metrics.labels(status='error', type='generic').inc()
             return ResponseManager.internal(error=str(e))
