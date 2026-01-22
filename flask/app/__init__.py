@@ -2,6 +2,9 @@
 import os
 from flask import Flask
 from flask_session import Session
+from prometheus_flask_exporter import PrometheusMetrics
+from prometheus_client import Counter
+ 
 
 from .managers.config import DevelopmentConfig, ProductionConfig
 from .managers.formatter_management import configure_logging
@@ -41,5 +44,14 @@ def create_flask_app(env= 'development'):
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
         return response
+    
+    # Prometheus Metrics
+    metrics = PrometheusMetrics(app)
+    # Login attempts counter
+    app.login_metrics = Counter(
+        'app_login_attempts_total', 
+        'Number of login attempts', 
+        ['status']
+    )
 
     return app
