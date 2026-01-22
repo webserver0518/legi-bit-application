@@ -59,7 +59,46 @@ services:
     networks: [backend_net]
     restart: always
 
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.54.1
+    depends_on:
+      - backend
+      - service-mongodb
+      - service-ses
+      - service-s3
+    volumes:
+      - ../prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yaml"
+      - "--storage.tsdb.path=/prometheus"
+    networks:
+      - backend_net
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:11.1.4
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - backend_net
+
 networks:
   backend_net:
     name: backend_net
     driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana_data:
