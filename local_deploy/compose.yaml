@@ -68,7 +68,7 @@ services:
       - service-ses
       - service-s3
     volumes:
-      - ../prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
       - prometheus-data:/prometheus
     ports:
       - "9090:9090"
