@@ -135,6 +135,7 @@ class S3Manager:
         """Return a temporary download URL for a private S3 object."""
         if not key:
             # debug bad request
+            current_app.file_download_metrics.labels(action='presign_get', status='bad_request').inc()
             current_app.logger.debug(f"bad_request: 'key' is required")
             return ResponseManager.bad_request(error="key is required")
         
@@ -145,11 +146,13 @@ class S3Manager:
                 ExpiresIn=3600,
             )
             # debug success
+            current_app.file_download_metrics.labels(action='presign_get', status='success').inc()
             current_app.logger.debug(f"returning success with url: {url}")
             return ResponseManager.success(data=url)
         
         except botocore.exceptions.ClientError as e:
             # debug error
+            current_app.file_download_metrics.labels(action='presign_get', status='error').inc()
             current_app.logger.error(f"S3 presigned GET failed: {str(e)}")
             current_app.logger.debug(f"returning internal server error")
             return ResponseManager.internal(error="Failed to generate download URL")
