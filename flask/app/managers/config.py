@@ -30,13 +30,3 @@ class Config:
         app.config["SESSION_REDIS"] = Redis(
             host=Config.REDIS_HOST, port=Config.REDIS_PORT, db=Config.REDIS_DB
         )
-
-
-class DevelopmentConfig(Config):
-    DEBUG = True
-    FLASK_ENV = "development"
-
-
-class ProductionConfig(Config):
-    DEBUG = False
-    FLASK_ENV = "production"
