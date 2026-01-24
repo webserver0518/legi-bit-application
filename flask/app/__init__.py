@@ -3,7 +3,7 @@ import os
 from flask import Flask
 from flask_session import Session
 from prometheus_flask_exporter import PrometheusMetrics
-from prometheus_client import Counter
+from prometheus_client import Counter, REGISTRY
  
 
 from .managers.config import Config
@@ -19,7 +19,7 @@ def create_flask_app():
     app.config.from_object(Config)
     Config.init_app(app)
 
-    metrics = PrometheusMetrics(app, path='/metrics')
+    metrics = PrometheusMetrics(app, path='/metrics', registry=REGISTRY)
 
     Session(app)
 
@@ -50,5 +50,14 @@ def create_flask_app():
         'Number of login attempts', 
         ['status']
     )
+
+    # Initialize metrics to 0 to ensure they appear in Grafana immediately
+    app.login_metrics.labels(status='success').inc(0)
+    app.login_metrics.labels(status='failure_credentials').inc(0)
+    app.login_metrics.labels(status='failure_recaptcha_invalid').inc(0)
+    app.login_metrics.labels(status='failure_missing_data').inc(0)
+    app.login_metrics.labels(status='failure_recaptcha_low_score').inc(0)
+    app.login_metrics.labels(status='failure_no_content').inc(0)
+    app.login_metrics.labels(status='failure_mfa_code').inc(0)
 
     return app
