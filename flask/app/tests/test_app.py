@@ -10,7 +10,7 @@ def app():
     """
     # Create the app instance using your factory function
     # You can pass 'testing' environment if you have a specific config for it
-    app_instance = create_flask_app(env="development")
+    app_instance = create_flask_app()
 
     # Update configuration for testing
     app_instance.config.update(
