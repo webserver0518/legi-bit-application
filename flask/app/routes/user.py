@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from urllib import response
 import os
 from werkzeug.security import check_password_hash
-from flask import Blueprint, render_template, request, flash, current_app
+from flask import Blueprint, render_template, request, flash, current_app, redirect, Response, stream_with_context
 
 from ..services import mongodb_service, s3_service
 from ..services.webrtc_service import webrtc_store, WebRTCStoreUnavailable
@@ -537,21 +537,21 @@ def update_file():
     return ResponseManager.success()
 
 
-@user_bp.route("/get_file_url", methods=["GET"])
+@user_bp.route("/view_file", methods=["GET"])
 @AuthorizationManager.login_required
-def get_file_url():
+def view_file():
     """
-    Generate a temporary presigned GET URL for viewing a file from S3.
-    Expected query parameters:
-        - case_serial
-        - file_serial
-        - file_name
-    office_serial is retrieved automatically from the user's auth.
+    Auth-gated proxy to stream file from S3 (hides S3 URL).
     """
     office_serial = AuthorizationManager.get_office_serial()
-    case_serial = request.args.get("case_serial")
     file_serial = request.args.get("file_serial")
 
+    if not office_serial:
+        return ResponseManager.error("Missing 'office_serial' in auth")
+    if not file_serial:
+        return ResponseManager.bad_request("Missing 'file_serial'")
+
+    # Fetch file to verify permissions and get metadata
     file_res = mongodb_service.search_entities(
         entity=MongoDBEntity.FILES,
         office_serial=office_serial,
@@ -560,45 +560,50 @@ def get_file_url():
     )
 
     if not ResponseManager.is_success(response=file_res):
-        current_app.logger.error(
-            f"❌ [get_file_url] Failed to fetch file serial={file_serial} from MongoDB"
-        )
         return file_res
     
     if ResponseManager.is_no_content(response=file_res):
-        return file_res
+        return ResponseManager.not_found("File not found")
     
-    file = ResponseManager.get_data(response=file_res)
-    file = file[0]
-    file_name = file.get("name")
+    file_list = ResponseManager.get_data(response=file_res)
+    file_doc = file_list[0]
+    
+    # Construct Key
+    case_serial = file_doc.get("case_serial")
+    file_name = file_doc.get("name")
+    
+    if not case_serial or not file_name:
+         return ResponseManager.internal("File metadata incomplete (missing case or name)")
 
-    if not office_serial:
-        current_app.logger.error("Missing 'office_serial' in auth")
-        return ResponseManager.error("Missing 'office_serial' in auth")
-    if not file_serial:
-        current_app.logger.error("Missing 'file_serial'")
-        return ResponseManager.error("Missing 'file_serial'")
-    if not file_name:
-        current_app.logger.error("Missing 'file_name'")
-        return ResponseManager.error("Missing 'file_name'")
-
-    # 🧩 Build key using standard naming convention
     key = f"uploads/{office_serial}/{case_serial}/{file_serial}/{file_name}"
-    current_app.logger.debug(f"🔑 [get_file_url] Generated key: {key}")
-
-    # 🧠 Request presigned URL from S3 service
-    s3_res = s3_service.generate_presigned_get(key)
+    
+    # Generate Presigned URL (internal use)
+    s3_res = s3_service.generate_presigned_get(key, expires_in=60)
+    
     if not ResponseManager.is_success(response=s3_res):
-        current_app.logger.error(
-            f"❌ [get_file_url] S3 service error: {s3_res['error']}"
-        )
         return s3_res
 
-    presigned_url = ResponseManager.get_data(response=s3_res)
-    current_app.logger.debug(
-        f"✅ [get_file_url] Returning presigned URL for key: {key}"
+    url = ResponseManager.get_data(response=s3_res)
+    
+    # Stream from S3
+    upstream_res = s3_service.stream_download(url)
+    
+    if not upstream_res or upstream_res.status_code != 200:
+        current_app.logger.error("Failed to stream from S3")
+        return ResponseManager.internal("Failed to retrieve file content")
+
+    # Forward headers safely
+    headers = {
+        "Content-Type": upstream_res.headers.get("Content-Type"),
+        "Content-Length": upstream_res.headers.get("Content-Length"),
+        "Content-Disposition": f'inline; filename="{file_name}"',
+        "Cache-Control": "private, max-age=3600"
+    }
+
+    return Response(
+        stream_with_context(upstream_res.iter_content(chunk_size=8192)),
+        headers=headers
     )
-    return ResponseManager.success(data=presigned_url)
 
 
 @user_bp.route("/delete_file", methods=["DELETE"])

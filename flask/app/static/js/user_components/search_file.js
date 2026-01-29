@@ -173,28 +173,17 @@ function OpenNewTab(serial) {
         }
 
         const caseSerial = rec.case_serial;
-        const fileName = rec.name;
-
-        if (!caseSerial || !fileName) {
-            window.toast?.error?.("נתוני קובץ חסרים (case_serial / name)");
+        if (!caseSerial) {
+            // If we don't have case_serial in the row, we might need to fetch it or fail.
+            // But usually it's there.
+            window.toast?.error?.("נתוני קובץ חסרים (case_serial)");
             return false;
         }
 
-        const qs =
-            `case_serial=${encodeURIComponent(caseSerial)}` +
-            `&file_serial=${encodeURIComponent(serial)}` +
-            `&file_name=${encodeURIComponent(fileName)}`;
+        const qs = `case_serial=${encodeURIComponent(caseSerial)}&file_serial=${encodeURIComponent(serial)}`;
+        const url = `/view_file?${qs}`;
 
-        window.API.getJson(`/get_file_url?${qs}`)
-            .then(res => {
-                if (!res?.success || !res?.data) {
-                    window.toast?.error?.("נכשל בהפקת קישור זמני לצפייה");
-                    return;
-                }
-                // פתח בלשונית חדשה
-                window.open(res.data, "_blank", "noopener,noreferrer");
-            })
-            .catch(() => window.toast?.error?.("שגיאה בבקשת קישור לקובץ"));
+        window.open(url, "_blank", "noopener,noreferrer");
 
     } catch (e) {
         console.error(e);

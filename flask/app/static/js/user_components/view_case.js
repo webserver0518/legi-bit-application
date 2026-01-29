@@ -590,15 +590,15 @@
     renderRecords();
   }
 
-  async function openFile(rec) {
+  function openFile(rec) {
     const params = new URLSearchParams({
       case_serial: String(rec.case_serial || (window.CASE && CASE.serial) || ''),
-      file_serial: String(rec.serial),
-      file_name: rec.name || rec.file_name || ''
+      file_serial: String(rec.serial)
     });
-    const res = await window.API.getJson(`/get_file_url?${params}`);
-    if (!res?.success || !res.data) throw new Error(res?.error || 'לא ניתן לפתוח את הקובץ');
-    window.open(typeof res.data === 'string' ? res.data : (res.data.url || ''), '_blank');
+    // Proxy download/view
+    const url = `/view_file?${params.toString()}`;
+    window.open(url, '_blank');
+    return Promise.resolve();
   }
 
   function confirmDelete(rec) {

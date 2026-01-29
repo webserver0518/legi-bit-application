@@ -49,8 +49,8 @@ def generate_presigned_post(filename, filetype, filesize, key=None):
 
 
 # ------------------------ Generate Presigned GET -------------------------
-def generate_presigned_get(key):
-    return _safe_request("GET", "/presign/get", params={"key": key})
+def generate_presigned_get(key, expires_in=3600):
+    return _safe_request("GET", "/presign/get", params={"key": key, "expires_in": expires_in})
 
 
 # ------------------------ Upload -------------------------
@@ -63,3 +63,17 @@ def create(fileobj, key):
 # ------------------------ Delete -------------------------
 def delete(key):
     return _safe_request("DELETE", "/delete", json={"key": key})
+
+
+# ------------------------ Stream Download -------------------------
+def stream_download(url):
+    """
+    Stream a file from a URL (e.g., presigned S3 URL).
+    Returns a requests.Response object with stream=True.
+    """
+    try:
+        # stream=True ensures we don't load the whole file into memory
+        return requests.get(url, stream=True, timeout=10)
+    except requests.exceptions.RequestException as e:
+        current_app.logger.error(f"Stream download failed: {e}")
+        return None
