@@ -24,6 +24,9 @@ class Config:
     # reCAPTCHA v3
     RECAPTCHA_SITE_KEY = os.getenv("RECAPTCHA_SITE_KEY")
     RECAPTCHA_SECRET = os.getenv("RECAPTCHA_SECRET")
+    
+    # Environment
+    POD_IP = os.getenv("MY_POD_IP", "Unknown")
 
     @staticmethod
     def init_app(app):

@@ -60,4 +60,6 @@ def create_flask_app():
     app.login_metrics.labels(status='failure_no_content').inc(0)
     app.login_metrics.labels(status='failure_mfa_code').inc(0)
 
+
+
     return app
