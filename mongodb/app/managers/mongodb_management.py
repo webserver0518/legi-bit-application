@@ -1,10 +1,10 @@
-# app/managers/mongodb_management.py
 from flask import current_app
 import os
 from typing import Optional
 
 from pymongo import MongoClient, ReturnDocument
 
+from .config import Config
 from .response_management import ResponseManager
 from ..constants.constants_mongodb import MongoDBEntity
 
@@ -55,7 +55,7 @@ class MongoDBManager:
         if cls._client is not None:
             return  # already initialized
 
-        cls.MONGO_URI = os.getenv("MONGO_URI")
+        cls.MONGO_URI = Config.MONGO_URI
         cls.MONGO_SERVER_SELECTION_TIMEOUT_MS = int(
             os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "5000")
         )
