@@ -16,7 +16,6 @@ services:
     build:
       context: ../flask
     stop_signal: SIGINT
-    volumes: [ ../flask:/app ]
     env_file: [ ./secrets/envs/backend.env ]
     ports: [ "9000:9000" ]
     depends_on: [ redis ]
@@ -38,6 +37,9 @@ services:
     build:
       context: ../mongodb
     env_file: [ ./secrets/envs/mongodb.env ]
+    volumes:
+      - ./secrets/aws/config.ini:/root/.aws/config:ro
+      - ./secrets/aws/credentials.ini:/root/.aws/credentials:ro
     ports: [ "8001:8001" ]
     networks: [ backend_net ]
 
