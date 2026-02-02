@@ -148,11 +148,6 @@ def login():
 
     secret = current_app.config.get("RECAPTCHA_SECRET")
     site_key = current_app.config.get("RECAPTCHA_SITE_KEY")
-    current_app.logger.debug(f"Verifying reCAPTCHA for user '{username}'")
-    current_app.logger.debug(f"reCAPTCHA token: {recaptcha_token}")
-    current_app.logger.debug(f"reCAPTCHA secret: {secret}")
-    current_app.logger.debug(f"reCAPTCHA site key: {site_key}")
-    current_app.logger.debug(f"reCAPTCHA verify URL: {verify_url}")
     resp = requests.post(
         verify_url, data={"secret": secret, "response": recaptcha_token}
     ).json()
